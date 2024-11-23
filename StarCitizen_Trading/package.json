@@ -1,0 +1,13 @@
+{
+  "name": "star-citizen_trading",
+  "version": "0.0.0",
+  "description": "StarCitizen_Trading",
+  "main": "server.js",
+  "author": {
+    "name": ""
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1"
+  },
+  "eslintConfig": {}
+}
