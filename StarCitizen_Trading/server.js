@@ -1,3 +1,5 @@
+console.log("INFO: Node.js version - ", process.version);
+
 const http_server = require('http');
 const functions = require('./functions.js');
 
