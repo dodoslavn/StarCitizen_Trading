@@ -1,0 +1,11 @@
+#version: '3.9'
+services:
+  app:
+    image: "starcitizen_trading_v1"
+    container_name: 'starcitizen_trading'
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:11081:3000"

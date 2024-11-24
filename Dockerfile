@@ -1,9 +1,11 @@
 FROM debian:latest
-RUN mkdir /app
-WORKDIR /app
-COPY StarCitizen_Trading/*.js /app
+FROM debian:latest
+ARG FOLDER="/app"
+RUN mkdir ${FOLDER}
+WORKDIR ${FOLDER}
+COPY StarCitizen_Trading/*.js ${FOLDER}
 RUN apt-get clean
 RUN apt-get update
 RUN apt-get install -y nodejs 
-EXPOSE 11081
+EXPOSE ${PORT}
 ENTRYPOINT ["node" , "server.js" ]
