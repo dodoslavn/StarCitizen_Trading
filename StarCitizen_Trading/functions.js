@@ -1,17 +1,29 @@
 const html = require('./html.js');
 function serverStarted() { console.log(`INFO: HTTP server started`); }
 
-async function downloadJson() {
+async function downloadPrices()
+    {
     const result = await fetch('https://uexcorp.space/api/2.0/commodities_prices_all');
     const data = await result.json();
     return (data);
-}
+    }
+async function downloadPrices()
+    {
+    const result = await fetch('https://uexcorp.space/api/2.0/commodities_prices_all');
+    const data = await result.json();
+    return (data);
+    }
 async function refreshData() {
     try {
-        global.cachedData = await downloadJson();
-        console.log('INFO: Data refreshed successfully');
+        global.cachedData = await downloadPrices();
+        console.log('INFO: Prices refreshed successfully');
     }
-    catch (error) { console.error('ERROR: Refreshing data failed:', error); }
+    catch (error) { console.error('ERROR: Refreshing price data failed:', error); }
+    try {
+        global.cachedTerminals = await downloadTerminals();
+        console.log('INFO: Locations refreshed successfully');
+    }
+    catch (error) { console.error('ERROR: Refreshing location data failed:', error); }
 }
 
 function website_unknown(req, res) {
