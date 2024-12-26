@@ -5,6 +5,7 @@ const cron = require('node-cron');
 const functions = require('./functions.js');
 
 global.cachedData = null;
+global.cachedTerminals = [];
 global.profit = [];
 global.refreshInfo = [];
 
