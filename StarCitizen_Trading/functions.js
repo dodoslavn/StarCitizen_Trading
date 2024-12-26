@@ -78,7 +78,8 @@ function genData_buy() {
 }
 
 
-function website_showData(req, res) {
+function website_showData(req, res)
+    {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html');
     res.write(html.header);
@@ -93,7 +94,28 @@ function website_showData(req, res) {
     res.write(tables);
     res.write(html.footer);
     res.end();
-}
+    }
+
+function website_showLocation(req, res)
+    {
+    (!req.url.startsWith('/location/id/') && !req.url.startsWith('/location/name/'))
+        {
+        website_unknown(req, res);
+        return;
+        }
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html');
+    res.write(html.header);
+    res.write('lokaciaaa');
+    res.write(html.footer);
+    res.end();
+    }
+
+function website_showComodity(req, res)
+    {
+
+    }
+
 async function processRequest(req, res) {
     console.log('INFO: Client request received - ' + req.url);
     if (cachedData == null) {
@@ -104,20 +126,25 @@ async function processRequest(req, res) {
         return;
     }
 
-    switch (req.url) {
-        case '/':
+    switch (true)
+        {
+        case req.url === '/':
             website_showData(req, res);
             break;
-        case '/refresh':
+        case req.url === '/refresh':
             website_refreshData(req, res);
             break;
-        case '/default.css':
+        case req.url === '/default.css':
             website_showCSS(req, res);
             break;
+        case req.url.startsWith('/location/'):
+            website_showLocation(req, res);
+        case req.url.startsWith('/commodity/'):
+            website_showCommodity(req, res);
         default:
             website_unknown(req, res);
+        }
     }
-}
 
 module.exports =
 {
