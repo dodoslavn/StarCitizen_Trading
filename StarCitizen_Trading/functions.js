@@ -2,7 +2,7 @@ const html = require('./html.js');
 function serverStarted() { console.log(`INFO: HTTP server started`); }
 
 async function downloadJson() {
-    const result = await fetch('https://uexcorp.space/api/2.0/commodities_prices_all');
+    const result = await fetch('https://api.uexcorp.space/2.0/commodities_prices_all');
     const data = await result.json();
     return (data);
 }
