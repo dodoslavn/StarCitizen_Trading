@@ -1,3 +1,4 @@
+const fs = require('fs');
 const html = require('./html.js');
 function serverStarted() { console.log(`INFO: HTTP server started`); }
 
@@ -119,9 +120,22 @@ async function processRequest(req, res) {
     }
 }
 
+function loadConfig() {
+    const filename = './config.json';
+    const data = fs.readFileSync(filename, 'utf8');
+    if (!data) {
+        console.error('ERROR: Couldnt load config file - ' + filename);
+        process.exit(1);
+    }
+    const json = JSON.parse(data);
+    console.log(`INFO: Config file loaded`);
+    return json;
+}
+
 module.exports =
 {
     serverStarted,
     refreshData,
-    processRequest
+    processRequest,
+    loadConfig
 };
