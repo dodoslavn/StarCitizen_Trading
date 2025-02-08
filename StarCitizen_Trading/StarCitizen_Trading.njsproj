@@ -28,6 +28,7 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="config.json" />
     <Content Include="functions.js" />
     <Content Include="html.js" />
     <Content Include="server.js" />
