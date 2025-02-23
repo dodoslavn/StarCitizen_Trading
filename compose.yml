@@ -4,8 +4,9 @@ services:
     image: "starcitizen_trading_v1"
     container_name: 'starcitizen_trading'
     restart: always
+    network_mode: host
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "127.0.0.1:11082:3000"
+#    ports:
+#      - "127.0.0.1:11082:3000"
