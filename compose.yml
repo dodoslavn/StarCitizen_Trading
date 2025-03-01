@@ -8,5 +8,3 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-#    ports:
-#      - "127.0.0.1:11082:3000"

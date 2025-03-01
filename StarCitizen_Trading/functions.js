@@ -89,9 +89,13 @@ function website_showData(req, res) {
     const tables = unique_commodities.map(commodity => html.displayCommodity(commodity, buy_prices[commodity], sell_prices[commodity])).join('');
     const profit_uec = html.profit_uec();
     const profit_perc = html.profit_perc();
+    res.write('<div id="content"> <div id="panel_l">');
     res.write(profit_uec);
+    res.write('</div> <div id="panel_r">');
     res.write(profit_perc);
+    res.write('</div> <div id="main">');
     res.write(tables);
+    res.write('</div></div>');
     res.write(html.footer);
     res.end();
 }
