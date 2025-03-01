@@ -1,11 +1,6 @@
-FROM debian:latest
+FROM nodejs_sc-trading:latest
 ARG FOLDER="/app"
-RUN mkdir ${FOLDER}
 WORKDIR ${FOLDER}
 COPY StarCitizen_Trading/* ${FOLDER}
-RUN apt-get clean
-RUN apt-get update
-RUN apt-get install -y nodejs npm
-RUN npm install node-cron
 EXPOSE ${PORT}
 ENTRYPOINT ["node" , "server.js" ]
