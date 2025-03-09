@@ -2634,7 +2634,7 @@ function genData_sell() {
     const commodities = {};
     global.cachedData.data.forEach(item => {
         const { commodity_name, terminal_name, price_sell, price_sell_avg, scu_sell, scu_sell_avg } = item;
-        if (price_sell === 0)
+        if (Number(price_sell) === 0)
             return;
         if (!commodities[commodity_name]) { commodities[commodity_name] = []; }
         commodities[commodity_name].push(
@@ -2653,7 +2653,7 @@ function genData_buy() {
     const commodities = {};
     global.cachedData.data.forEach(item => {
         const { commodity_name, terminal_name, price_buy, price_buy_avg, scu_buy, scu_buy_avg } = item;
-        if (price_buy === 0)
+        if (Number(price_buy) === 0)
             return;
         if (!commodities[commodity_name]) { commodities[commodity_name] = []; }
         commodities[commodity_name].push(
