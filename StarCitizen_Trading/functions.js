@@ -8,10 +8,25 @@ async function downloadJson() {
     return (data);
 }
 async function refreshData() {
-    try {
-        global.cachedData = await downloadJson();
+    try
+        {
+        const resp = await downloadJson();
+        resp.data.forEach(item =>
+            {
+            item.price_buy = Number(item.price_buy);
+            item.price_buy_avg = Number(item.price_buy_avg);
+            item.price_sell = Number(item.price_sell);
+            item.price_sell_avg = Number(item.price_sell_avg);
+            item.scu_buy = Number(item.scu_buy);
+            item.scu_buy_avg = Number(item.scu_buy_avg);
+            item.scu_sell_stock = Number(item.scu_sell_stock);
+            item.scu_sell_stock_avg = Number(item.scu_sell_stock_avg);
+            item.scu_sell = Number(item.scu_sell);
+            item.scu_sell_avg = Number(item.scu_sell_avg);
+            });
+        global.cachedData = resp;
         console.log('INFO: Data refreshed successfully');
-    }
+        }
     catch (error) { console.error('ERROR: Refreshing data failed:', error); }
 }
 
@@ -2634,7 +2649,7 @@ function genData_sell() {
     const commodities = {};
     global.cachedData.data.forEach(item => {
         const { commodity_name, terminal_name, price_sell, price_sell_avg, scu_sell, scu_sell_avg } = item;
-        if (Number(price_sell) === 0)
+        if (price_sell === 0)
             return;
         if (!commodities[commodity_name]) { commodities[commodity_name] = []; }
         commodities[commodity_name].push(
@@ -2653,7 +2668,7 @@ function genData_buy() {
     const commodities = {};
     global.cachedData.data.forEach(item => {
         const { commodity_name, terminal_name, price_buy, price_buy_avg, scu_buy, scu_buy_avg } = item;
-        if (Number(price_buy) === 0)
+        if (price_buy === 0)
             return;
         if (!commodities[commodity_name]) { commodities[commodity_name] = []; }
         commodities[commodity_name].push(
