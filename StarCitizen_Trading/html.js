@@ -32,6 +32,7 @@ table
 table.commodity
     {
     margin: 2rem;
+    margin-bottom: 0rem;
     float: left;
     border-radius: 0.5rem;
     box-shadow: 0.15rem 0.15rem 0.15rem rgba(50, 50, 50, 0.5);
