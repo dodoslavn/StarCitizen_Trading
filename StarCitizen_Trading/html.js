@@ -18,7 +18,7 @@ function css() {
 body
     {
     //margin: auto, 0, auto, 0;
-    //width: 100%;
+    min-width: 92rem;
     color: white;
     background-color: #121212;
     font-family: Open Sans;
