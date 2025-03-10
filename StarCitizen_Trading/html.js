@@ -110,17 +110,30 @@ function displayCommodity(item, buy = [], sell = []) {
     const buy_sorted = buy.sort((a, b) => a.price_buy - b.price_buy);
     const sell_sorted = sell.sort((a, b) => b.price_sell - a.price_sell);
 
+    const sell_sorted_real = sell.filter(item => item.scu_sell_avg !== null && item.scu_sell_avg !== 0);
+    const buy_sorted_real = buy.filter(item => item.scu_buy_avg !== null && item.scu_buy_avg !== 0);
+
     let profit_uec_txt = '';
     let profit_perc_txt = '';
     if (sell_sorted.length > 0 && buy_sorted.length > 0) {
         const profit_uec = (sell_sorted[0].price_sell - buy_sorted[0].price_buy);
         const profit_perc = (((sell_sorted[0].price_sell - buy_sorted[0].price_buy) / buy_sorted[0].price_buy) * 100).toFixed(2);
 
+        let profit_uec_real = '-';
+        let profit_perc_real = '-';
+        if (sell_sorted_real.length > 0 && buy_sorted_real.length > 0)
+            {
+            profit_uec_real = (sell_sorted_real[0].price_sell - buy_sorted_real[0].price_buy);
+            if (profit_uec_real < 0) profit_uec_real = '-';
+            profit_perc_real = (((sell_sorted_real[0].price_sell - buy_sorted_real[0].price_buy) / buy_sorted_real[0].price_buy) * 100).toFixed(2);
+            if (profit_perc_real < 0) profit_perc_real = '-';
+            }
+
         profit_uec_txt = profit_uec + ' aUEC - ';
         profit_perc_txt = profit_perc + '%';
 
-        global.profit.push({ 'commodity': item, 'profit_uec': profit_uec, 'profit_perc': profit_perc });
-    }
+        global.profit.push({ 'commodity': item, 'profit_uec': profit_uec, 'profit_perc': profit_perc, 'profit_uec_real': profit_uec_real, 'profit_perc_real': profit_perc_real });
+        }
     return `
     <table class="commodity" id="comm-${item}">
         <tr><th colspan="2" style="text-align:center;">${item} ( ${profit_uec_txt} ${profit_perc_txt} )</th></tr>
@@ -153,7 +166,7 @@ function profit_uec() {
     let profit_sorted = global.profit;
     profit_sorted.sort((a, b) => b.profit_uec - a.profit_uec);
     const header = '<tr><th>Commodity</th><th>Profit aUEC/SCU</th></tr>';
-    const data = profit_sorted.map(item => { return `<tr><td><a href="#comm-${item.commodity}">${item.commodity}</a></td><td>${item.profit_uec}</td></tr>`; }).join('');
+    const data = profit_sorted.map(item => { return `<tr><td><a href="#comm-${item.commodity}">${item.commodity}</a></td><td>${item.profit_uec_real} (up to ${item.profit_uec})</td></tr>`; }).join('');
     //const header = '<tr><td>Commodity name</td>' + profit_sorted.map(item => { return `<td>${item.commodity}</td>`; }).join('') + '</tr>';
     //const data = '<tr><td>Profit [UEC/SCU]</td>' + profit_sorted.map(item => { return `<td>${item.profit_uec}</td>`; }).join('') + '</tr>';
     return '<table class="best">' + header + data + '</table>';
@@ -162,7 +175,7 @@ function profit_perc() {
     let profit_sorted = global.profit;
     profit_sorted.sort((a, b) => b.profit_perc - a.profit_perc);
     const header = '<tr><th>Commodity</th><th>Profit %</th></tr>';
-    const data = profit_sorted.map(item => { return `<tr><td><a href="#comm-${item.commodity}">${item.commodity}</a></td><td>${item.profit_perc}</td></tr>`; }).join('');
+    const data = profit_sorted.map(item => { return `<tr><td><a href="#comm-${item.commodity}">${item.commodity}</a></td><td>${item.profit_perc_real} (up to ${item.profit_perc})</td></tr>`; }).join('');
     //const header = '<tr><td>Commodity name</td>' + profit_sorted.map(item => { return `<td>${item.commodity}</td>`; }).join('') + '</tr>';
     //const data = '<tr><td>Profit</td>' + profit_sorted.map(item => { return `<td>${item.profit_perc}%</td>`; }).join('') + '</tr>';
     return '<table class="best">' + header + data + '</table>';
