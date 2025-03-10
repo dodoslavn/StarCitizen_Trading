@@ -57,7 +57,10 @@ th
     border-radius: 5px;
     }
 td
-    { text-align: center; }
+    { 
+    text-align: center; 
+    vertical-align: top;
+    }
 
 a
     {
