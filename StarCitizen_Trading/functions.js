@@ -1,6 +1,12 @@
 const fs = require('fs');
 const html = require('./html.js');
-function serverStarted() { console.log(`INFO: HTTP server started`); }
+function serverStarted() { console.log(timestamp() + `INFO: HTTP server started`); }
+
+function timestamp()
+    {
+    const now = new Date();
+    return now.getFullYear() + "-" + (now.getMonth() + 1) + "-" + now.getDate() + "_" + now.getHours() + ":" + now.getMinutes() + ":" + now.getSeconds() + " > ";
+    } 
 
 async function downloadJson() {
     const result = await fetch('https://api.uexcorp.space/2.0/commodities_prices_all');
@@ -25,16 +31,16 @@ async function refreshData() {
             item.scu_sell_avg = Number(item.scu_sell_avg);
             });
         global.cachedData = resp;
-        console.log('INFO: Data refreshed successfully');
+        console.log(timestamp() + 'INFO: Data refreshed successfully');
         }
-    catch (error) { console.error('ERROR: Refreshing data failed:', error); }
+    catch (error) { console.error(timestamp() + 'ERROR: Refreshing data failed:', error); }
 }
 
 function website_unknown(req, res) {
     res.statusCode = 404;
     res.setHeader('Content-Type', 'text/plain');
     res.end('Page not found');
-    console.error('ERROR: Unknown URL - ' + req.url);
+    console.error(timestamp() + 'ERROR: Unknown URL - ' + req.url);
 }
 
 function website_showCSS(req, res) {
@@ -2637,7 +2643,7 @@ function website_refreshData(req, res) {
     refreshData();
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/plain');
-    res.end('INFO: Call to refresh data sent');
+    res.end(timestamp() + 'INFO: Call to refresh data sent');
 }
 
 function getComodities() {
@@ -2705,12 +2711,12 @@ function website_showData(req, res) {
     res.end();
 }
 async function processRequest(req, res) {
-    console.log('INFO: Client request received - ' + req.url);
+    console.log(timestamp() + 'INFO: Client request received - ' + req.url);
     if (cachedData == null) {
-        console.log('WARNING: No cached data');
+        console.log(timestamp() + 'WARNING: No cached data');
         res.statusCode = 404;
         res.setHeader('Content-Type', 'text/plain');
-        res.end('ERROR: No data to process');
+        res.end(timestamp() + 'ERROR: No data to process');
         return;
     }
 
@@ -2736,11 +2742,11 @@ function loadConfig() {
     const filename = './config.json';
     const data = fs.readFileSync(filename, 'utf8');
     if (!data) {
-        console.error('ERROR: Couldnt load config file - ' + filename);
+        console.error(timestamp() + 'ERROR: Couldnt load config file - ' + filename);
         process.exit(1);
     }
     const json = JSON.parse(data);
-    console.log(`INFO: Config file loaded`);
+    console.log(timestamp() + `INFO: Config file loaded`);
     return json;
 }
 

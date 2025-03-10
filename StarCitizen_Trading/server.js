@@ -1,11 +1,10 @@
 console.log("INFO: Node.js version -", process.version);
 
+const functions = require('./functions.js');
 const http_server = require('http');
 const cron = require('node-cron');
-const functions = require('./functions.js');
 
 global.config = functions.loadConfig();
-
 global.cachedData = null;
 global.profit = [];
 
