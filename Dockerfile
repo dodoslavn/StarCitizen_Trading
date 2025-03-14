@@ -1,4 +1,4 @@
-FROM nodejs_terrario:latest
+FROM nodejs_sc-trading:latest
 ARG FOLDER="/app"
 WORKDIR ${FOLDER}
 COPY StarCitizen_Trading/* ${FOLDER}
