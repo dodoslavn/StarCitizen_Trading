@@ -6,9 +6,11 @@ const cron = require('node-cron');
 
 global.config = functions.loadConfig();
 global.cachedData = null;
+global.cachedInitData = null;
 global.profit = [];
 
 functions.refreshData();
+functions.getInitData();
 cron.schedule('* * * * *', functions.refreshData );
 
 const my_server = http_server.createServer(functions.processRequest);

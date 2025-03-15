@@ -1,8 +1,9 @@
 const header = `
+<!DOCTYPE html>
 <html>
     <head>
         <title>ComTrading - Star Citizen</title>
-        <link rel="stylesheet" type="text/css" href="default.css" media="screen" >
+        <link rel="stylesheet" type="text/css" href="/default.css" media="screen" >
         <meta http-equiv="refresh" content="300">
     </head>
     <body>
