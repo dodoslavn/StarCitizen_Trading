@@ -108,6 +108,13 @@ function website_showFavicon(req, res)
     res.end(Buffer.from(faviconBase64, 'base64'));
     }
 
+function website_touchpanel(req, res)
+    {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html');
+    res.end('test'));
+    }
+
 function website_refreshData(req, res)
     {
     refreshData();
@@ -202,6 +209,9 @@ async function processRequest(req, res) {
             break;
         case '/favicon.ico':
             website_showFavicon(req, res);
+            break;
+        case '/touchpanel':
+            website_touchpanel(req, res);
             break;
         default:
             website_unknown(req, res);
