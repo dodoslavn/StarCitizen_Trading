@@ -112,7 +112,7 @@ function website_touchpanel(req, res)
     {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html');
-    res.end('test');
+    res.end(html.touchportal());
     }
 
 function website_refreshData(req, res)

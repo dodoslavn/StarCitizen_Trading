@@ -194,7 +194,7 @@ function touchportal()
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-equiv="refresh" content="300">
+    <meta http-equiv="refresh" content="3">
     <style>
         body
             {
@@ -204,6 +204,7 @@ function touchportal()
     </style>
 </head>
 <body>
+    test
 </body>
 </html>
 
