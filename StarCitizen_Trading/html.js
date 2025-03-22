@@ -187,4 +187,27 @@ function profit_perc() {
     //const data = '<tr><td>Profit</td>' + profit_sorted.map(item => { return `<td>${item.profit_perc}%</td>`; }).join('') + '</tr>';
     return '<table class="best">' + header + data + '</table>';
 }
-module.exports = { header, footer, displayCommodity, css, profit_uec, profit_perc };
+
+function touchportal()
+    {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="refresh" content="300">
+    <style>
+        body
+            {
+            background-color: black;
+            color: white;
+            }
+    </style>
+</head>
+<body>
+</body>
+</html>
+
+    `;
+    }
+
+module.exports = { header, footer, displayCommodity, css, profit_uec, profit_perc, touchportal };
