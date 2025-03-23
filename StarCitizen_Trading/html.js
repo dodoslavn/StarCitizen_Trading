@@ -191,7 +191,7 @@ function readable_number(num)
 
 
     }
-function touchportal()
+function touchportal(scu, solar_system = '')
     {
     const uniq_comm = [...new Set(global.cachedData.data.map(item => item.commodity_name))];
     let profit_sorted = global.profit;
@@ -204,47 +204,42 @@ function touchportal()
         terminals_sell.forEach(sell =>
             {
             const system = global.cachedInitData[sell.terminal_name].name;
+            if (solar_system && (system != solar_system)) return;
             terminals_buy.filter(item => global.cachedInitData[item.terminal_name].name === system).forEach(buy =>
                 {
                 let amount = sell.scu_sell_stock_avg;
                 if (amount > buy.scu_buy_stock_avg) amount = buy.scu_buy_stock_avg;
-                if (amount > 50) deals_list.push({ 'profit_avg': (sell.price_sell_avg - buy.price_buy_avg) * 50, 'profit': Math.floor(((sell.price_sell - buy.price_buy) * 50) / 1000), 'investment': buy.price_buy_avg * 50, 'amount': 50, 'system': system, 'buy': buy, 'sell': sell })
-                if (amount > 100) deals_list.push({ 'profit_avg': (sell.price_sell_avg - buy.price_buy_avg) * 100, 'profit': Math.floor(((sell.price_sell - buy.price_buy) * 100) / 1000), 'investment': buy.price_buy_avg * 100, 'amount': 100, 'system': system, 'buy': buy, 'sell': sell })
-                if (amount > 300) deals_list.push({ 'profit_avg': (sell.price_sell_avg - buy.price_buy_avg) * 300, 'profit': Math.floor(((sell.price_sell - buy.price_buy) * 300) / 1000), 'investment': buy.price_buy_avg * 300, 'amount': 300, 'system': system, 'buy': buy, 'sell': sell })
-                if (amount > 500) deals_list.push({ 'profit_avg': (sell.price_sell_avg - buy.price_buy_avg) * 500, 'profit': Math.floor(((sell.price_sell - buy.price_buy) * 500) / 1000), 'investment': buy.price_buy_avg * 500, 'amount': 500, 'system': system, 'buy': buy, 'sell': sell })
+                if (amount > scu) deals_list.push({ 'profit_avg': (sell.price_sell_avg - buy.price_buy_avg) * scu, 'profit': Math.floor(((sell.price_sell - buy.price_buy) * scu) / 1000), 'investment': buy.price_buy_avg * scu, 'amount': scu, 'system': system, 'buy': buy, 'sell': sell })
                 });       
             });
         });
-    profit_sorted = deals_list.filter(item => item.amount === 50).sort((a, b) => b.profit_avg - a.profit_avg).slice(0, 10);
+    profit_sorted = deals_list.filter(item => item.amount === scu).sort((a, b) => b.profit_avg - a.profit_avg).slice(0, 20);
     let output = '';
-    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit aUEC/50 SCU</th><th>Investment</th></tr>';
-    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>~${readable_number(item.profit_avg)} (${readable_number(item.profit)}k)</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
-    output = output + '</table>';
-
-    profit_sorted = deals_list.filter(item => item.amount === 100).sort((a, b) => b.profit_avg - a.profit_avg).slice(0, 10);
-    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit aUEC/100 SCU</th><th>Investment</th></tr>';
-    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>~${readable_number(item.profit_avg)} (${readable_number(item.profit)}k)</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
-    output = output + '</table>';
-
-    profit_sorted = deals_list.filter(item => item.amount === 300).sort((a, b) => b.profit_avg - a.profit_avg).slice(0, 10);
-    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit aUEC/300 SCU</th><th>Investment</th></tr>';
-    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>~${readable_number(item.profit_avg)} (${readable_number(item.profit)}k)</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
-    output = output + '</table>';
-
-    profit_sorted = deals_list.filter(item => item.amount === 500).sort((a, b) => b.profit_avg - a.profit_avg).slice(0, 10);
-    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit aUEC/500 SCU</th><th>Investment</th></tr>';
-    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>~${readable_number(item.profit_avg)} (${readable_number(item.profit)}k)</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
+    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit aUEC/' + scu +' SCU</th><th>Investment</th></tr>';
+    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>~ ${readable_number(item.profit_avg)} ( ${readable_number(item.profit)}k )</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
     output = output + '</table>';
     return `
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-equiv="refresh" content="10">
+    <meta http-equiv="refresh" content="100">
     <style>
         body
             {
             background-color: black;
             color: white;
+            }
+        body div#top
+            {
+            text-align: center;
+            margin-bottom: 0.5rem;
+            }
+        body div#top a
+            {
+            background-color: #006fdd;
+            border-radius: 5px;
+            text-align: center;
+            padding: 0.4rem;
             }
         table
             {
@@ -272,6 +267,15 @@ function touchportal()
     </style>
 </head>
 <body>
+    <div id="top">
+        <a href="/touchportal/` + scu + `/Stanton">Stanton only</a>
+        <a href="/touchportal/` + scu + `/Pyro">Pyro only</a>
+        <a style="margin-right: 3rem;" href="/touchportal/` + scu + `/">All systems</a> 
+        ${scu > 10 ? "<a href='/touchportal/" + (Number(scu) - 10) + "/" + String(solar_system) +"'>-10 SCU</a>" : "" }
+        <a href="/touchportal/` + (Number(scu) + 10) + `/` + String(solar_system) + `">+10 SCU</a>
+        ${scu > 100 ? "<a href='/touchportal/" + (Number(scu) - 100) + "/" + String(solar_system) +"'>-100 SCU</a>" : "" }
+        <a href="/touchportal/` + (Number(scu) + 100) + `/` + String(solar_system) + `">+100 SCU</a>
+    </div>
     `+ output + `
 
 </body>
