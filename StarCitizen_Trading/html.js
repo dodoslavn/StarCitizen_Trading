@@ -232,7 +232,7 @@ function touchportal(scu, solar_system = '')
         body div#top
             {
             text-align: center;
-            margin-bottom: 0.5rem;
+            margin-bottom: 3rem;
             }
         body div#top a
             {
