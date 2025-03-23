@@ -174,8 +174,6 @@ function profit_uec() {
     profit_sorted.sort((a, b) => b.profit_uec - a.profit_uec);
     const header = '<tr><th>Commodity</th><th>Profit aUEC/SCU</th></tr>';
     const data = profit_sorted.map(item => { return `<tr><td><a href="#comm-${item.commodity}">${item.commodity}</a></td><td>${item.profit_uec_real} (up to ${item.profit_uec})</td></tr>`; }).join('');
-    //const header = '<tr><td>Commodity name</td>' + profit_sorted.map(item => { return `<td>${item.commodity}</td>`; }).join('') + '</tr>';
-    //const data = '<tr><td>Profit [UEC/SCU]</td>' + profit_sorted.map(item => { return `<td>${item.profit_uec}</td>`; }).join('') + '</tr>';
     return '<table class="best">' + header + data + '</table>';
 }
 function profit_perc() {
@@ -190,21 +188,60 @@ function profit_perc() {
 
 function touchportal()
     {
+    const uniq_comm = [...new Set(global.cachedData.data.map(item => item.commodity_name))];
+    let profit_sorted = global.profit;
+    let deals_list = [];
+    uniq_comm.forEach(commodity =>
+        {
+        const terminals_sell = global.cachedData.data.filter(item => item.commodity_name === commodity && item.price_sell_avg > 0);
+        const terminals_buy = global.cachedData.data.filter(item => item.commodity_name === commodity && item.price_buy_avg > 0);
+
+        terminals_sell.forEach(sell =>
+            {
+            terminals_buy.forEach(buy =>
+                {
+                let amount = sell.scu_sell_stock_avg;
+                if (amount > buy.scu_buy_stock_avg) amount = buy.scu_buy_stock_avg;
+                deals_list.push({ 'profit': (sell.price_sell_avg - buy.price_buy_avg) * amount, 'buy': buy, 'sell': sell })
+                });       
+            });
+        });
+    profit_sorted = deals_list.sort((a, b) => b.profit - a.profit).slice(0, 15);
+    const header = '<tr><th>Commodity</th><th>From</th><th>To</th><th>Profit aUEC/SCU</th></tr>';
+    const data = profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>${item.profit}</td></tr>`; }).join('');
+
     return `
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-equiv="refresh" content="3">
+    <meta http-equiv="refresh" content="10">
     <style>
         body
             {
             background-color: black;
             color: white;
             }
+        table tr th
+            {
+            background-color: #006fdd;
+            border-radius: 5px;
+            text-align: center;
+            }
+        table tr td
+            {
+            text-align: center;
+            }
+        a
+            {
+            text-decoration: none;
+            color: white;
+            }
     </style>
 </head>
 <body>
-    test
+    <table>
+    `+ header + data + `
+    </table>
 </body>
 </html>
 

@@ -210,7 +210,7 @@ async function processRequest(req, res) {
         case '/favicon.ico':
             website_showFavicon(req, res);
             break;
-        case '/touchpanel':
+        case '/touchportal':
             website_touchpanel(req, res);
             break;
         default:
