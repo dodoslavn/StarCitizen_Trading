@@ -208,32 +208,32 @@ function touchportal()
                 {
                 let amount = sell.scu_sell_stock_avg;
                 if (amount > buy.scu_buy_stock_avg) amount = buy.scu_buy_stock_avg;
-                if (amount > 50) deals_list.push({ 'profit': (sell.price_sell_avg - buy.price_buy_avg) * 50, 'investment': buy.price_buy_avg * 50, 'amount': 50, 'system': system, 'buy': buy, 'sell': sell })
-                if (amount > 100) deals_list.push({ 'profit': (sell.price_sell_avg - buy.price_buy_avg) * 100, 'investment': buy.price_buy_avg * 100, 'amount': 100, 'system': system, 'buy': buy, 'sell': sell })
-                if (amount > 300) deals_list.push({ 'profit': (sell.price_sell_avg - buy.price_buy_avg) * 300, 'investment': buy.price_buy_avg * 300, 'amount': 300, 'system': system, 'buy': buy, 'sell': sell })
-                if (amount > 500) deals_list.push({ 'profit': (sell.price_sell_avg - buy.price_buy_avg) * 500, 'investment': buy.price_buy_avg * 500, 'amount': 500, 'system': system, 'buy': buy, 'sell': sell })
+                if (amount > 50) deals_list.push({ 'profit_avg': (sell.price_sell_avg - buy.price_buy_avg) * 50, 'profit': Math.floor(((sell.price_sell - buy.price_buy) * 50) / 1000), 'investment': buy.price_buy_avg * 50, 'amount': 50, 'system': system, 'buy': buy, 'sell': sell })
+                if (amount > 100) deals_list.push({ 'profit_avg': (sell.price_sell_avg - buy.price_buy_avg) * 100, 'profit': Math.floor(((sell.price_sell - buy.price_buy) * 100) / 1000), 'investment': buy.price_buy_avg * 100, 'amount': 100, 'system': system, 'buy': buy, 'sell': sell })
+                if (amount > 300) deals_list.push({ 'profit_avg': (sell.price_sell_avg - buy.price_buy_avg) * 300, 'profit': Math.floor(((sell.price_sell - buy.price_buy) * 300) / 1000), 'investment': buy.price_buy_avg * 300, 'amount': 300, 'system': system, 'buy': buy, 'sell': sell })
+                if (amount > 500) deals_list.push({ 'profit_avg': (sell.price_sell_avg - buy.price_buy_avg) * 500, 'profit': Math.floor(((sell.price_sell - buy.price_buy) * 500) / 1000), 'investment': buy.price_buy_avg * 500, 'amount': 500, 'system': system, 'buy': buy, 'sell': sell })
                 });       
             });
         });
-    profit_sorted = deals_list.sort((a, b) => b.profit - a.profit).filter(item => item.amount === 50).slice(0, 10);
+    profit_sorted = deals_list.filter(item => item.amount === 50).sort((a, b) => b.profit_avg - a.profit_avg).slice(0, 10);
     let output = '';
-    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit 50 aUEC/SCU</th><th>Investment</th></tr>';
-    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>${readable_number(item.profit)}</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
+    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit aUEC/50 SCU</th><th>Investment</th></tr>';
+    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>~${readable_number(item.profit_avg)} (${readable_number(item.profit)}k)</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
     output = output + '</table>';
 
-    profit_sorted = deals_list.sort((a, b) => b.profit - a.profit).filter(item => item.amount === 100).slice(0, 10);
-    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit 100 aUEC/SCU</th><th>Investment</th></tr>';
-    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>${readable_number(item.profit)}</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
+    profit_sorted = deals_list.filter(item => item.amount === 100).sort((a, b) => b.profit_avg - a.profit_avg).slice(0, 10);
+    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit aUEC/100 SCU</th><th>Investment</th></tr>';
+    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>~${readable_number(item.profit_avg)} (${readable_number(item.profit)}k)</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
     output = output + '</table>';
 
-    profit_sorted = deals_list.sort((a, b) => b.profit - a.profit).filter(item => item.amount === 300).slice(0, 10);
-    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit 300 aUEC/SCU</th><th>Investment</th></tr>';
-    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>${readable_number(item.profit)}</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
+    profit_sorted = deals_list.filter(item => item.amount === 300).sort((a, b) => b.profit_avg - a.profit_avg).slice(0, 10);
+    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit aUEC/300 SCU</th><th>Investment</th></tr>';
+    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>~${readable_number(item.profit_avg)} (${readable_number(item.profit)}k)</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
     output = output + '</table>';
 
-    profit_sorted = deals_list.sort((a, b) => b.profit - a.profit).filter(item => item.amount === 500).slice(0, 10);
-    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit 500 aUEC/SCU</th><th>Investment</th></tr>';
-    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>${readable_number(item.profit)}</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
+    profit_sorted = deals_list.filter(item => item.amount === 500).sort((a, b) => b.profit_avg - a.profit_avg).slice(0, 10);
+    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit aUEC/500 SCU</th><th>Investment</th></tr>';
+    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>~${readable_number(item.profit_avg)} (${readable_number(item.profit)}k)</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
     output = output + '</table>';
     return `
 <!DOCTYPE html>
