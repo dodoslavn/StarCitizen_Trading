@@ -222,7 +222,7 @@ function touchportal(scu, solar_system = '')
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-equiv="refresh" content="100">
+    <meta http-equiv="refresh" content="10">
     <style>
         body
             {
