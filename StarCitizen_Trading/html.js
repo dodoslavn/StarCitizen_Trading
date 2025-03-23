@@ -246,11 +246,19 @@ function touchportal()
             background-color: black;
             color: white;
             }
+        table
+            {
+            margin-right: auto;
+            margin-left: auto;
+            margin-bottom: 1rem;
+            }
         table tr th
             {
             background-color: #006fdd;
             border-radius: 5px;
             text-align: center;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
             }
         table tr td
             {
