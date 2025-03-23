@@ -186,6 +186,11 @@ function profit_perc() {
     return '<table class="best">' + header + data + '</table>';
 }
 
+function readable_number(num)
+    { return new Intl.NumberFormat("en-US", { useGrouping: true }).format(num).replace(/,/g, " "); 
+
+
+    }
 function touchportal()
     {
     const uniq_comm = [...new Set(global.cachedData.data.map(item => item.commodity_name))];
@@ -198,18 +203,38 @@ function touchportal()
 
         terminals_sell.forEach(sell =>
             {
-            terminals_buy.forEach(buy =>
+            const system = global.cachedInitData[sell.terminal_name].name;
+            terminals_buy.filter(item => global.cachedInitData[item.terminal_name].name === system).forEach(buy =>
                 {
                 let amount = sell.scu_sell_stock_avg;
                 if (amount > buy.scu_buy_stock_avg) amount = buy.scu_buy_stock_avg;
-                deals_list.push({ 'profit': (sell.price_sell_avg - buy.price_buy_avg) * amount, 'buy': buy, 'sell': sell })
+                if (amount > 50) deals_list.push({ 'profit': (sell.price_sell_avg - buy.price_buy_avg) * 50, 'investment': buy.price_buy_avg * 50, 'amount': 50, 'system': system, 'buy': buy, 'sell': sell })
+                if (amount > 100) deals_list.push({ 'profit': (sell.price_sell_avg - buy.price_buy_avg) * 100, 'investment': buy.price_buy_avg * 100, 'amount': 100, 'system': system, 'buy': buy, 'sell': sell })
+                if (amount > 300) deals_list.push({ 'profit': (sell.price_sell_avg - buy.price_buy_avg) * 300, 'investment': buy.price_buy_avg * 300, 'amount': 300, 'system': system, 'buy': buy, 'sell': sell })
+                if (amount > 500) deals_list.push({ 'profit': (sell.price_sell_avg - buy.price_buy_avg) * 500, 'investment': buy.price_buy_avg * 500, 'amount': 500, 'system': system, 'buy': buy, 'sell': sell })
                 });       
             });
         });
-    profit_sorted = deals_list.sort((a, b) => b.profit - a.profit).slice(0, 15);
-    const header = '<tr><th>Commodity</th><th>From</th><th>To</th><th>Profit aUEC/SCU</th></tr>';
-    const data = profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>${item.profit}</td></tr>`; }).join('');
+    profit_sorted = deals_list.sort((a, b) => b.profit - a.profit).filter(item => item.amount === 50).slice(0, 10);
+    let output = '';
+    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit 50 aUEC/SCU</th><th>Investment</th></tr>';
+    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>${readable_number(item.profit)}</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
+    output = output + '</table>';
 
+    profit_sorted = deals_list.sort((a, b) => b.profit - a.profit).filter(item => item.amount === 100).slice(0, 10);
+    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit 100 aUEC/SCU</th><th>Investment</th></tr>';
+    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>${readable_number(item.profit)}</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
+    output = output + '</table>';
+
+    profit_sorted = deals_list.sort((a, b) => b.profit - a.profit).filter(item => item.amount === 300).slice(0, 10);
+    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit 300 aUEC/SCU</th><th>Investment</th></tr>';
+    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>${readable_number(item.profit)}</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
+    output = output + '</table>';
+
+    profit_sorted = deals_list.sort((a, b) => b.profit - a.profit).filter(item => item.amount === 500).slice(0, 10);
+    output = output + '<table><tr><th>Commodity</th><th>System</th><th>From</th><th>To</th><th>Profit 500 aUEC/SCU</th><th>Investment</th></tr>';
+    output = output + profit_sorted.map(item => { return `<tr><td>${item.sell.commodity_name}</td><td>${item.system}</td><td>${item.buy.terminal_name}</td><td>${item.sell.terminal_name}</td><td>${readable_number(item.profit)}</td><td>${readable_number(item.investment)}</td></tr>`; }).join('');
+    output = output + '</table>';
     return `
 <!DOCTYPE html>
 <html>
@@ -239,9 +264,8 @@ function touchportal()
     </style>
 </head>
 <body>
-    <table>
-    `+ header + data + `
-    </table>
+    `+ output + `
+
 </body>
 </html>
 

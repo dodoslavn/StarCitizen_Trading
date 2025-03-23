@@ -67,7 +67,7 @@ async function getInitData_Terminals()
     try {
         const resp = await downloadJson(endpoints['terminals_all']);
         const data = resp.data.reduce((acc, item) => {
-            acc[item.name] = item.id_star_system;
+            acc[item.nickname] = item.id_star_system;
             return acc;
             }, {});
         console.log(timestamp() + 'INFO: Init data (termianls) processed successfully');
@@ -197,18 +197,24 @@ async function processRequest(req, res) {
         return;
     }
 
+    let url_processed = false;
+
     switch (req.url) {
         case '/':
             website_showData(req, res);
+            url_processed = true;
             break;
         case '/refresh':
             website_refreshData(req, res);
+            url_processed = true;
             break;
         case '/default.css':
             website_showCSS(req, res);
+            url_processed = true;
             break;
         case '/favicon.ico':
             website_showFavicon(req, res);
+            url_processed = true;
             break;
         case '/touchportal':
             website_touchpanel(req, res);
