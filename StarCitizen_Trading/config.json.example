@@ -1,0 +1,6 @@
+{
+  "http_server": {
+    "ip_listen": "127.0.0.1",
+    "port_listen": "3000"
+  }
+}

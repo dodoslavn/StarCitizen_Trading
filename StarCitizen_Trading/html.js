@@ -177,8 +177,8 @@ function displayCommodity(item, buy = [], sell = []) {
     if (profit_sorted.length > 0)
         {
         best_profit = `( ${profit_uec_txt} ${profit_perc_txt} )`;
-        best_route = `<tr><td>${profit_sorted[0].buy.terminal_name} -> ${profit_sorted[0].sell.terminal_name}</td><td>${readable_number(profit_sorted[0].profit)} aUEC</td><td>${readable_number(profit_sorted[0].amount)} SCU</td><td>${readable_number(profit_sorted_avg[0].investment)} aUEC)</td></tr>
-        <tr><td>${profit_sorted_avg[0].buy.terminal_name} -> ${profit_sorted_avg[0].sell.terminal_name}</td><td>~ ${readable_number(profit_sorted_avg[0].profit)} aUEC</td><td>~ ${readable_number(profit_sorted_avg[0].amount)} SCU</td><td>(~ ${readable_number(profit_sorted_avg[0].investment)} aUEC)</td></tr>`;
+        best_route = `<tr><td>${profit_sorted[0].buy.terminal_name} -> ${profit_sorted[0].sell.terminal_name}</td><td>${readable_number(profit_sorted[0].profit)} aUEC</td><td>${readable_number(profit_sorted[0].amount)} SCU</td><td>( ${readable_number(profit_sorted_avg[0].investment)} aUEC)</td></tr>
+        <tr><td>${profit_sorted_avg[0].buy.terminal_name} -> ${profit_sorted_avg[0].sell.terminal_name}</td><td>~ ${readable_number(profit_sorted_avg[0].profit)} aUEC</td><td>~ ${readable_number(profit_sorted_avg[0].amount)} SCU</td><td>( ~ ${readable_number(profit_sorted_avg[0].investment)} aUEC )</td></tr>`;
         }
     return `
     <table class="commodity" id="comm-${item}">
