@@ -108,21 +108,28 @@ function displayTerminal(item) {
     const price_avg = (item.price_buy_avg || 0) + (item.price_sell_avg || 0);
     const stock = (item.scu_buy || 0) + (item.scu_sell || 0);
     const stock_avg = (item.scu_buy_avg || 0) + (item.scu_sell_avg || 0);
-    return `<tr><td>${item.terminal_name}</td><td>${price} (~${price_avg})</td><td>${stock} (~${stock_avg})</td></tr>`;
+    return `<tr><td>${item.terminal_name}</td><td>${readable_number(price)} (~${readable_number(price_avg)})</td><td>${readable_number(stock)} (~${readable_number(stock_avg)})</td></tr>`;
 }
 
-function displayPricing(pricings, stock_demand) { return '<tr><th>Location</th><th>Price (avg)</th><th>' + stock_demand + ' (avg)</th></tr>' + pricings.map(terminal => displayTerminal(terminal)).join(''); }
+function displayPricing(pricings, stock_demand)
+    {
+    no_prices = '';
+    if (pricings.length === 0) no_prices = '<tr><td>-</td><td>-</td><td>-</td></tr>';
+    return '<tr><th>Location</th><th>Price (avg)</th><th>' + stock_demand + ' (avg)</th></tr>' + no_prices + pricings.map(terminal => displayTerminal(terminal)).join('');
+    }
 
 function displayCommodity(item, buy = [], sell = []) {
-    const buy_sorted = buy.sort((a, b) => a.price_buy - b.price_buy);
-    const sell_sorted = sell.sort((a, b) => b.price_sell - a.price_sell);
+
+    let buy_sorted = buy.sort((a, b) => a.price_buy - b.price_buy);
+    let sell_sorted = sell.sort((a, b) => b.price_sell - a.price_sell);
 
     const sell_sorted_real = sell.filter(item => item.scu_sell_avg !== null && item.scu_sell_avg !== 0);
     const buy_sorted_real = buy.filter(item => item.scu_buy_avg !== null && item.scu_buy_avg !== 0);
 
     let profit_uec_txt = '';
     let profit_perc_txt = '';
-    if (sell_sorted.length > 0 && buy_sorted.length > 0) {
+    if (sell_sorted.length > 0 && buy_sorted.length > 0)
+        {
         const profit_uec = (sell_sorted[0].price_sell - buy_sorted[0].price_buy);
         const profit_perc = (((sell_sorted[0].price_sell - buy_sorted[0].price_buy) / buy_sorted[0].price_buy) * 100).toFixed(2);
 
@@ -141,21 +148,53 @@ function displayCommodity(item, buy = [], sell = []) {
 
         global.profit.push({ 'commodity': item, 'profit_uec': profit_uec, 'profit_perc': profit_perc, 'profit_uec_real': profit_uec_real, 'profit_perc_real': profit_perc_real });
         }
+
+    let deals_list = [];
+    let deals_list_avg = [];
+    const terminals_sell = global.cachedData.data.filter(comm => comm.commodity_name === item && comm.price_sell_avg > 0);
+    const terminals_buy = global.cachedData.data.filter(comm => comm.commodity_name === item && comm.price_buy_avg > 0);
+
+    terminals_sell.forEach(sell =>
+        {
+        terminals_buy.forEach(buy =>
+            {
+            let amount = sell.scu_sell_stock;
+            if (amount > buy.scu_buy_stock) amount = buy.scu_buy_stock;
+            deals_list.push({ 'profit': (sell.price_sell - buy.price_buy) * amount, 'investment': buy.price_buy * amount, 'amount': amount, 'buy': buy, 'sell': sell })
+            });
+        });
+    terminals_sell.forEach(sell => {
+        terminals_buy.forEach(buy => {
+            let amount = sell.scu_sell_stock_avg;
+            if (amount > buy.scu_buy_stock_avg) amount = buy.scu_buy_stock_avg;
+            deals_list_avg.push({ 'profit': (sell.price_sell_avg - buy.price_buy_avg) * amount, 'investment': buy.price_buy_avg * amount, 'amount': amount, 'buy': buy, 'sell': sell })
+        });
+    });
+    profit_sorted = deals_list.sort((a, b) => b.profit - a.profit).slice(0, 1);
+    profit_sorted_avg = deals_list_avg.sort((a, b) => b.profit - a.profit).slice(0, 1);
+    best_profit = '';
+    best_route = '';
+    if (profit_sorted.length > 0)
+        {
+        best_profit = `( ${profit_uec_txt} ${profit_perc_txt} )`;
+        best_route = `<tr><td>${profit_sorted[0].buy.terminal_name} -> ${profit_sorted[0].sell.terminal_name}</td><td>${readable_number(profit_sorted[0].profit)} aUEC</td><td>${readable_number(profit_sorted[0].amount)} SCU</td><td>${readable_number(profit_sorted_avg[0].investment)} aUEC)</td></tr>
+        <tr><td>${profit_sorted_avg[0].buy.terminal_name} -> ${profit_sorted_avg[0].sell.terminal_name}</td><td>~ ${readable_number(profit_sorted_avg[0].profit)} aUEC</td><td>~ ${readable_number(profit_sorted_avg[0].amount)} SCU</td><td>(~ ${readable_number(profit_sorted_avg[0].investment)} aUEC)</td></tr>`;
+        }
     return `
     <table class="commodity" id="comm-${item}">
-        <tr><th colspan="2" style="text-align:center;">${item} ( ${profit_uec_txt} ${profit_perc_txt} )</th></tr>
-
+        <tr><th colspan="4" style="text-align:center;">${item} ${best_profit}</th></tr>
+        ${best_route}
         <tr>
-            <td>(you) Sell</td>
-            <td>(you) Buy</td>
+            <td colspan="2">(you) Sell</td>
+            <td colspan="2">(you) Buy</td>
         </tr>
         <tr>
-            <td>
+            <td colspan="2">
                 <table>
                     ${displayPricing(sell_sorted, 'Demand')}
                 </table>
             </td>
-            <td>
+            <td colspan="2">
                 <table>
                     ${displayPricing(buy_sorted, 'In stock')}
                 </table>
@@ -165,7 +204,7 @@ function displayCommodity(item, buy = [], sell = []) {
     `;
 }
 
-function displayProfit_uec(item) { return `<tr><td>${item.commodity}</td><td>${item.profit_uec} UEC/SCU</td></tr>`; }
+function displayProfit_uec(item) { return `<tr><td>${item.commodity}</td><td>${readable_number(item.profit_uec)} UEC/SCU</td></tr>`; }
 
 function displayProfit_perc(item) { return `<tr><td>${item.commodity}</td><td>${item.profit_perc}%</td></tr>`; }
 
@@ -173,7 +212,7 @@ function profit_uec() {
     let profit_sorted = global.profit;
     profit_sorted.sort((a, b) => b.profit_uec - a.profit_uec);
     const header = '<tr><th>Commodity</th><th>Profit aUEC/SCU</th></tr>';
-    const data = profit_sorted.map(item => { return `<tr><td><a href="#comm-${item.commodity}">${item.commodity}</a></td><td>${item.profit_uec_real} (up to ${item.profit_uec})</td></tr>`; }).join('');
+    const data = profit_sorted.map(item => { return `<tr><td><a href="#comm-${item.commodity}">${item.commodity}</a></td><td>${readable_number(item.profit_uec_real)} (up to ${readable_number(item.profit_uec)})</td></tr>`; }).join('');
     return '<table class="best">' + header + data + '</table>';
 }
 function profit_perc() {
@@ -181,16 +220,15 @@ function profit_perc() {
     profit_sorted.sort((a, b) => b.profit_perc - a.profit_perc);
     const header = '<tr><th>Commodity</th><th>Profit %</th></tr>';
     const data = profit_sorted.map(item => { return `<tr><td><a href="#comm-${item.commodity}">${item.commodity}</a></td><td>${item.profit_perc_real} (up to ${item.profit_perc})</td></tr>`; }).join('');
-    //const header = '<tr><td>Commodity name</td>' + profit_sorted.map(item => { return `<td>${item.commodity}</td>`; }).join('') + '</tr>';
-    //const data = '<tr><td>Profit</td>' + profit_sorted.map(item => { return `<td>${item.profit_perc}%</td>`; }).join('') + '</tr>';
     return '<table class="best">' + header + data + '</table>';
 }
 
 function readable_number(num)
-    { return new Intl.NumberFormat("en-US", { useGrouping: true }).format(num).replace(/,/g, " "); 
-
-
+    {
+    if (num == '-') return num;
+    return new Intl.NumberFormat("en-US", { useGrouping: true }).format(num).replace(/,/g, " "); 
     }
+
 function touchportal(scu, solar_system = '')
     {
     const uniq_comm = [...new Set(global.cachedData.data.map(item => item.commodity_name))];
