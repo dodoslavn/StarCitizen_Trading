@@ -100,6 +100,10 @@ div#panel_l
     {
     float: left;
     }
+
+:target tbody tr th {
+    background-color: goldenrod;
+}
     `;
 }
 
