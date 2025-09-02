@@ -11,7 +11,7 @@ const header = `
 
 const footer = `
     </body>
-</thml>
+</html>
 `;
 
 function css() {
@@ -105,7 +105,16 @@ div#panel_l
     background-color: goldenrod;
 }
     `;
-}
+    }
+
+const about = `
+    Community made website - Dodoslav Novak<br>
+    <a href='mailto:admin@dodoslav.eu'>admin@dodoslav.eu</a><br>
+    Data collected from on <a href='https://uexcorp.space/'>UEX corp</a> API
+    2025
+    GitHub link to be provided..
+    `;
+
 
 function displayTerminal(item) {
     const price = (item.price_buy || 0) + (item.price_sell || 0);
@@ -217,7 +226,7 @@ function profit_uec() {
     profit_sorted.sort((a, b) => b.profit_uec - a.profit_uec);
     const header = '<tr><th>Commodity</th><th>Profit aUEC/SCU</th></tr>';
     const data = profit_sorted.map(item => { return `<tr><td><a href="#comm-${item.commodity}">${item.commodity}</a></td><td>${readable_number(item.profit_uec_real)} (up to ${readable_number(item.profit_uec)})</td></tr>`; }).join('');
-    return '<table class="best">' + header + data + '</table>';
+    return '<table class="best">' + header + data + '</table> <br> <a style="padding-left: 4rem; padding-top: 1rem; color: #333;" href="/about">About this website</a>';
 }
 function profit_perc() {
     let profit_sorted = global.profit;
@@ -326,4 +335,4 @@ function touchportal(scu, solar_system = '')
     `;
     }
 
-module.exports = { header, footer, displayCommodity, css, profit_uec, profit_perc, touchportal };
+module.exports = { header, footer, displayCommodity, css, profit_uec, profit_perc, touchportal, about };

@@ -176,7 +176,15 @@ function genData_buy() {
         });
     return (commodities);
     }
-
+function website_about(req, res)
+    {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/html');
+    res.write(html.header);
+    res.write(html.about);
+    res.write(html.footer);
+    res.end();
+    }
 
 function website_showData(req, res)
     {
@@ -199,6 +207,7 @@ function website_showData(req, res)
     res.write(html.footer);
     res.end();
     }
+
 async function processRequest(req, res)
     {
     console.log(timestamp() + 'INFO: Client(' + (req.connection.remoteAddress || req.socket.remoteAddress) +') request received - ' + req.url);
@@ -232,6 +241,9 @@ async function processRequest(req, res)
             break;
         case '/favicon.ico':
             website_showFavicon(req, res);
+            break;
+        case '/about':
+            website_about(req, res);
             break;
         case '/touchportal':
             website_touchpanel(req, res);
