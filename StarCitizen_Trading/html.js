@@ -110,9 +110,9 @@ div#panel_l
 const about = `
     Community made website - Dodoslav Novak<br>
     <a href='mailto:admin@dodoslav.eu'>admin@dodoslav.eu</a><br>
-    Data collected from on <a href='https://uexcorp.space/'>UEX corp</a> API
-    2025
-    GitHub link to be provided..
+    Data collected from on <a href='https://uexcorp.space/'>UEX corp</a> API<br>
+    2025<br>
+    GitHub link to be provided..<br>
     `;
 
 
