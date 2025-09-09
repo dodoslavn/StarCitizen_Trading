@@ -107,6 +107,7 @@ div#panel_l
     `;
     }
 
+// whole website content of the /about 
 const about = `
     Community made website - Dodoslav Novak<br>
     <a href='mailto:admin@dodoslav.eu'>admin@dodoslav.eu</a><br>
@@ -124,6 +125,7 @@ function displayTerminal(item) {
     return `<tr><td>${item.terminal_name}</td><td>${readable_number(price)} (~${readable_number(price_avg)})</td><td>${readable_number(stock)} (~${readable_number(stock_avg)})</td></tr>`;
 }
 
+// called only from fucntion displayCommodity in this fle
 function displayPricing(pricings, stock_demand)
     {
     no_prices = '';
@@ -131,6 +133,8 @@ function displayPricing(pricings, stock_demand)
     return '<tr><th>Location</th><th>Price (avg)</th><th>' + stock_demand + ' (avg)</th></tr>' + no_prices + pricings.map(terminal => displayTerminal(terminal)).join('');
     }
 
+// called from functions.js
+// this will generate the big table with data about the one specific commodity
 function displayCommodity(item, buy = [], sell = []) {
 
     let buy_sorted = buy.sort((a, b) => a.price_buy - b.price_buy);
@@ -217,10 +221,14 @@ function displayCommodity(item, buy = [], sell = []) {
     `;
 }
 
+// not used anymore ?
 function displayProfit_uec(item) { return `<tr><td>${item.commodity}</td><td>${readable_number(item.profit_uec)} UEC/SCU</td></tr>`; }
 
+// not used anymore ?
 function displayProfit_perc(item) { return `<tr><td>${item.commodity}</td><td>${item.profit_perc}%</td></tr>`; }
 
+// called from functions.js
+// display the smaller table on the sides of the website will comodity and their aEUC profit
 function profit_uec() {
     let profit_sorted = global.profit;
     profit_sorted.sort((a, b) => b.profit_uec - a.profit_uec);
@@ -228,6 +236,9 @@ function profit_uec() {
     const data = profit_sorted.map(item => { return `<tr><td><a href="#comm-${item.commodity}">${item.commodity}</a></td><td>${readable_number(item.profit_uec_real)} (up to ${readable_number(item.profit_uec)})</td></tr>`; }).join('');
     return '<table class="best">' + header + data + '</table> <br> <a style="padding-left: 4rem; padding-top: 1rem; color: #333;" href="/about">About this website</a>';
 }
+
+// called from functions.js
+// display the smaller table on the sides of the website will comodity and their percentual profit
 function profit_perc() {
     let profit_sorted = global.profit;
     profit_sorted.sort((a, b) => b.profit_perc - a.profit_perc);
@@ -242,6 +253,7 @@ function readable_number(num)
     return new Intl.NumberFormat("en-US", { useGrouping: true }).format(num).replace(/,/g, " "); 
     }
 
+// toucportal website
 function touchportal(scu, solar_system = '')
     {
     const uniq_comm = [...new Set(global.cachedData.data.map(item => item.commodity_name))];
