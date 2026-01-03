@@ -1,4 +1,4 @@
-const header = `
+﻿const header = `
 <!DOCTYPE html>
 <html>
     <head>
@@ -18,7 +18,6 @@ function css() {
     return `
 body
     {
-    //margin: auto, 0, auto, 0;
     min-width: 92rem;
     color: white;
     background-color: #121212;
@@ -122,7 +121,7 @@ function displayTerminal(item) {
     const price_avg = (item.price_buy_avg || 0) + (item.price_sell_avg || 0);
     const stock = (item.scu_buy || 0) + (item.scu_sell || 0);
     const stock_avg = (item.scu_buy_avg || 0) + (item.scu_sell_avg || 0);
-    return `<tr><td>${item.terminal_name}</td><td>${readable_number(price)} (~${readable_number(price_avg)})</td><td>${readable_number(stock)} (~${readable_number(stock_avg)})</td></tr>`;
+    return `<tr><td title="${item.container_sizes}">${item.terminal_name}</td><td>${readable_number(price)} (~${readable_number(price_avg)})</td><td>${readable_number(stock)} (~${readable_number(stock_avg)})</td></tr>`;
 }
 
 // called only from fucntion displayCommodity in this fle
@@ -139,6 +138,12 @@ function displayCommodity(item, buy = [], sell = []) {
 
     let buy_sorted = buy.sort((a, b) => a.price_buy - b.price_buy);
     let sell_sorted = sell.sort((a, b) => b.price_sell - a.price_sell);
+
+    sell_sorted.forEach(sell =>
+        {
+        const pom = 1;
+        }
+        );
 
     const sell_sorted_real = sell.filter(item => item.scu_sell_avg !== null && item.scu_sell_avg !== 0);
     const buy_sorted_real = buy.filter(item => item.scu_buy_avg !== null && item.scu_buy_avg !== 0);
@@ -234,7 +239,7 @@ function profit_uec() {
     profit_sorted.sort((a, b) => b.profit_uec - a.profit_uec);
     const header = '<tr><th>Commodity</th><th>Profit aUEC/SCU</th></tr>';
     const data = profit_sorted.map(item => { return `<tr><td><a href="#comm-${item.commodity}">${item.commodity}</a></td><td>${readable_number(item.profit_uec_real)} (up to ${readable_number(item.profit_uec)})</td></tr>`; }).join('');
-    return '<table class="best">' + header + data + '</table> <br> <a style="padding-left: 4rem; padding-top: 1rem; color: #333;" href="/about">About this website</a>';
+    return '<table class="best">' + header + data + '</table> <br> <a style="padding-left: 4rem; padding-top: 1rem; color: #333; " href="/about">About this website</a>';
 }
 
 // called from functions.js

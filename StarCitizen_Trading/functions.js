@@ -1,4 +1,4 @@
-const fs = require('fs');
+﻿const fs = require('fs');
 const html = require('./html.js');
 const favicon = require('./favicon.js');
 function serverStarted() { console.log(timestamp() + `INFO: HTTP server started`); }
@@ -143,12 +143,15 @@ function genData_sell()
     const commodities = {};
     global.cachedData.data.forEach(item =>
         {
-        const { commodity_name, terminal_name, price_sell, price_sell_avg, scu_sell, scu_sell_avg } = item;
+        const { commodity_name, container_sizes, terminal_name, price_sell, price_sell_avg, scu_sell, scu_sell_avg } = item;
+        let system = global.cachedInitData?.[terminal_name]?.code ?? "(?) ";
+        if (system != "- ") system = "(" + system + ") ";
         if (price_sell === 0) return;
         if (!commodities[commodity_name]) { commodities[commodity_name] = []; }
         commodities[commodity_name].push(
             {
-            terminal_name,
+            terminal_name: system + terminal_name,
+            container_sizes,
             price_sell: price_sell > 0 ? price_sell : null,
             price_sell_avg: price_sell_avg > 0 ? price_sell_avg : null,
             scu_sell: scu_sell > 0 ? scu_sell : null,
@@ -162,12 +165,15 @@ function genData_buy() {
     const commodities = {};
     global.cachedData.data.forEach(item =>
         {
-        const { commodity_name, terminal_name, price_buy, price_buy_avg, scu_buy, scu_buy_avg } = item;
+        const { commodity_name, container_sizes, terminal_name, price_buy, price_buy_avg, scu_buy, scu_buy_avg } = item;
+        let system = global.cachedInitData?.[terminal_name]?.code ?? "(?) ";
+        if (system != "- ") system = "(" + system + ") ";
         if (price_buy === 0) return;
         if (!commodities[commodity_name]) { commodities[commodity_name] = []; }
         commodities[commodity_name].push(
             {
-            terminal_name,
+            terminal_name: system + terminal_name,
+            container_sizes,
             price_buy: price_buy > 0 ? price_buy : null,
             price_buy_avg: price_buy_avg > 0 ? price_buy_avg : null,
             scu_buy: scu_buy > 0 ? scu_buy : null,
