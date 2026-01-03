@@ -139,12 +139,6 @@ function displayCommodity(item, buy = [], sell = []) {
     let buy_sorted = buy.sort((a, b) => a.price_buy - b.price_buy);
     let sell_sorted = sell.sort((a, b) => b.price_sell - a.price_sell);
 
-    sell_sorted.forEach(sell =>
-        {
-        const pom = 1;
-        }
-        );
-
     const sell_sorted_real = sell.filter(item => item.scu_sell_avg !== null && item.scu_sell_avg !== 0);
     const buy_sorted_real = buy.filter(item => item.scu_buy_avg !== null && item.scu_buy_avg !== 0);
 
@@ -199,8 +193,8 @@ function displayCommodity(item, buy = [], sell = []) {
     if (profit_sorted.length > 0)
         {
         best_profit = `( ${profit_uec_txt} ${profit_perc_txt} )`;
-        best_route = `<tr><td title="Most profitable trip based on latest reported data">${profit_sorted[0].buy.terminal_name} -> ${profit_sorted[0].sell.terminal_name}</td><td style="text-align:right;" title="Profit from the trip">${readable_number(profit_sorted[0].profit)} aUEC</td><td style="text-align:right;" title="Amount of SCU to trade">${readable_number(profit_sorted[0].amount)} SCU</td><td style="text-align: right; padding-right: 1rem;" title="Required aUEC investment">( ${readable_number(profit_sorted[0].investment)} aUEC )</td></tr>
-        <tr><td title="Most profitable trip based on average data">${profit_sorted_avg[0].buy.terminal_name} -> ${profit_sorted_avg[0].sell.terminal_name}</td><td style="text-align:right;" title="Profit from the trip">~ ${readable_number(profit_sorted_avg[0].profit)} aUEC</td><td style="text-align:right;" title="Amount of SCU to trade">~ ${readable_number(profit_sorted_avg[0].amount)} SCU</td><td style="text-align: right; padding-right: 1rem;" title="Required aUEC investment">( ~ ${readable_number(profit_sorted_avg[0].investment)} aUEC )</td></tr>`;
+        best_route = `<tr><td title="Most profitable trip based on latest reported data">(${global.cachedInitData?.[profit_sorted[0].buy.terminal_name]?.code ?? "?"}) ${profit_sorted[0].buy.terminal_name} -> (${global.cachedInitData?.[profit_sorted[0].sell.terminal_name]?.code ?? "?"}) ${profit_sorted[0].sell.terminal_name}</td><td style="text-align:right;" title="Profit from the trip">${readable_number(profit_sorted[0].profit)} aUEC</td><td style="text-align:right;" title="Amount of SCU to trade">${readable_number(profit_sorted[0].amount)} SCU</td><td style="text-align: right; padding-right: 1rem;" title="Required aUEC investment">( ${readable_number(profit_sorted[0].investment)} aUEC )</td></tr>
+        <tr><td title="Most profitable trip based on average data">(${global.cachedInitData?.[profit_sorted_avg[0].buy.terminal_name]?.code ?? "?"}) ${profit_sorted_avg[0].buy.terminal_name} -> (${global.cachedInitData?.[profit_sorted_avg[0].sell.terminal_name]?.code ?? "?"}) ${profit_sorted_avg[0].sell.terminal_name}</td><td style="text-align:right;" title="Profit from the trip">~ ${readable_number(profit_sorted_avg[0].profit)} aUEC</td><td style="text-align:right;" title="Amount of SCU to trade">~ ${readable_number(profit_sorted_avg[0].amount)} SCU</td><td style="text-align: right; padding-right: 1rem;" title="Required aUEC investment">( ~ ${readable_number(profit_sorted_avg[0].investment)} aUEC )</td></tr>`;
         }
     return `
     <table class="commodity" id="comm-${item}">

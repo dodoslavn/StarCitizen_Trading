@@ -145,7 +145,7 @@ function genData_sell()
         {
         const { commodity_name, container_sizes, terminal_name, price_sell, price_sell_avg, scu_sell, scu_sell_avg } = item;
         let system = global.cachedInitData?.[terminal_name]?.code ?? "(?) ";
-        if (system != "- ") system = "(" + system + ") ";
+        if (system != "(?) ") system = "(" + system + ") ";
         if (price_sell === 0) return;
         if (!commodities[commodity_name]) { commodities[commodity_name] = []; }
         commodities[commodity_name].push(
@@ -167,7 +167,7 @@ function genData_buy() {
         {
         const { commodity_name, container_sizes, terminal_name, price_buy, price_buy_avg, scu_buy, scu_buy_avg } = item;
         let system = global.cachedInitData?.[terminal_name]?.code ?? "(?) ";
-        if (system != "- ") system = "(" + system + ") ";
+        if (system != "(?) ") system = "(" + system + ") ";
         if (price_buy === 0) return;
         if (!commodities[commodity_name]) { commodities[commodity_name] = []; }
         commodities[commodity_name].push(
