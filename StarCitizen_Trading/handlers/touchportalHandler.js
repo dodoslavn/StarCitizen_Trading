@@ -4,24 +4,31 @@
  */
 
 const html = require('../html.js');
+const { validateSCU, validateSystemName } = require('../utils/validation.js');
 
 /**
- * Parse touchportal URL parameters
+ * Parse and validate touchportal URL parameters
  * @param {string} url - Request URL
  * @returns {Object} Parsed parameters {scu, system}
  */
 function parseParams(url) {
     const parts = url.split('/').filter(p => p);
 
+    let scu = 50;
+    let system = '';
+
     if (parts.length === 1) {
-        return { scu: 50, system: '' };
+        return { scu, system };
     } else if (parts.length === 2) {
-        return { scu: parts[1], system: '' };
-    } else if (parts.length === 3) {
-        return { scu: parts[1], system: parts[2] };
+        scu = validateSCU(parts[1], 50);
+        return { scu, system };
+    } else if (parts.length >= 3) {
+        scu = validateSCU(parts[1], 50);
+        system = validateSystemName(parts[2]);
+        return { scu, system };
     }
 
-    return { scu: 50, system: '' };
+    return { scu, system };
 }
 
 /**

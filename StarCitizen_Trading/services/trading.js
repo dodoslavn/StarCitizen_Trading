@@ -7,20 +7,28 @@ const logger = require('../logger.js');
 const uexApi = require('./uexApi.js');
 
 /**
- * Normalize price data to numbers
+ * Normalize price data to numbers with validation
  * @param {Object} item - Data item to normalize
  */
 function normalizeDataItem(item) {
-    item.price_buy = Number(item.price_buy);
-    item.price_buy_avg = Number(item.price_buy_avg);
-    item.price_sell = Number(item.price_sell);
-    item.price_sell_avg = Number(item.price_sell_avg);
-    item.scu_buy = Number(item.scu_buy);
-    item.scu_buy_avg = Number(item.scu_buy_avg);
-    item.scu_sell_stock = Number(item.scu_sell_stock);
-    item.scu_sell_stock_avg = Number(item.scu_sell_stock_avg);
-    item.scu_sell = Number(item.scu_sell);
-    item.scu_sell_avg = Number(item.scu_sell_avg);
+    // Convert to numbers, defaulting to 0 if invalid
+    item.price_buy = Number(item.price_buy) || 0;
+    item.price_buy_avg = Number(item.price_buy_avg) || 0;
+    item.price_sell = Number(item.price_sell) || 0;
+    item.price_sell_avg = Number(item.price_sell_avg) || 0;
+    item.scu_buy = Number(item.scu_buy) || 0;
+    item.scu_buy_avg = Number(item.scu_buy_avg) || 0;
+    item.scu_sell_stock = Number(item.scu_sell_stock) || 0;
+    item.scu_sell_stock_avg = Number(item.scu_sell_stock_avg) || 0;
+    item.scu_sell = Number(item.scu_sell) || 0;
+    item.scu_sell_avg = Number(item.scu_sell_avg) || 0;
+
+    // Ensure no negative values
+    Object.keys(item).forEach(key => {
+        if (key.startsWith('price_') || key.startsWith('scu_')) {
+            if (item[key] < 0) item[key] = 0;
+        }
+    });
 }
 
 /**
@@ -33,6 +41,14 @@ async function refreshData(config, cache) {
     try {
         logger.info('Refreshing commodity data from UEX API...');
         const resp = await uexApi.fetchPrices(config);
+
+        if (!resp || !Array.isArray(resp.data)) {
+            throw new Error('Invalid API response structure');
+        }
+
+        if (resp.data.length === 0) {
+            logger.warn('API returned empty data set');
+        }
 
         resp.data.forEach(normalizeDataItem);
         cache.setData(resp);
@@ -50,8 +66,15 @@ async function refreshData(config, cache) {
  * @returns {Object} Processed systems data
  */
 function processSolarSystems(rawData) {
+    if (!rawData || !Array.isArray(rawData.data)) {
+        logger.warn('Invalid solar systems data structure');
+        return {};
+    }
+
     return rawData.data.reduce((acc, item) => {
-        acc[item.id] = { name: item.name, code: item.code };
+        if (item && item.id && item.name && item.code) {
+            acc[item.id] = { name: item.name, code: item.code };
+        }
         return acc;
     }, {});
 }
@@ -62,8 +85,15 @@ function processSolarSystems(rawData) {
  * @returns {Object} Processed terminals data
  */
 function processTerminals(rawData) {
+    if (!rawData || !Array.isArray(rawData.data)) {
+        logger.warn('Invalid terminals data structure');
+        return {};
+    }
+
     return rawData.data.reduce((acc, item) => {
-        acc[item.nickname] = item.id_star_system;
+        if (item && item.nickname && item.id_star_system) {
+            acc[item.nickname] = item.id_star_system;
+        }
         return acc;
     }, {});
 }

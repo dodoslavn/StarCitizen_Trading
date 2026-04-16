@@ -55,7 +55,9 @@ class DataCache {
      * @param {Object} profitData - The profit data to add
      */
     addProfit(profitData) {
-        this.profit.push(profitData);
+        if (profitData && typeof profitData === 'object') {
+            this.profit.push(profitData);
+        }
     }
 
     /**
