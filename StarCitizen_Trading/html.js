@@ -85,14 +85,14 @@ a:hover
 
 div.about-page a
     {
-    color: #4da6ff;
+    color: #4da6ff !important;
     cursor: pointer;
     transition: color 0.2s ease;
     }
 div.about-page a:hover
     {
-    color: #80c1ff;
-    text-decoration: underline;
+    color: #80c1ff !important;
+    text-decoration: underline !important;
     }
 
 
