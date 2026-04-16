@@ -75,12 +75,21 @@ td
 a
     {
     text-decoration: none;
-    color: #4da6ff;
+    color: inherit;
     outline: none;
-    cursor: pointer;
-    transition: color 0.2s ease, background-color 0.2s ease;
     }
 a:hover
+    {
+    color: #006fdd;
+    }
+
+div.about-page a
+    {
+    color: #4da6ff;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    }
+div.about-page a:hover
     {
     color: #80c1ff;
     text-decoration: underline;
@@ -117,7 +126,7 @@ div#panel_l
 }
 
 const about = `
-    <div style="max-width: 50rem; margin: 2rem auto; padding: 2rem; background-color: #1e1e1e; border-radius: 0.5rem; line-height: 1.8;">
+    <div class="about-page" style="max-width: 50rem; margin: 2rem auto; padding: 2rem; background-color: #1e1e1e; border-radius: 0.5rem; line-height: 1.8;">
         <h1 style="color: #4da6ff; margin-bottom: 1.5rem;">About ComTrading</h1>
 
         <p style="margin-bottom: 1rem;">
