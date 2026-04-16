@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  starcitizen-trading:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: starcitizen-trading
+    restart: unless-stopped
+    ports:
+      - "127.0.0.2:3000:3000"
+    volumes:
+      - ./StarCitizen_Trading/config.json:/app/config.json:ro
+      - ./logs:/app/logs
+    environment:
+      - NODE_ENV=production
