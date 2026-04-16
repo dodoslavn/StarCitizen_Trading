@@ -1,16 +1,32 @@
 {
   "name": "star-citizen_trading",
-  "version": "0.0.0",
-  "description": "StarCitizen_Trading",
+  "version": "1.0.0",
+  "description": "Star Citizen trading data display with auto-refreshing from UEX API",
   "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "keywords": [
+    "star-citizen",
+    "trading",
+    "uex",
+    "cargo"
+  ],
   "author": {
-    "name": ""
+    "name": "Dodoslav"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "node-cron": "^3.0.3",
+    "winston": "^3.11.0"
   },
   "devDependencies": {
-    "eslint": "^8.57.1"
-  },
-  "eslintConfig": {},
-  "dependencies": {
-    "node-cron": "^3.0.3"
+    "eslint": "^8.57.1",
+    "jest": "^29.7.0"
   }
 }
