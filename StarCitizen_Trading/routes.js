@@ -40,7 +40,7 @@ async function processRequest(req, res, config, cache) {
     if (!cache.hasData()) {
         logger.warn('No cached data available');
         res.statusCode = 503;
-        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.end('<html><body><h1>503 Service Unavailable</h1><p>Data is being loaded. Please try again in a moment.</p></body></html>');
         return;
     }

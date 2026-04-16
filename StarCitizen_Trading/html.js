@@ -7,6 +7,7 @@ const header = `
 <!DOCTYPE html>
 <html>
     <head>
+        <meta charset="UTF-8">
         <title>ComTrading - Star Citizen</title>
         <link rel="stylesheet" type="text/css" href="/default.css" media="screen" >
         <meta http-equiv="refresh" content="300">

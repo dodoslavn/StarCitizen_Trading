@@ -114,7 +114,7 @@ function website_showFavicon(req, res)
 function website_touchpanel(req, res)
     {
     res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     if (req.url == '/touchportal' || req.url == '/touchportal/') res.end(html.touchportal(50));
     else
         {
@@ -185,7 +185,7 @@ function genData_buy() {
 function website_about(req, res)
     {
     res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.write(html.header);
     res.write(html.about);
     res.write(html.footer);
@@ -195,7 +195,7 @@ function website_about(req, res)
 function website_showData(req, res)
     {
     res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.write(html.header);
     const unique_commodities = getComodities();
     const sell_prices = genData_sell();

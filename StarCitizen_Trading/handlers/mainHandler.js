@@ -14,7 +14,7 @@ const trading = require('../services/trading.js');
  */
 function handle(req, res, cache) {
     res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.write(html.header);
 
     const unique_commodities = trading.getCommodities(cache);

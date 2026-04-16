@@ -11,7 +11,7 @@ const html = require('../html.js');
  */
 function handle(req, res) {
     res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.write(html.header);
     res.write(html.about);
     res.write(html.footer);

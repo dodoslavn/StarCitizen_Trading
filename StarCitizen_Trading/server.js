@@ -63,7 +63,7 @@ const my_server = http_server.createServer((req, res) => {
     routes.processRequest(req, res, config, cache).catch(err => {
         logger.error('Request processing error:', err);
         res.statusCode = 500;
-        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.end('<html><body><h1>500 Internal Server Error</h1><p>An error occurred processing your request.</p></body></html>');
     });
 });
