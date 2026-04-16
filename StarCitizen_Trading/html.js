@@ -83,6 +83,18 @@ a:hover
     color: #006fdd;
     }
 
+a.about-link
+    {
+    color: #4da6ff !important;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    }
+a.about-link:hover
+    {
+    color: #80c1ff !important;
+    text-decoration: underline !important;
+    }
+
 div.about-page a
     {
     color: #4da6ff !important;
@@ -397,7 +409,7 @@ function profit_uec(cache) {
     }).join('');
 
     return '<table class="best">' + header + data + '</table> <br> ' +
-        '<a style="padding-left: 4rem; padding-top: 1rem; color: #4da6ff;" href="/about">About this website</a>';
+        '<a class="about-link" style="padding-left: 4rem; padding-top: 1rem;" href="/about">About this website</a>';
 }
 
 /**
