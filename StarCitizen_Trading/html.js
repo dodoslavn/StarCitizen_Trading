@@ -75,12 +75,15 @@ td
 a
     {
     text-decoration: none;
-    color: inherit;
+    color: #4da6ff;
     outline: none;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease;
     }
 a:hover
     {
-    color: #006fdd;
+    color: #80c1ff;
+    text-decoration: underline;
     }
 
 
@@ -114,11 +117,33 @@ div#panel_l
 }
 
 const about = `
-    Community made website - Dodoslav Novak<br>
-    <a href='mailto:admin@dodoslav.eu'>admin@dodoslav.eu</a><br>
-    Data collected from <a href='https://uexcorp.space/'>UEX Corp</a> API<br>
-    2025<br>
-    <a href='https://github.com/dodoslavn/StarCitizen_Trading'>GitHub Repository</a><br>
+    <div style="max-width: 50rem; margin: 2rem auto; padding: 2rem; background-color: #1e1e1e; border-radius: 0.5rem; line-height: 1.8;">
+        <h1 style="color: #4da6ff; margin-bottom: 1.5rem;">About ComTrading</h1>
+
+        <p style="margin-bottom: 1rem;">
+            <strong>Community made website</strong><br>
+            Created by Dodoslav Novak
+        </p>
+
+        <p style="margin-bottom: 1rem;">
+            <strong>Contact:</strong><br>
+            <a href='mailto:admin@dodoslav.eu'>admin@dodoslav.eu</a>
+        </p>
+
+        <p style="margin-bottom: 1rem;">
+            <strong>Data Source:</strong><br>
+            Trading data collected from <a href='https://uexcorp.space/' target="_blank" rel="noopener">UEX Corp API</a>
+        </p>
+
+        <p style="margin-bottom: 1rem;">
+            <strong>Source Code:</strong><br>
+            <a href='https://github.com/dodoslavn/StarCitizen_Trading' target="_blank" rel="noopener">View on GitHub</a>
+        </p>
+
+        <p style="margin-top: 2rem; text-align: center; color: #888;">
+            &copy; 2025
+        </p>
+    </div>
     `;
 
 /**
