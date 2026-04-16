@@ -2,5 +2,23 @@
   "http_server": {
     "ip_listen": "127.0.0.1",
     "port_listen": "3000"
+  },
+  "api": {
+    "base_url": "https://api.uexcorp.space/2.0",
+    "endpoints": {
+      "prices_all": "/commodities_prices_all",
+      "solar_systems_all": "/star_systems",
+      "terminals_all": "/terminals"
+    },
+    "timeout": 10000,
+    "retries": 3
+  },
+  "cache": {
+    "refresh_interval_minutes": 1
+  },
+  "logging": {
+    "level": "info",
+    "file": "trading.log",
+    "console": true
   }
 }

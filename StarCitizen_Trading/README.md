@@ -1,3 +1,0 @@
-# StarCitizen_Trading
-
-
