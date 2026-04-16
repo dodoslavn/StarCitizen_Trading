@@ -140,9 +140,9 @@ function generateBestRouteHTML(routes) {
             (${cachedInitData?.[latest.buy.terminal_name]?.code ?? '?'}) ${latest.buy.terminal_name} →
             (${cachedInitData?.[latest.sell.terminal_name]?.code ?? '?'}) ${latest.sell.terminal_name}
         </td>
-        <td style="text-align:right;" title="Profit from the trip">${readable_number(latest.profit)} aUEC</td>
-        <td style="text-align:right;" title="Amount of SCU to trade">${readable_number(latest.amount)} SCU</td>
-        <td style="text-align: right; padding-right: 1rem;" title="Required aUEC investment">
+        <td class="text-right" title="Profit from the trip">${readable_number(latest.profit)} aUEC</td>
+        <td class="text-right" title="Amount of SCU to trade">${readable_number(latest.amount)} SCU</td>
+        <td class="text-right padding-right-1" title="Required aUEC investment">
             ( ${readable_number(latest.investment)} aUEC )
         </td>
     </tr>
@@ -151,9 +151,9 @@ function generateBestRouteHTML(routes) {
             (${cachedInitData?.[average.buy.terminal_name]?.code ?? '?'}) ${average.buy.terminal_name} →
             (${cachedInitData?.[average.sell.terminal_name]?.code ?? '?'}) ${average.sell.terminal_name}
         </td>
-        <td style="text-align:right;" title="Profit from the trip">~ ${readable_number(average.profit)} aUEC</td>
-        <td style="text-align:right;" title="Amount of SCU to trade">~ ${readable_number(average.amount)} SCU</td>
-        <td style="text-align: right; padding-right: 1rem;" title="Required aUEC investment">
+        <td class="text-right" title="Profit from the trip">~ ${readable_number(average.profit)} aUEC</td>
+        <td class="text-right" title="Amount of SCU to trade">~ ${readable_number(average.amount)} SCU</td>
+        <td class="text-right padding-right-1" title="Required aUEC investment">
             ( ~ ${readable_number(average.investment)} aUEC )
         </td>
     </tr>`;
@@ -195,7 +195,7 @@ function displayCommodity(item, buy = [], sell = [], cache) {
 
     return `
     <table class="commodity" id="comm-${item}">
-        <tr><th colspan="4" style="text-align:center;">${item} ${best_profit}</th></tr>
+        <tr><th colspan="4" class="text-center">${item} ${best_profit}</th></tr>
         ${best_route}
         <tr>
             <td colspan="2">(you) Sell</td>

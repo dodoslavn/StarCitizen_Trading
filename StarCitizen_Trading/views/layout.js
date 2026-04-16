@@ -21,30 +21,30 @@ const footer = `
 `;
 
 const about = `
-    <div class="about-page" style="max-width: 50rem; margin: 2rem auto; padding: 2rem; background-color: #1e1e1e; border-radius: 0.5rem; line-height: 1.8;">
-        <h1 style="color: #4da6ff; margin-bottom: 1.5rem;">About ComTrading</h1>
+    <div class="about-page about-container">
+        <h1>About ComTrading</h1>
 
-        <p style="margin-bottom: 1rem;">
+        <p>
             <strong>Community made website</strong><br>
             Created by Dodoslav Novak
         </p>
 
-        <p style="margin-bottom: 1rem;">
+        <p>
             <strong>Contact:</strong><br>
             <a href='mailto:admin@dodoslav.eu'>admin@dodoslav.eu</a>
         </p>
 
-        <p style="margin-bottom: 1rem;">
+        <p>
             <strong>Data Source:</strong><br>
             Trading data collected from <a href='https://uexcorp.space/' target="_blank" rel="noopener">UEX Corp API</a>
         </p>
 
-        <p style="margin-bottom: 1rem;">
+        <p>
             <strong>Source Code:</strong><br>
             <a href='https://github.com/dodoslavn/StarCitizen_Trading' target="_blank" rel="noopener">View on GitHub</a>
         </p>
 
-        <p style="margin-top: 2rem; text-align: center; color: #888;">
+        <p class="footer-text">
             &copy; 2025
         </p>
     </div>

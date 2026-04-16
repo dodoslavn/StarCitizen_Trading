@@ -117,6 +117,63 @@ div#panel_l
 :target tbody tr th {
     background-color: goldenrod;
 }
+
+/* About page styles */
+div.about-container
+    {
+    max-width: 50rem;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #1e1e1e;
+    border-radius: 0.5rem;
+    line-height: 1.8;
+    }
+
+div.about-container h1
+    {
+    color: #4da6ff;
+    margin-bottom: 1.5rem;
+    }
+
+div.about-container p
+    {
+    margin-bottom: 1rem;
+    }
+
+div.about-container p.footer-text
+    {
+    margin-top: 2rem;
+    text-align: center;
+    color: #888;
+    margin-bottom: 0;
+    }
+
+/* Utility classes */
+.text-right
+    {
+    text-align: right;
+    }
+
+.text-center
+    {
+    text-align: center;
+    }
+
+.padding-right-1
+    {
+    padding-right: 1rem;
+    }
+
+.about-link
+    {
+    padding-left: 4rem;
+    padding-top: 1rem;
+    }
+
+.spacer-right
+    {
+    margin-right: 3rem;
+    }
     `;
 }
 

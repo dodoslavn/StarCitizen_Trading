@@ -22,13 +22,13 @@ function touchportal(scu, solar_system = '') {
     <div id="top">
         <a href="/touchportal/${scu}/Stanton">Stanton only</a>
         <a href="/touchportal/${scu}/Pyro">Pyro only</a>
-        <a style="margin-right: 3rem;" href="/touchportal/${scu}/">All systems</a>
+        <a class="spacer-right" href="/touchportal/${scu}/">All systems</a>
         ${scu > 10 ? `<a href='/touchportal/${Number(scu) - 10}/${solar_system}'>-10 SCU</a>` : ''}
         <a href="/touchportal/${Number(scu) + 10}/${solar_system}">+10 SCU</a>
         ${scu > 100 ? `<a href='/touchportal/${Number(scu) - 100}/${solar_system}'>-100 SCU</a>` : ''}
         <a href="/touchportal/${Number(scu) + 100}/${solar_system}">+100 SCU</a>
     </div>
-    <p style="text-align:center;">Touchportal page for ${scu} SCU capacity</p>
+    <p class="text-center">Touchportal page for ${scu} SCU capacity</p>
     </body></html>`;
 }
 
