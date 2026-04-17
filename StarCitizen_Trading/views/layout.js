@@ -35,13 +35,21 @@ const about = `
         </p>
 
         <p>
+            <strong>Features:</strong><br>
+            • Real-time commodity trading data<br>
+            • Profit calculator and route optimization<br>
+            • <a href='/touchportal'>TouchPortal interface</a> - Simplified view for touchscreen displays
+        </p>
+
+        <p>
             <strong>Data Source:</strong><br>
             Trading data collected from <a href='https://uexcorp.space/' target="_blank" rel="noopener">UEX Corp API</a>
         </p>
 
         <p>
             <strong>Source Code:</strong><br>
-            <a href='https://github.com/dodoslavn/StarCitizen_Trading' target="_blank" rel="noopener">View on GitHub</a>
+            <a href='https://github.com/dodoslavn/StarCitizen_Trading' target="_blank" rel="noopener">View on GitHub</a><br>
+            License: MIT
         </p>
 
         <p class="footer-text">

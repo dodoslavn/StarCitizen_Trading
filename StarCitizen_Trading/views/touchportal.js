@@ -3,32 +3,114 @@
  * Simplified trading interface for touchscreen displays
  */
 
+const { readable_number } = require('../utils/formatters.js');
+
+/**
+ * Calculate best trading routes for given SCU capacity
+ * @param {Object} cache - Data cache instance
+ * @param {number} scu - SCU capacity
+ * @param {string} solar_system - System filter
+ * @returns {Array} Sorted array of best routes
+ */
+function calculateBestRoutes(cache, scu, solar_system) {
+    const cachedData = cache.getData();
+    const cachedInitData = cache.getInitData();
+    const deals = [];
+
+    // Get all terminals with buy/sell data
+    const terminals_sell = cachedData.data.filter(t => t.price_sell_avg > 0);
+    const terminals_buy = cachedData.data.filter(t => t.price_buy_avg > 0);
+
+    // Calculate all possible deals
+    terminals_sell.forEach(sell => {
+        terminals_buy.forEach(buy => {
+            // Must be same commodity
+            if (sell.commodity_name !== buy.commodity_name) return;
+
+            // Filter by system if specified
+            if (solar_system) {
+                const buySystem = cachedInitData?.[buy.terminal_name]?.system;
+                const sellSystem = cachedInitData?.[sell.terminal_name]?.system;
+                if (buySystem !== solar_system || sellSystem !== solar_system) return;
+            }
+
+            // Calculate trade amount limited by SCU capacity
+            let amount = Math.min(sell.scu_sell_avg, buy.scu_buy_avg, scu);
+            if (amount <= 0) return;
+
+            const profit = (sell.price_sell_avg - buy.price_buy_avg) * amount;
+            if (profit <= 0) return;
+
+            deals.push({
+                commodity: sell.commodity_name,
+                profit: profit,
+                profit_per_scu: sell.price_sell_avg - buy.price_buy_avg,
+                investment: buy.price_buy_avg * amount,
+                amount: amount,
+                buy_location: buy.terminal_name,
+                buy_system: cachedInitData?.[buy.terminal_name]?.code || '?',
+                sell_location: sell.terminal_name,
+                sell_system: cachedInitData?.[sell.terminal_name]?.code || '?',
+                buy_price: buy.price_buy_avg,
+                sell_price: sell.price_sell_avg
+            });
+        });
+    });
+
+    // Sort by profit and return top 20
+    return deals.sort((a, b) => b.profit - a.profit).slice(0, 20);
+}
+
 /**
  * Generate touchportal interface
  * @param {number} scu - SCU capacity
  * @param {string} solar_system - System filter
+ * @param {Object} cache - Data cache instance
  * @returns {string} Complete HTML page
  */
-function touchportal(scu, solar_system = '') {
-    return `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="10"><style>
-        body { background-color: black; color: white; }
-        body div#top { text-align: center; margin-bottom: 2rem; }
-        body div#top a { background-color: #006fdd; border-radius: 5px; text-align: center; padding: 0.4rem; }
-        table { margin: auto; margin-bottom: 1rem; }
-        table tr th { background-color: #006fdd; border-radius: 5px; text-align: center; padding: 0 0.5rem; }
-        table tr td { text-align: center; }
+function touchportal(scu, solar_system = '', cache) {
+    const routes = calculateBestRoutes(cache, scu, solar_system);
+
+    const routeRows = routes.map(route => `
+        <tr>
+            <td>${route.commodity}</td>
+            <td>(${route.buy_system}) ${route.buy_location}</td>
+            <td>(${route.sell_system}) ${route.sell_location}</td>
+            <td>${readable_number(route.profit)} aUEC</td>
+            <td>${readable_number(route.amount)} SCU</td>
+        </tr>
+    `).join('');
+
+    return `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="60"><style>
+        body { background-color: black; color: white; font-family: Arial, sans-serif; margin: 0; padding: 1rem; }
+        body div#top { text-align: center; margin-bottom: 1rem; }
+        body div#top a { background-color: #006fdd; border-radius: 5px; text-align: center; padding: 0.5rem 0.8rem; margin: 0.2rem; display: inline-block; }
+        h2 { text-align: center; color: #4ab8ff; }
+        table { width: 100%; border-collapse: collapse; margin: auto; }
+        table tr th { background-color: #006fdd; border-radius: 3px; text-align: center; padding: 0.5rem; }
+        table tr td { text-align: center; padding: 0.3rem; border-bottom: 1px solid #333; }
         a { text-decoration: none; color: white; }
     </style></head><body>
     <div id="top">
-        <a href="/touchportal/${scu}/Stanton">Stanton only</a>
-        <a href="/touchportal/${scu}/Pyro">Pyro only</a>
-        <a class="spacer-right" href="/touchportal/${scu}/">All systems</a>
+        <a href="/touchportal/${scu}/Stanton">Stanton</a>
+        <a href="/touchportal/${scu}/Pyro">Pyro</a>
+        <a href="/touchportal/${scu}/">All systems</a>
         ${scu > 10 ? `<a href='/touchportal/${Number(scu) - 10}/${solar_system}'>-10 SCU</a>` : ''}
         <a href="/touchportal/${Number(scu) + 10}/${solar_system}">+10 SCU</a>
         ${scu > 100 ? `<a href='/touchportal/${Number(scu) - 100}/${solar_system}'>-100 SCU</a>` : ''}
         <a href="/touchportal/${Number(scu) + 100}/${solar_system}">+100 SCU</a>
     </div>
-    <p class="text-center">Touchportal page for ${scu} SCU capacity</p>
+    <h2>Best Trading Routes - ${scu} SCU${solar_system ? ` - ${solar_system}` : ''}</h2>
+    <table>
+        <tr>
+            <th>Commodity</th>
+            <th>Buy at</th>
+            <th>Sell at</th>
+            <th>Profit</th>
+            <th>Amount</th>
+        </tr>
+        ${routeRows || '<tr><td colspan="5">No routes available</td></tr>'}
+    </table>
     </body></html>`;
 }
 

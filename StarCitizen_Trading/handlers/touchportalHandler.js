@@ -35,13 +35,14 @@ function parseParams(url) {
  * Handle touchportal request
  * @param {Object} req - HTTP request
  * @param {Object} res - HTTP response
+ * @param {Object} cache - DataCache instance
  */
-function handle(req, res) {
+function handle(req, res, cache) {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
     const { scu, system } = parseParams(req.url);
-    res.end(html.touchportal(scu, system));
+    res.end(html.touchportal(scu, system, cache));
 }
 
 module.exports = { handle };
