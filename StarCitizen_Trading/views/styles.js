@@ -166,8 +166,8 @@ div.about-container p.footer-text
 
 .about-link
     {
-    padding-left: 4rem;
-    padding-top: 1rem;
+    display: block;
+    margin: 0.5rem 0;
     }
 
 .spacer-right
