@@ -22,9 +22,12 @@ function profit_uec(cache) {
         </tr>`;
     }).join('');
 
-    return '<table class="best">' + header + data + '</table> <br> ' +
-        '<a class="about-link" href="/about">About this website</a> <br> ' +
-        '<a class="about-link" href="/touchportal">TouchPortal interface</a>';
+    return '<table class="best">' + header + data + '</table>' +
+        '<div style="text-align: center; margin-top: 1rem;">' +
+        '<a class="about-link" href="/about">About this website</a>' +
+        '<br>' +
+        '<a class="about-link" href="/touchportal">TouchPortal interface</a>' +
+        '</div>';
 }
 
 /**

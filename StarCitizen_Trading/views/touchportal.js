@@ -110,7 +110,11 @@ function touchportal(scu, solar_system = '', cache) {
         </tr>
     `).join('');
 
-    return `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="60"><style>
+    return `<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>TouchPortal - ComTrading</title>
+    <meta http-equiv="refresh" content="60">
+    <style>
         body { background-color: black; color: white; font-family: Arial, sans-serif; margin: 0; padding: 1rem; }
         body div#top { text-align: center; margin-bottom: 1rem; }
         body div#top a { border-radius: 5px; text-align: center; padding: 0.5rem 0.8rem; margin: 0.2rem; display: inline-block; }
