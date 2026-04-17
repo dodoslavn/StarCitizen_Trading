@@ -15,8 +15,8 @@ function getAvailableSystems(cache) {
     const systems = new Set();
 
     Object.values(cachedInitData).forEach(terminal => {
-        if (terminal.system) {
-            systems.add(terminal.system);
+        if (terminal && terminal.name) {
+            systems.add(terminal.name);
         }
     });
 
@@ -47,8 +47,8 @@ function calculateBestRoutes(cache, scu, solar_system) {
 
             // Filter by system if specified
             if (solar_system) {
-                const buySystem = cachedInitData?.[buy.terminal_name]?.system;
-                const sellSystem = cachedInitData?.[sell.terminal_name]?.system;
+                const buySystem = cachedInitData?.[buy.terminal_name]?.name;
+                const sellSystem = cachedInitData?.[sell.terminal_name]?.name;
                 if (buySystem !== solar_system || sellSystem !== solar_system) return;
             }
 
