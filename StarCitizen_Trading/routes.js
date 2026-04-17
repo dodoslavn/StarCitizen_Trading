@@ -35,6 +35,7 @@ const routes = {
 async function processRequest(req, res, config, cache) {
     // Get real client IP from Cloudflare/Apache headers
     const clientIp = req.headers['cf-connecting-ip'] ||
+                     req.headers['x-real-ip'] ||
                      req.headers['x-forwarded-for']?.split(',')[0].trim() ||
                      req.connection.remoteAddress ||
                      req.socket.remoteAddress;
