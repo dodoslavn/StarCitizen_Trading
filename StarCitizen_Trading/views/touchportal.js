@@ -6,6 +6,24 @@
 const { readable_number } = require('../utils/formatters.js');
 
 /**
+ * Get all available systems from cached data
+ * @param {Object} cache - Data cache instance
+ * @returns {Array} Sorted array of unique system names
+ */
+function getAvailableSystems(cache) {
+    const cachedInitData = cache.getInitData();
+    const systems = new Set();
+
+    Object.values(cachedInitData).forEach(terminal => {
+        if (terminal.system) {
+            systems.add(terminal.system);
+        }
+    });
+
+    return Array.from(systems).sort();
+}
+
+/**
  * Calculate best trading routes for given SCU capacity
  * @param {Object} cache - Data cache instance
  * @param {number} scu - SCU capacity
@@ -70,6 +88,17 @@ function calculateBestRoutes(cache, scu, solar_system) {
  */
 function touchportal(scu, solar_system = '', cache) {
     const routes = calculateBestRoutes(cache, scu, solar_system);
+    const systems = getAvailableSystems(cache);
+
+    // Generate system filter buttons
+    const systemButtons = systems.map(system => {
+        const isActive = solar_system === system;
+        const style = isActive ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
+        return `<a href="/touchportal/${scu}/${system}" style="${style}">${system}</a>`;
+    }).join('\n        ');
+
+    // All systems button
+    const allSystemsStyle = !solar_system ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
 
     const routeRows = routes.map(route => `
         <tr>
@@ -84,7 +113,8 @@ function touchportal(scu, solar_system = '', cache) {
     return `<!DOCTYPE html><html><head><meta http-equiv="refresh" content="60"><style>
         body { background-color: black; color: white; font-family: Arial, sans-serif; margin: 0; padding: 1rem; }
         body div#top { text-align: center; margin-bottom: 1rem; }
-        body div#top a { background-color: #006fdd; border-radius: 5px; text-align: center; padding: 0.5rem 0.8rem; margin: 0.2rem; display: inline-block; }
+        body div#top a { border-radius: 5px; text-align: center; padding: 0.5rem 0.8rem; margin: 0.2rem; display: inline-block; }
+        body div#top div.button-group { display: inline-block; margin: 0.2rem 0.5rem; }
         h2 { text-align: center; color: #4ab8ff; }
         table { width: 100%; border-collapse: collapse; margin: auto; }
         table tr th { background-color: #006fdd; border-radius: 3px; text-align: center; padding: 0.5rem; }
@@ -92,13 +122,16 @@ function touchportal(scu, solar_system = '', cache) {
         a { text-decoration: none; color: white; }
     </style></head><body>
     <div id="top">
-        <a href="/touchportal/${scu}/Stanton">Stanton</a>
-        <a href="/touchportal/${scu}/Pyro">Pyro</a>
-        <a href="/touchportal/${scu}/">All systems</a>
-        ${scu > 10 ? `<a href='/touchportal/${Number(scu) - 10}/${solar_system}'>-10 SCU</a>` : ''}
-        <a href="/touchportal/${Number(scu) + 10}/${solar_system}">+10 SCU</a>
-        ${scu > 100 ? `<a href='/touchportal/${Number(scu) - 100}/${solar_system}'>-100 SCU</a>` : ''}
-        <a href="/touchportal/${Number(scu) + 100}/${solar_system}">+100 SCU</a>
+        <div class="button-group">
+            ${systemButtons}
+            <a href="/touchportal/${scu}/" style="${allSystemsStyle}">All systems</a>
+        </div>
+        <div class="button-group">
+            ${scu > 10 ? `<a href='/touchportal/${Number(scu) - 10}/${solar_system}' style='background-color: #006fdd;'>-10 SCU</a>` : ''}
+            <a href="/touchportal/${Number(scu) + 10}/${solar_system}" style='background-color: #006fdd;'>+10 SCU</a>
+            ${scu > 100 ? `<a href='/touchportal/${Number(scu) - 100}/${solar_system}' style='background-color: #006fdd;'>-100 SCU</a>` : ''}
+            <a href="/touchportal/${Number(scu) + 100}/${solar_system}" style='background-color: #006fdd;'>+100 SCU</a>
+        </div>
     </div>
     <h2>Best Trading Routes - ${scu} SCU${solar_system ? ` - ${solar_system}` : ''}</h2>
     <table>
