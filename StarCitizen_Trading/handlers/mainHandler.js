@@ -18,7 +18,7 @@ function handle(req, res, cache, config) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.write(html.header);
 
-    const staleThresholdMinutes = config?.cache?.stale_after_minutes || 30;
+    const staleThresholdMinutes = config?.cache?.stale_after_minutes || 1440;
 
     const unique_commodities = trading.getCommodities(cache);
     const sell_prices = trading.generateSellData(cache);

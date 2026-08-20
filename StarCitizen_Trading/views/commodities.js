@@ -18,11 +18,11 @@ function displayTerminal(item, staleThresholdMinutes) {
     const stock_avg = (item.scu_buy_avg || 0) + (item.scu_sell_avg || 0);
 
     const stale = isStale(item.date_modified, staleThresholdMinutes);
-    const staleClass = stale ? ' stale' : '';
+    const rowClass = stale ? ' class="stale"' : '';
     const updatedTitle = `Last updated: ${formatDateTime(item.date_modified)}`;
 
-    return `<tr>
-        <td class="terminal-name${staleClass}" title="${item.container_sizes}&#10;${updatedTitle}">${item.terminal_name}</td>
+    return `<tr${rowClass}>
+        <td title="${item.container_sizes}&#10;${updatedTitle}">${item.terminal_name}</td>
         <td>${readable_number(price)} (~${readable_number(price_avg)})</td>
         <td>${readable_number(stock)} (~${readable_number(stock_avg)})</td>
     </tr>`;
@@ -174,7 +174,7 @@ function generateBestRouteHTML(routes) {
  * @param {number} staleThresholdMinutes - Age in minutes after which a terminal's data is grayed out
  * @returns {string} HTML table for commodity
  */
-function displayCommodity(item, buy = [], sell = [], cache, staleThresholdMinutes = 30) {
+function displayCommodity(item, buy = [], sell = [], cache, staleThresholdMinutes = 1440) {
     const buy_sorted = buy.sort((a, b) => a.price_buy - b.price_buy);
     const sell_sorted = sell.sort((a, b) => b.price_sell - a.price_sell);
 

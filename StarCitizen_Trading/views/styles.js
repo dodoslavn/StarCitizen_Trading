@@ -55,7 +55,7 @@ td
     vertical-align: top;
     }
 
-td.terminal-name.stale
+tr.stale td
     {
     color: #666;
     }
