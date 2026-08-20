@@ -16,7 +16,7 @@ function displayTerminal(item, staleThresholds) {
     const price_avg = (item.price_buy_avg || 0) + (item.price_sell_avg || 0);
     const stock = (item.scu_buy || 0) + (item.scu_sell || 0);
     const stock_avg = (item.scu_buy_avg || 0) + (item.scu_sell_avg || 0);
-    const max_inventory = (item.scu_buy_max || 0) + (item.scu_sell_max || 0);
+    const max_inventory = Math.max((item.scu_buy_max || 0) + (item.scu_sell_max || 0), stock);
 
     const staleness = getStalenessLevel(item.date_modified, staleThresholds);
     const rowClass = staleness !== 'fresh' ? ` class="${staleness}"` : '';

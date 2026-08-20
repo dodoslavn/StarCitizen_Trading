@@ -199,7 +199,7 @@ function generateSellData(cache) {
     const maxInventory = cache.getMaxInventory();
 
     cachedData.data.forEach(item => {
-        const { commodity_name, container_sizes, terminal_name, price_sell, price_sell_avg, scu_sell, scu_sell_avg, date_modified, id_commodity, id_terminal } = item;
+        const { commodity_name, container_sizes, terminal_name, price_sell, price_sell_avg, scu_sell_stock, scu_sell_stock_avg, date_modified, id_commodity, id_terminal } = item;
 
         let system = cachedInitData?.[terminal_name]?.code ?? '(?) ';
         if (system !== '(?) ') system = '(' + system + ') ';
@@ -215,8 +215,8 @@ function generateSellData(cache) {
             container_sizes,
             price_sell: price_sell > 0 ? price_sell : null,
             price_sell_avg: price_sell_avg > 0 ? price_sell_avg : null,
-            scu_sell: scu_sell > 0 ? scu_sell : null,
-            scu_sell_avg: scu_sell_avg > 0 ? scu_sell_avg : null,
+            scu_sell: scu_sell_stock > 0 ? scu_sell_stock : null,
+            scu_sell_avg: scu_sell_stock_avg > 0 ? scu_sell_stock_avg : null,
             scu_sell_max: maxInventory[`${id_commodity}_${id_terminal}`]?.scu_sell_max || 0,
             date_modified,
         });
