@@ -57,7 +57,7 @@ td
 
 tr.stale td
     {
-    color: #ddd;
+    color: #bbb;
     }
 tr.very-stale td
     {
