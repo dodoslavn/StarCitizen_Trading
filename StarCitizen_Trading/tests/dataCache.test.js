@@ -62,4 +62,65 @@ describe('DataCache', () => {
         expect(age).toBeGreaterThanOrEqual(0);
         expect(age).toBeLessThan(100); // Should be very recent
     });
+
+    test('should set and get game version', () => {
+        expect(cache.getGameVersion()).toBeNull();
+        cache.setGameVersion('4.9');
+        expect(cache.getGameVersion()).toBe('4.9');
+    });
+
+    test('should record and retrieve confirmed max inventory per side', () => {
+        expect(cache.getConfirmedMax('60_252', 'sell')).toBeUndefined();
+
+        cache.setConfirmedMax('60_252', 'sell', 1866);
+        cache.setConfirmedMax('60_252', 'buy', 500);
+
+        expect(cache.getConfirmedMax('60_252', 'sell')).toBe(1866);
+        expect(cache.getConfirmedMax('60_252', 'buy')).toBe(500);
+        expect(cache.getConfirmedMax('unknown_key', 'sell')).toBeUndefined();
+    });
+
+    test('should track the max inventory scan cursor and completion flag', () => {
+        expect(cache.getMaxInventoryCursor()).toBe(0);
+        expect(cache.isMaxInventoryScanComplete()).toBe(false);
+
+        cache.setMaxInventoryCursor(120);
+        cache.setMaxInventoryScanComplete(true);
+
+        expect(cache.getMaxInventoryCursor()).toBe(120);
+        expect(cache.isMaxInventoryScanComplete()).toBe(true);
+    });
+
+    test('should round-trip max inventory scan state through export/import', () => {
+        cache.setGameVersion('4.9');
+        cache.setConfirmedMax('60_252', 'sell', 1866);
+        cache.setMaxInventoryCursor(2593);
+        cache.setMaxInventoryScanComplete(true);
+
+        const exported = cache.exportMaxInventoryState();
+        expect(exported).toEqual({
+            gameVersion: '4.9',
+            data: { '60_252': { sell: 1866 } },
+            cursor: 2593,
+            complete: true
+        });
+
+        const fresh = new DataCache();
+        fresh.importMaxInventoryState(exported);
+
+        expect(fresh.getConfirmedMax('60_252', 'sell')).toBe(1866);
+        expect(fresh.getMaxInventoryCursor()).toBe(2593);
+        expect(fresh.isMaxInventoryScanComplete()).toBe(true);
+        // importMaxInventoryState intentionally does not restore gameVersion -
+        // callers set it independently from the live API before comparing/importing
+        expect(fresh.getGameVersion()).toBeNull();
+    });
+
+    test('importMaxInventoryState should default missing fields safely', () => {
+        cache.importMaxInventoryState({});
+
+        expect(cache.getConfirmedMax('any', 'sell')).toBeUndefined();
+        expect(cache.getMaxInventoryCursor()).toBe(0);
+        expect(cache.isMaxInventoryScanComplete()).toBe(false);
+    });
 });

@@ -88,22 +88,42 @@ async function fetchLiveGameVersion(config) {
  * @param {Object} cache - DataCache instance (must have its game version set first)
  */
 function loadConfirmedMaxInventory(cache) {
+    let raw;
     try {
-        const raw = fs.readFileSync(MAX_INVENTORY_FILE, 'utf8');
-        const state = JSON.parse(raw);
-        const currentVersion = cache.getGameVersion();
-
-        if (currentVersion && state.gameVersion && state.gameVersion !== currentVersion) {
-            logger.info(`Discarding saved max inventory data (scanned on game version ${state.gameVersion}, current live version is ${currentVersion})`);
-            return;
+        raw = fs.readFileSync(MAX_INVENTORY_FILE, 'utf8');
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            logger.info('No saved max inventory data found, will scan from scratch');
+        } else {
+            logger.warn(`Could not read ${MAX_INVENTORY_FILE}, will scan from scratch: ${error.message}`);
         }
-
-        cache.importMaxInventoryState(state);
-        const pairCount = Object.keys(state.data || {}).length;
-        logger.info(`Loaded confirmed max inventory from disk (${pairCount} pairs, cursor ${state.cursor || 0}, complete=${!!state.complete}, game version ${state.gameVersion || 'unknown'})`);
-    } catch {
-        logger.info('No saved max inventory data found, will scan from scratch');
+        return;
     }
+
+    let state;
+    try {
+        state = JSON.parse(raw);
+    } catch (error) {
+        logger.warn(`Saved max inventory data is corrupted, will scan from scratch: ${error.message}`);
+        return;
+    }
+
+    const currentVersion = cache.getGameVersion();
+
+    if (currentVersion && state.gameVersion && state.gameVersion !== currentVersion) {
+        logger.info(`Discarding saved max inventory data (scanned on game version ${state.gameVersion}, current live version is ${currentVersion})`);
+        return;
+    }
+
+    cache.importMaxInventoryState(state);
+    if (!currentVersion && state.gameVersion) {
+        // Couldn't verify the live version this run (e.g. API unavailable) - keep the
+        // file's existing tag instead of losing it to a null on the next save.
+        cache.setGameVersion(state.gameVersion);
+    }
+
+    const pairCount = Object.keys(state.data || {}).length;
+    logger.info(`Loaded confirmed max inventory from disk (${pairCount} pairs, cursor ${state.cursor || 0}, complete=${!!state.complete}, game version ${state.gameVersion || 'unknown'})`);
 }
 
 /**
@@ -130,15 +150,18 @@ function saveConfirmedMaxInventory(cache) {
  * @returns {Promise<{complete: boolean, cursor: number, total: number}>} Scan progress
  */
 async function refreshConfirmedMaxInventory(config, cache) {
-    if (cache.isMaxInventoryScanComplete()) {
-        return { complete: true, cursor: cache.getMaxInventoryCursor(), total: cache.getMaxInventoryCursor() };
+    const cachedData = cache.getData();
+    if (!cachedData) {
+        // Data hasn't been loaded yet - not done, just not ready. Distinct from an
+        // empty pair list below, which really does mean "nothing to scan."
+        return { complete: false, cursor: cache.getMaxInventoryCursor(), total: 0 };
     }
 
-    const cachedData = cache.getData();
-    if (!cachedData) return { complete: false, cursor: 0, total: 0 };
-
     const pairs = [...new Set(cachedData.data.map(item => `${item.id_commodity}_${item.id_terminal}`))];
-    if (pairs.length === 0) return { complete: false, cursor: 0, total: 0 };
+
+    if (cache.isMaxInventoryScanComplete() || pairs.length === 0) {
+        return { complete: true, cursor: cache.getMaxInventoryCursor(), total: pairs.length };
+    }
 
     const cursor = cache.getMaxInventoryCursor();
     if (cursor >= pairs.length) {

@@ -41,16 +41,16 @@ async function main() {
     await trading.refreshData(config, cache);
 
     let batches = 0;
-    let progress = { complete: false, cursor: cache.getMaxInventoryCursor(), total: 0 };
+    let progress;
 
-    while (!progress.complete) {
+    do {
         progress = await trading.refreshConfirmedMaxInventory(config, cache);
         batches += 1;
 
         if (batches % PROGRESS_LOG_INTERVAL === 0) {
             logger.info(`Scan progress: ${progress.cursor} / ${progress.total}`);
         }
-    }
+    } while (!progress.complete);
 
     logger.info('Max inventory scan finished');
 }
