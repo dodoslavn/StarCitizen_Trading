@@ -71,14 +71,14 @@ async function fetchPrices(config) {
 }
 
 /**
- * Fetch detailed commodity prices (including historical min/max SCU) for a single commodity
- * across all terminals
+ * Fetch individual historical price/stock records for one commodity at one terminal
  * @param {number} idCommodity - Commodity ID
+ * @param {number} idTerminal - Terminal ID
  * @param {Object} config - Configuration object
- * @returns {Promise<Object>} Prices data with min/max fields
+ * @returns {Promise<Object>} Historical records (individual data points, not aggregated)
  */
-async function fetchCommodityPricesDetailed(idCommodity, config) {
-    const url = `${buildApiUrl(config, 'prices_by_commodity')}?id_commodity=${idCommodity}`;
+async function fetchStockHistory(idCommodity, idTerminal, config) {
+    const url = `${buildApiUrl(config, 'prices_history')}?id_commodity=${idCommodity}&id_terminal=${idTerminal}`;
     return await downloadJson(url, config);
 }
 
@@ -106,5 +106,5 @@ module.exports = {
     fetchPrices,
     fetchSolarSystems,
     fetchTerminals,
-    fetchCommodityPricesDetailed
+    fetchStockHistory
 };

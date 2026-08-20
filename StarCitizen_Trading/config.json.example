@@ -7,7 +7,7 @@
     "base_url": "https://api.uexcorp.space/2.0",
     "endpoints": {
       "prices_all": "/commodities_prices_all",
-      "prices_by_commodity": "/commodities_prices",
+      "prices_history": "/commodities_prices_history",
       "solar_systems_all": "/star_systems",
       "terminals_all": "/terminals"
     },
@@ -16,7 +16,6 @@
   },
   "cache": {
     "refresh_interval_minutes": 1,
-    "max_inventory_refresh_interval_minutes": 60,
     "stale_after_minutes": 1440,
     "very_stale_after_minutes": 4320
   },

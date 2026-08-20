@@ -8,7 +8,8 @@ class DataCache {
         this.cachedInitData = null;
         this.profit = [];
         this.lastUpdate = null;
-        this.maxInventory = {};
+        this.confirmedMaxInventory = {};
+        this.maxInventoryCursor = 0;
     }
 
     /**
@@ -70,19 +71,40 @@ class DataCache {
     }
 
     /**
-     * Set the max SCU inventory data (historical buy/sell max per commodity+terminal)
-     * @param {Object} data - Map keyed by "idCommodity_idTerminal" -> { scu_buy_max, scu_sell_max }
+     * Record a confirmed max SCU value observed in a terminal+commodity's price history
+     * @param {string} key - "idCommodity_idTerminal"
+     * @param {'sell'|'buy'} side - Which side this max applies to
+     * @param {number} value - The confirmed max SCU value
      */
-    setMaxInventory(data) {
-        this.maxInventory = data;
+    setConfirmedMax(key, side, value) {
+        if (!this.confirmedMaxInventory[key]) this.confirmedMaxInventory[key] = {};
+        this.confirmedMaxInventory[key][side] = value;
     }
 
     /**
-     * Get the max SCU inventory data
-     * @returns {Object} Map keyed by "idCommodity_idTerminal" -> { scu_buy_max, scu_sell_max }
+     * Get the confirmed max SCU value for a terminal+commodity, if one has been observed
+     * @param {string} key - "idCommodity_idTerminal"
+     * @param {'sell'|'buy'} side - Which side to look up
+     * @returns {number|undefined} The confirmed max value, or undefined if never observed
      */
-    getMaxInventory() {
-        return this.maxInventory;
+    getConfirmedMax(key, side) {
+        return this.confirmedMaxInventory[key]?.[side];
+    }
+
+    /**
+     * Get the cursor position for the background history scan (which batch to process next)
+     * @returns {number} Current cursor position
+     */
+    getMaxInventoryCursor() {
+        return this.maxInventoryCursor;
+    }
+
+    /**
+     * Advance the cursor position for the background history scan
+     * @param {number} value - New cursor position
+     */
+    setMaxInventoryCursor(value) {
+        this.maxInventoryCursor = value;
     }
 
     /**

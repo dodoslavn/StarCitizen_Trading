@@ -5,6 +5,7 @@
 
 const logger = require('../logger.js');
 const uexApi = require('./uexApi.js');
+const { estimateMaxInventory } = require('../utils/formatters.js');
 
 /**
  * Normalize price data to numbers with validation
@@ -60,51 +61,50 @@ async function refreshData(config, cache) {
     }
 }
 
+const CONFIRMED_MAX_BATCH_SIZE = 10;
+
 /**
- * Refresh max SCU inventory data (historical buy/sell max per commodity+terminal)
- * Fetched separately from the main price refresh since it requires one API call
- * per commodity and changes far less often than live prices
+ * Slowly scan through commodity+terminal price history to replace estimated max
+ * SCU values with confirmed ones (the highest stock actually observed in the last
+ * ~30 days). Processes a small batch per call and remembers its position via the
+ * cache's cursor, so repeated calls (e.g. once a minute) page through every
+ * commodity+terminal pair over time without hammering the API.
  * @param {Object} config - Configuration object
  * @param {Object} cache - DataCache instance
- * @param {number} batchSize - Number of concurrent requests per batch
  * @returns {Promise<void>}
  */
-async function refreshMaxInventory(config, cache, batchSize = 10) {
+async function refreshConfirmedMaxInventory(config, cache) {
     const cachedData = cache.getData();
-    if (!cachedData) {
-        logger.warn('Skipping max inventory refresh, no price data loaded yet');
-        return;
+    if (!cachedData) return;
+
+    const pairs = [...new Set(cachedData.data.map(item => `${item.id_commodity}_${item.id_terminal}`))];
+    if (pairs.length === 0) return;
+
+    const cursor = cache.getMaxInventoryCursor() % pairs.length;
+    const batchKeys = [];
+    for (let i = 0; i < CONFIRMED_MAX_BATCH_SIZE && i < pairs.length; i++) {
+        batchKeys.push(pairs[(cursor + i) % pairs.length]);
     }
 
-    logger.info('Refreshing max SCU inventory data from UEX API...');
+    await Promise.all(batchKeys.map(async key => {
+        const [idCommodity, idTerminal] = key.split('_').map(Number);
 
-    const commodityIds = [...new Set(cachedData.data.map(item => item.id_commodity))];
-    const maxInventory = {};
+        try {
+            const resp = await uexApi.fetchStockHistory(idCommodity, idTerminal, config);
+            if (!resp || !Array.isArray(resp.data) || resp.data.length === 0) return;
 
-    for (let i = 0; i < commodityIds.length; i += batchSize) {
-        const batch = commodityIds.slice(i, i + batchSize);
+            const maxSell = Math.max(...resp.data.map(r => Number(r.scu_sell_stock) || 0));
+            const maxBuy = Math.max(...resp.data.map(r => Number(r.scu_buy) || 0));
 
-        const responses = await Promise.all(batch.map(idCommodity =>
-            uexApi.fetchCommodityPricesDetailed(idCommodity, config).catch(error => {
-                logger.warn(`Failed to fetch max inventory for commodity ${idCommodity}: ${error.message}`);
-                return null;
-            })
-        ));
+            if (maxSell > 0) cache.setConfirmedMax(key, 'sell', maxSell);
+            if (maxBuy > 0) cache.setConfirmedMax(key, 'buy', maxBuy);
+        } catch (error) {
+            logger.debug(`Failed to fetch stock history for ${key}: ${error.message}`);
+        }
+    }));
 
-        responses.forEach(resp => {
-            if (!resp || !Array.isArray(resp.data)) return;
-
-            resp.data.forEach(row => {
-                maxInventory[`${row.id_commodity}_${row.id_terminal}`] = {
-                    scu_buy_max: Number(row.scu_buy_max) || 0,
-                    scu_sell_max: Number(row.scu_sell_max) || 0
-                };
-            });
-        });
-    }
-
-    cache.setMaxInventory(maxInventory);
-    logger.info(`Max inventory data refreshed for ${commodityIds.length} commodities`);
+    cache.setMaxInventoryCursor(cursor + CONFIRMED_MAX_BATCH_SIZE);
+    logger.debug(`Confirmed max inventory scan: ${batchKeys.length} pairs processed (cursor ${cursor + CONFIRMED_MAX_BATCH_SIZE} / ${pairs.length})`);
 }
 
 /**
@@ -196,10 +196,9 @@ function generateSellData(cache) {
     const commodities = {};
     const cachedData = cache.getData();
     const cachedInitData = cache.getInitData();
-    const maxInventory = cache.getMaxInventory();
 
     cachedData.data.forEach(item => {
-        const { commodity_name, container_sizes, terminal_name, price_sell, price_sell_avg, scu_sell_stock, scu_sell_stock_avg, date_modified, id_commodity, id_terminal } = item;
+        const { commodity_name, container_sizes, terminal_name, price_sell, price_sell_avg, scu_sell_stock, scu_sell_stock_avg, status_sell, date_modified, id_commodity, id_terminal } = item;
 
         let system = cachedInitData?.[terminal_name]?.code ?? '(?) ';
         if (system !== '(?) ') system = '(' + system + ') ';
@@ -210,6 +209,8 @@ function generateSellData(cache) {
             commodities[commodity_name] = [];
         }
 
+        const confirmedMax = cache.getConfirmedMax(`${id_commodity}_${id_terminal}`, 'sell');
+
         commodities[commodity_name].push({
             terminal_name: system + terminal_name,
             container_sizes,
@@ -217,7 +218,8 @@ function generateSellData(cache) {
             price_sell_avg: price_sell_avg > 0 ? price_sell_avg : null,
             scu_sell: scu_sell_stock > 0 ? scu_sell_stock : null,
             scu_sell_avg: scu_sell_stock_avg > 0 ? scu_sell_stock_avg : null,
-            scu_sell_max: maxInventory[`${id_commodity}_${id_terminal}`]?.scu_sell_max || 0,
+            scu_sell_max: confirmedMax ?? estimateMaxInventory(scu_sell_stock, status_sell),
+            scu_sell_max_is_estimate: confirmedMax === undefined,
             date_modified,
         });
     });
@@ -234,10 +236,9 @@ function generateBuyData(cache) {
     const commodities = {};
     const cachedData = cache.getData();
     const cachedInitData = cache.getInitData();
-    const maxInventory = cache.getMaxInventory();
 
     cachedData.data.forEach(item => {
-        const { commodity_name, container_sizes, terminal_name, price_buy, price_buy_avg, scu_buy, scu_buy_avg, date_modified, id_commodity, id_terminal } = item;
+        const { commodity_name, container_sizes, terminal_name, price_buy, price_buy_avg, scu_buy, scu_buy_avg, status_buy, date_modified, id_commodity, id_terminal } = item;
 
         let system = cachedInitData?.[terminal_name]?.code ?? '(?) ';
         if (system !== '(?) ') system = '(' + system + ') ';
@@ -248,6 +249,8 @@ function generateBuyData(cache) {
             commodities[commodity_name] = [];
         }
 
+        const confirmedMax = cache.getConfirmedMax(`${id_commodity}_${id_terminal}`, 'buy');
+
         commodities[commodity_name].push({
             terminal_name: system + terminal_name,
             container_sizes,
@@ -255,7 +258,8 @@ function generateBuyData(cache) {
             price_buy_avg: price_buy_avg > 0 ? price_buy_avg : null,
             scu_buy: scu_buy > 0 ? scu_buy : null,
             scu_buy_avg: scu_buy_avg > 0 ? scu_buy_avg : null,
-            scu_buy_max: maxInventory[`${id_commodity}_${id_terminal}`]?.scu_buy_max || 0,
+            scu_buy_max: confirmedMax ?? estimateMaxInventory(scu_buy, status_buy),
+            scu_buy_max_is_estimate: confirmedMax === undefined,
             date_modified,
         });
     });
@@ -265,7 +269,7 @@ function generateBuyData(cache) {
 
 module.exports = {
     refreshData,
-    refreshMaxInventory,
+    refreshConfirmedMaxInventory,
     initializeData,
     getCommodities,
     generateSellData,

@@ -41,8 +41,8 @@ async function initialize() {
 
         logger.info('Initial data loaded successfully');
 
-        trading.refreshMaxInventory(config, cache).catch(err => {
-            logger.error('Initial max inventory refresh failed:', err);
+        trading.refreshConfirmedMaxInventory(config, cache).catch(err => {
+            logger.error('Initial confirmed max inventory scan failed:', err);
         });
     } catch (error) {
         logger.error('Failed to initialize:', error);
@@ -60,17 +60,9 @@ cron.schedule(cronExpression, () => {
     trading.refreshData(config, cache).catch(err => {
         logger.error('Scheduled refresh failed:', err);
     });
-});
 
-// Schedule periodic max inventory refresh (one API call per commodity, so runs far less often)
-const maxInventoryRefreshInterval = config.cache?.max_inventory_refresh_interval_minutes || 60;
-const maxInventoryCronExpression = `*/${maxInventoryRefreshInterval} * * * *`;
-
-logger.info(`Scheduling max inventory refresh every ${maxInventoryRefreshInterval} minute(s)`);
-cron.schedule(maxInventoryCronExpression, () => {
-    logger.debug('Running scheduled max inventory refresh');
-    trading.refreshMaxInventory(config, cache).catch(err => {
-        logger.error('Scheduled max inventory refresh failed:', err);
+    trading.refreshConfirmedMaxInventory(config, cache).catch(err => {
+        logger.error('Confirmed max inventory scan failed:', err);
     });
 });
 
