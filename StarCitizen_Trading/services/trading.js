@@ -151,7 +151,7 @@ function generateSellData(cache) {
     const cachedInitData = cache.getInitData();
 
     cachedData.data.forEach(item => {
-        const { commodity_name, container_sizes, terminal_name, price_sell, price_sell_avg, scu_sell, scu_sell_avg } = item;
+        const { commodity_name, container_sizes, terminal_name, price_sell, price_sell_avg, scu_sell, scu_sell_avg, date_modified } = item;
 
         let system = cachedInitData?.[terminal_name]?.code ?? '(?) ';
         if (system !== '(?) ') system = '(' + system + ') ';
@@ -169,6 +169,7 @@ function generateSellData(cache) {
             price_sell_avg: price_sell_avg > 0 ? price_sell_avg : null,
             scu_sell: scu_sell > 0 ? scu_sell : null,
             scu_sell_avg: scu_sell_avg > 0 ? scu_sell_avg : null,
+            date_modified,
         });
     });
 
@@ -186,7 +187,7 @@ function generateBuyData(cache) {
     const cachedInitData = cache.getInitData();
 
     cachedData.data.forEach(item => {
-        const { commodity_name, container_sizes, terminal_name, price_buy, price_buy_avg, scu_buy, scu_buy_avg } = item;
+        const { commodity_name, container_sizes, terminal_name, price_buy, price_buy_avg, scu_buy, scu_buy_avg, date_modified } = item;
 
         let system = cachedInitData?.[terminal_name]?.code ?? '(?) ';
         if (system !== '(?) ') system = '(' + system + ') ';
@@ -204,6 +205,7 @@ function generateBuyData(cache) {
             price_buy_avg: price_buy_avg > 0 ? price_buy_avg : null,
             scu_buy: scu_buy > 0 ? scu_buy : null,
             scu_buy_avg: scu_buy_avg > 0 ? scu_buy_avg : null,
+            date_modified,
         });
     });
 

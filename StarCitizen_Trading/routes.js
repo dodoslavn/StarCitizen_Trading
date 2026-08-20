@@ -59,7 +59,7 @@ async function processRequest(req, res, config, cache) {
     if (handler) {
         // Call handler with appropriate parameters
         if (url === '/') {
-            handler.handle(req, res, cache);
+            handler.handle(req, res, cache, config);
         } else if (url === '/refresh') {
             handler.handle(req, res, config, cache);
         } else if (url === '/about' || url === '/default.css' || url === '/favicon.ico') {

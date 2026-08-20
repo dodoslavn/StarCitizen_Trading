@@ -14,7 +14,8 @@
     "retries": 3
   },
   "cache": {
-    "refresh_interval_minutes": 1
+    "refresh_interval_minutes": 1,
+    "stale_after_minutes": 30
   },
   "logging": {
     "level": "info",

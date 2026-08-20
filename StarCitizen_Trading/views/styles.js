@@ -55,6 +55,11 @@ td
     vertical-align: top;
     }
 
+td.terminal-name.stale
+    {
+    color: #666;
+    }
+
 a
     {
     text-decoration: none;

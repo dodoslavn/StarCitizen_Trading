@@ -3,21 +3,26 @@
  * Handles commodity table generation and profit calculations
  */
 
-const { readable_number } = require('../utils/formatters.js');
+const { readable_number, isStale, formatDateTime } = require('../utils/formatters.js');
 
 /**
  * Display single terminal data row
  * @param {Object} item - Terminal data
+ * @param {number} staleThresholdMinutes - Age in minutes after which a terminal's data is grayed out
  * @returns {string} HTML table row
  */
-function displayTerminal(item) {
+function displayTerminal(item, staleThresholdMinutes) {
     const price = (item.price_buy || 0) + (item.price_sell || 0);
     const price_avg = (item.price_buy_avg || 0) + (item.price_sell_avg || 0);
     const stock = (item.scu_buy || 0) + (item.scu_sell || 0);
     const stock_avg = (item.scu_buy_avg || 0) + (item.scu_sell_avg || 0);
 
+    const stale = isStale(item.date_modified, staleThresholdMinutes);
+    const staleClass = stale ? ' stale' : '';
+    const updatedTitle = `Last updated: ${formatDateTime(item.date_modified)}`;
+
     return `<tr>
-        <td title="${item.container_sizes}">${item.terminal_name}</td>
+        <td class="terminal-name${staleClass}" title="${item.container_sizes}&#10;${updatedTitle}">${item.terminal_name}</td>
         <td>${readable_number(price)} (~${readable_number(price_avg)})</td>
         <td>${readable_number(stock)} (~${readable_number(stock_avg)})</td>
     </tr>`;
@@ -27,12 +32,13 @@ function displayTerminal(item) {
  * Display pricing table (buy or sell)
  * @param {Array} pricings - Array of pricing data
  * @param {string} stock_demand - Label for stock/demand column
+ * @param {number} staleThresholdMinutes - Age in minutes after which a terminal's data is grayed out
  * @returns {string} HTML table content
  */
-function displayPricing(pricings, stock_demand) {
+function displayPricing(pricings, stock_demand, staleThresholdMinutes) {
     const no_prices = pricings.length === 0 ? '<tr><td>-</td><td>-</td><td>-</td></tr>' : '';
     const header = `<tr><th>Location</th><th>Price (avg)</th><th>${stock_demand} (avg)</th></tr>`;
-    const rows = pricings.map(terminal => displayTerminal(terminal)).join('');
+    const rows = pricings.map(terminal => displayTerminal(terminal, staleThresholdMinutes)).join('');
 
     return header + no_prices + rows;
 }
@@ -165,9 +171,10 @@ function generateBestRouteHTML(routes) {
  * @param {Array} buy - Buy price data
  * @param {Array} sell - Sell price data
  * @param {Object} cache - Data cache instance
+ * @param {number} staleThresholdMinutes - Age in minutes after which a terminal's data is grayed out
  * @returns {string} HTML table for commodity
  */
-function displayCommodity(item, buy = [], sell = [], cache) {
+function displayCommodity(item, buy = [], sell = [], cache, staleThresholdMinutes = 30) {
     const buy_sorted = buy.sort((a, b) => a.price_buy - b.price_buy);
     const sell_sorted = sell.sort((a, b) => b.price_sell - a.price_sell);
 
@@ -204,12 +211,12 @@ function displayCommodity(item, buy = [], sell = [], cache) {
         <tr>
             <td colspan="2">
                 <table>
-                    ${displayPricing(sell_sorted, 'Demand')}
+                    ${displayPricing(sell_sorted, 'Demand', staleThresholdMinutes)}
                 </table>
             </td>
             <td colspan="2">
                 <table>
-                    ${displayPricing(buy_sorted, 'In stock')}
+                    ${displayPricing(buy_sorted, 'In stock', staleThresholdMinutes)}
                 </table>
             </td>
         </tr>

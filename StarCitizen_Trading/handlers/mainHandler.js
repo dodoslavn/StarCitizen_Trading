@@ -11,18 +11,21 @@ const trading = require('../services/trading.js');
  * @param {Object} req - HTTP request
  * @param {Object} res - HTTP response
  * @param {Object} cache - DataCache instance
+ * @param {Object} config - Configuration object
  */
-function handle(req, res, cache) {
+function handle(req, res, cache, config) {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.write(html.header);
+
+    const staleThresholdMinutes = config?.cache?.stale_after_minutes || 30;
 
     const unique_commodities = trading.getCommodities(cache);
     const sell_prices = trading.generateSellData(cache);
     const buy_prices = trading.generateBuyData(cache);
 
     const tables = unique_commodities
-        .map(commodity => html.displayCommodity(commodity, buy_prices[commodity], sell_prices[commodity], cache))
+        .map(commodity => html.displayCommodity(commodity, buy_prices[commodity], sell_prices[commodity], cache, staleThresholdMinutes))
         .join('');
 
     const profit_uec = html.profit_uec(cache);
