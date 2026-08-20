@@ -13,8 +13,8 @@ const TOUCHPORTAL_STYLES = `
     body div#top { text-align: center; margin-bottom: 1rem; }
     body div#top a { border-radius: 5px; text-align: center; padding: 0.5rem 0.8rem; margin: 0.2rem; display: inline-block; }
     body div#top div.button-group { display: inline-block; margin: 0.2rem 0.5rem; }
-    body div.hub { max-width: 40rem; margin: 4rem auto; text-align: center; }
-    body div.hub a.hub-tile { display: block; margin: 1.5rem 0; padding: 2rem; background-color: #006fdd; border-radius: 0.5rem; font-size: 1.5rem; color: white; text-decoration: none; }
+    body div.hub { max-width: 70rem; margin: 4rem auto; display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center; }
+    body div.hub a.hub-tile { flex: 1 1 20rem; padding: 2rem; background-color: #006fdd; border-radius: 0.5rem; font-size: 1.5rem; color: white; text-decoration: none; text-align: center; }
     body div.hub a.hub-tile:hover { background-color: #4ab8ff; }
     body div.hub a.hub-tile small { display: block; font-size: 1rem; opacity: 0.85; margin-top: 0.5rem; }
     body a.back-hub { display: inline-block; background-color: #444; color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 5px; margin-bottom: 1rem; }
@@ -182,8 +182,8 @@ function touchportal(scu, solar_system = '', cache) {
  */
 function touchportalHub() {
     const body = `
+    <h1>TouchPortal</h1>
     <div class="hub">
-        <h1>TouchPortal</h1>
         <a class="hub-tile" href="/touchportal/50">
             Best Trading Routes
             <small>Sorted by profit, pick your SCU capacity and system</small>
@@ -197,46 +197,69 @@ function touchportalHub() {
 }
 
 /**
- * Generate the "oldest terminal data" page - lists commodity/terminal pairs
- * sorted by date_modified ascending (oldest first). Helps players see which
- * data points need fresh reports to the UEX community.
+ * Generate the "oldest terminal data" page - one row per terminal, showing
+ * the most recent date_modified across all commodities at that terminal.
+ * Sorted ascending, so terminals with the most-neglected data appear first
+ * (i.e. even their newest data point is old, meaning no one has visited in
+ * a while). Optionally filtered to a single star system.
  * @param {Object} cache - Data cache instance
+ * @param {string} solar_system - Optional system name filter
  * @returns {string} Complete HTML page
  */
-function touchportalStale(cache) {
+function touchportalStale(cache, solar_system = '') {
     const cachedData = cache.getData();
     const cachedInitData = cache.getInitData();
 
-    const rows = cachedData.data
-        .filter(item => item.date_modified > 0)
-        .sort((a, b) => a.date_modified - b.date_modified)
-        .slice(0, 100)
-        .map(item => {
-            const systemCode = cachedInitData?.[item.terminal_name]?.code ?? '?';
-            const priceLabel = item.price_sell > 0
-                ? `sell ${readable_number(item.price_sell)} aUEC`
-                : item.price_buy > 0
-                    ? `buy ${readable_number(item.price_buy)} aUEC`
-                    : '-';
-            return `<tr>
-                <td>${formatDateTime(item.date_modified)}</td>
-                <td>(${escapeHtml(systemCode)}) ${escapeHtml(item.terminal_name)}</td>
-                <td>${escapeHtml(item.commodity_name)}</td>
-                <td>${escapeHtml(priceLabel)}</td>
-            </tr>`;
-        }).join('');
+    // Aggregate by terminal: keep the most recent date_modified per terminal.
+    const perTerminal = new Map();
+    cachedData.data.forEach(item => {
+        if (!item.date_modified) return;
+        if (solar_system) {
+            const systemName = cachedInitData?.[item.terminal_name]?.name;
+            if (systemName !== solar_system) return;
+        }
+        const prev = perTerminal.get(item.terminal_name);
+        if (!prev || item.date_modified > prev) {
+            perTerminal.set(item.terminal_name, item.date_modified);
+        }
+    });
+
+    const terminals = [...perTerminal.entries()]
+        .sort((a, b) => a[1] - b[1])
+        .slice(0, 100);
+
+    // System filter buttons - reuse the same set of systems as the routes page.
+    const systems = getAvailableSystems(cache);
+    const systemButtons = systems.map(system => {
+        const isActive = solar_system === system;
+        const style = isActive ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
+        return `<a href="/touchportal/stale/${encodeURIComponent(system)}" style="${style}">${escapeHtml(system)}</a>`;
+    }).join('\n        ');
+    const allSystemsStyle = !solar_system ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
+
+    const rows = terminals.map(([terminalName, dateModified]) => {
+        const systemCode = cachedInitData?.[terminalName]?.code ?? '?';
+        return `<tr>
+            <td>${formatDateTime(dateModified)}</td>
+            <td>(${escapeHtml(systemCode)}) ${escapeHtml(terminalName)}</td>
+        </tr>`;
+    }).join('');
 
     const body = `
     <a class="back-hub" href="/touchportal">&larr; Hub</a>
-    <h2>Oldest Terminal Data (top 100)</h2>
+    <div id="top">
+        <div class="button-group">
+            ${systemButtons}
+            <a href="/touchportal/stale" style="${allSystemsStyle}">All systems</a>
+        </div>
+    </div>
+    <h2>Oldest Terminal Data (top 100${solar_system ? ` - ${escapeHtml(solar_system)}` : ''})</h2>
     <table>
         <tr>
             <th>Last updated</th>
             <th>Terminal</th>
-            <th>Commodity</th>
-            <th>Price</th>
         </tr>
-        ${rows || '<tr><td colspan="4">No data available</td></tr>'}
+        ${rows || '<tr><td colspan="2">No data available</td></tr>'}
     </table>`;
 
     return shell('Oldest Data', body, true);

@@ -1,10 +1,11 @@
 /**
  * Touchportal Handler
  * Serves the touch portal hub and its sub-pages:
- *   /touchportal              -> hub
- *   /touchportal/{scu}        -> best trading routes for given SCU
- *   /touchportal/{scu}/{sys}  -> best trading routes filtered by system
- *   /touchportal/stale        -> terminals with the oldest data (needs updates)
+ *   /touchportal               -> hub
+ *   /touchportal/{scu}         -> best trading routes for given SCU
+ *   /touchportal/{scu}/{sys}   -> best trading routes filtered by system
+ *   /touchportal/stale         -> terminals with the oldest data
+ *   /touchportal/stale/{sys}   -> oldest-data list filtered by system
  */
 
 const html = require('../html.js');
@@ -29,7 +30,8 @@ function handle(req, res, cache) {
     }
 
     if (parts[1] === 'stale') {
-        res.end(html.touchportalStale(cache));
+        const system = parts[2] ? validateSystemName(parts[2]) : '';
+        res.end(html.touchportalStale(cache, system));
         return;
     }
 
