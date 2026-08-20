@@ -142,19 +142,18 @@ npm run dev
 
 The commodity table shows an estimated (or, once scanned, confirmed) max SCU
 capacity per terminal. Confirmed values come from a separate one-shot script
-that scans UEX's price history and is not run by the server itself:
+that scans UEX's price history:
 
 ```bash
 npm run scan-inventory
 ```
 
-It writes `max_inventory.json`, which the server reads on startup. The scan
-is resumable (safe to interrupt and re-run) and skips straight to a no-op if
-a completed scan already exists for the current live game version - a patch
-that changes terminal capacities/locations invalidates the old scan
-automatically. Run it before starting the server (e.g. a systemd
-`ExecStartPre`, or a scheduled CI job that commits the resulting
-`max_inventory.json` back to the repo) rather than alongside it.
+It writes `max_inventory.json`, which the server reads on startup. This is
+run daily by the `Scan max inventory` GitHub Action (see
+`.github/workflows/scan-max-inventory.yml`), which commits the updated file
+back to `master` and thereby triggers a redeploy. The script always does a
+full pass (~2-3 minutes) and exits non-zero if too many per-pair fetches
+fail during the run, so an incomplete file never gets committed.
 
 ## Architecture
 

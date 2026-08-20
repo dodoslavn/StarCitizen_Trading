@@ -5,12 +5,14 @@
  * highest SCU stock ever observed per terminal+commodity pair, and persists
  * the results to max_inventory.json for the server to read on startup.
  *
- * Runs to completion (one full pass) and exits - intended to run before the
- * server starts (e.g. a systemd ExecStartPre step), not inside the running
- * server, so this slow scan never competes with serving live traffic.
+ * Runs to completion (one full pass) and exits - intended to run in the
+ * scheduled GitHub Action that commits the resulting max_inventory.json
+ * back to the repo, not inside the running server, so this slow scan
+ * never competes with serving live traffic.
  *
- * Safe to run repeatedly: it resumes from wherever it left off, and exits
- * immediately if a completed scan already exists for the current game version.
+ * Always does a fresh full pass regardless of the previously-persisted
+ * scan state, so new stock highs and newly-added terminals get picked
+ * up on every run.
  */
 
 const logger = require('./logger.js');
@@ -35,12 +37,14 @@ async function main() {
     cache.setGameVersion(gameVersion);
     logger.info(`Live game version: ${gameVersion || 'unknown'}`);
 
+    // Load any prior data so a partial-progress file (from an interrupted
+    // previous run) at least preserves the confirmed maxes we've already seen -
+    // new-scan results will overwrite existing keys with the fresh value.
+    // Cursor and complete flag get reset so this run does a full pass.
     trading.loadConfirmedMaxInventory(cache);
-
-    if (cache.isMaxInventoryScanComplete()) {
-        logger.info('Max inventory scan already complete for this game version, nothing to do');
-        return 0;
-    }
+    cache.setMaxInventoryCursor(0);
+    cache.setMaxInventoryScanComplete(false);
+    logger.info('Starting fresh full pass');
 
     logger.info('Fetching commodity price data to determine scan scope...');
     await trading.refreshData(config, cache);

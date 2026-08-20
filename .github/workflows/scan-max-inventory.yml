@@ -1,0 +1,71 @@
+name: Scan max inventory
+
+# Runs the standalone max-inventory history scan and commits the resulting
+# max_inventory.json back to master when it changes. A push to max_inventory.json
+# on master is what triggers the Jenkins redeploy of the running app, so a
+# no-change run is intentionally a no-op (no empty commits).
+#
+# The scan script itself exits non-zero if too many per-pair fetches failed
+# during the run (see MAX_ACCEPTABLE_FAILURE_RATE in scan-max-inventory.js);
+# that fails the workflow step and prevents an incomplete file from being
+# committed.
+
+'on':
+  schedule:
+    # Once a day at 03:15 UTC - off-peak for UEX, and after any daily patches
+    # have propagated. Frequency vs freshness: the file only really changes
+    # when a new terminal appears or an existing one hits a new stock high,
+    # so more than daily would be wasted work.
+    - cron: '15 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  # Prevent two scheduled + one manual run from stepping on each other.
+  group: scan-max-inventory
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: StarCitizen_Trading
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        # Uses `npm install` rather than `npm ci` because this repo doesn't
+        # commit package-lock.json. Extra ~30s per run vs `ci`, no big deal
+        # for a daily scheduled scan.
+        run: npm install --no-audit --no-fund
+
+      - name: Create config.json from example
+        # The scanner only needs the API endpoints - the http_server/logging
+        # blocks are irrelevant here but the loader requires the file to exist.
+        run: cp config.json.example config.json
+
+      - name: Run max inventory scan
+        run: npm run scan-inventory
+
+      - name: Commit updated max_inventory.json (if changed)
+        run: |
+          if git diff --quiet -- max_inventory.json; then
+            echo "No changes to max_inventory.json, skipping commit"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add max_inventory.json
+          git commit -m "Update max_inventory.json from scheduled scan
+
+          Scanned game version: $(node -e 'console.log(JSON.parse(require("fs").readFileSync("max_inventory.json")).gameVersion)')
+          Confirmed pairs: $(node -e 'console.log(Object.keys(JSON.parse(require("fs").readFileSync("max_inventory.json")).data).length)')"
+          git push
