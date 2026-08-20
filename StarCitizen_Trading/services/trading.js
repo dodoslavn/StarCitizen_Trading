@@ -236,9 +236,11 @@ function processSolarSystems(rawData) {
 }
 
 /**
- * Process terminals data
+ * Process terminals data. Keyed by nickname, storing star-system id and the
+ * planet the terminal belongs to (used for grouping in the touchportal
+ * views). `planet_name` may be null for Lagrange stations etc.
  * @param {Object} rawData - Raw API response
- * @returns {Object} Processed terminals data
+ * @returns {Object} Map { [nickname]: { id_star_system, planet_name } }
  */
 function processTerminals(rawData) {
     if (!rawData || !Array.isArray(rawData.data)) {
@@ -248,7 +250,10 @@ function processTerminals(rawData) {
 
     return rawData.data.reduce((acc, item) => {
         if (item && item.nickname && item.id_star_system) {
-            acc[item.nickname] = item.id_star_system;
+            acc[item.nickname] = {
+                id_star_system: item.id_star_system,
+                planet_name: item.planet_name || null
+            };
         }
         return acc;
     }, {});
@@ -272,9 +277,13 @@ async function initializeData(config, cache) {
         const systems = processSolarSystems(systemsResp);
         const terminals = processTerminals(terminalsResp);
 
+        // mergedDict[terminal_nickname] = { name (system), code (system), planet_name }
         const mergedDict = [];
-        Object.entries(terminals).forEach(([key, value]) => {
-            mergedDict[key] = systems[value];
+        Object.entries(terminals).forEach(([nickname, { id_star_system, planet_name }]) => {
+            const system = systems[id_star_system];
+            if (system) {
+                mergedDict[nickname] = { ...system, planet_name };
+            }
         });
 
         cache.setInitData(mergedDict);

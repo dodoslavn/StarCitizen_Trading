@@ -3,7 +3,7 @@
  * Simplified trading interface for touchscreen displays
  */
 
-const { readable_number, formatDateTime, escapeHtml } = require('../utils/formatters.js');
+const { readable_number, escapeHtml } = require('../utils/formatters.js');
 
 // Shared page chrome for all touchportal sub-pages so hub, routes, and stale
 // look and feel like siblings under one experience.
@@ -23,6 +23,12 @@ const TOUCHPORTAL_STYLES = `
     table tr th { background-color: #006fdd; border-radius: 3px; text-align: center; padding: 0.5rem; }
     table tr td { text-align: center; padding: 0.3rem; border-bottom: 1px solid #333; }
     a { text-decoration: none; color: white; }
+    body div.stale-columns { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
+    body div.stale-column { flex: 1 1 18rem; background-color: #111; border-radius: 0.5rem; padding: 0.5rem; }
+    body div.stale-column h3 { margin: 0.25rem 0 0.75rem; text-align: center; color: #4ab8ff; border-bottom: 1px solid #333; padding-bottom: 0.4rem; }
+    body div.stale-column div.terminal-row { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.35rem 0.4rem; border-bottom: 1px solid #222; font-size: 0.95rem; }
+    body div.stale-column div.terminal-row:last-child { border-bottom: none; }
+    body div.stale-column div.terminal-row span.date { color: #888; white-space: nowrap; }
 `;
 
 /**
@@ -206,11 +212,26 @@ function touchportalHub() {
  * @param {string} solar_system - Optional system name filter
  * @returns {string} Complete HTML page
  */
+/**
+ * Format a Unix timestamp as a compact date-only Slovak string (d. M. yyyy)
+ * for the tight-column layout of the stale-terminals page. Time-of-day
+ * doesn't add much for "when did this terminal last see any update" and
+ * costs precious tablet width.
+ * @param {number} unixTimestampSeconds
+ * @returns {string}
+ */
+function shortDate(unixTimestampSeconds) {
+    return new Date(unixTimestampSeconds * 1000).toLocaleDateString('sk-SK', {
+        timeZone: 'UTC', year: 'numeric', month: 'numeric', day: 'numeric'
+    });
+}
+
 function touchportalStale(cache, solar_system = '') {
     const cachedData = cache.getData();
     const cachedInitData = cache.getInitData();
 
     // Aggregate by terminal: keep the most recent date_modified per terminal.
+    // "Oldest newest-update" surfaces terminals that no one has visited in ages.
     const perTerminal = new Map();
     cachedData.data.forEach(item => {
         if (!item.date_modified) return;
@@ -219,14 +240,14 @@ function touchportalStale(cache, solar_system = '') {
             if (systemName !== solar_system) return;
         }
         const prev = perTerminal.get(item.terminal_name);
-        if (!prev || item.date_modified > prev) {
-            perTerminal.set(item.terminal_name, item.date_modified);
+        if (!prev || item.date_modified > prev.dateModified) {
+            perTerminal.set(item.terminal_name, {
+                dateModified: item.date_modified,
+                planet: cachedInitData?.[item.terminal_name]?.planet_name || 'Other',
+                systemCode: cachedInitData?.[item.terminal_name]?.code ?? '?'
+            });
         }
     });
-
-    const terminals = [...perTerminal.entries()]
-        .sort((a, b) => a[1] - b[1])
-        .slice(0, 100);
 
     // System filter buttons - reuse the same set of systems as the routes page.
     const systems = getAvailableSystems(cache);
@@ -237,14 +258,33 @@ function touchportalStale(cache, solar_system = '') {
     }).join('\n        ');
     const allSystemsStyle = !solar_system ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
 
-    const rows = terminals.map(([terminalName, dateModified]) => {
-        const systemCode = cachedInitData?.[terminalName]?.code ?? '?';
-        return `<tr>
-            <td>${formatDateTime(dateModified)}</td>
-            <td>(${escapeHtml(systemCode)}) ${escapeHtml(terminalName)}</td>
-        </tr>`;
+    // Group terminals by planet. Sort planets alphabetically for a stable
+    // column layout, put the "Other" bucket last since it's the miscellaneous one.
+    const byPlanet = new Map();
+    perTerminal.forEach((info, terminalName) => {
+        if (!byPlanet.has(info.planet)) byPlanet.set(info.planet, []);
+        byPlanet.get(info.planet).push({ terminalName, ...info });
+    });
+    const planets = [...byPlanet.keys()].sort((a, b) => {
+        if (a === 'Other') return 1;
+        if (b === 'Other') return -1;
+        return a.localeCompare(b);
+    });
+
+    const columns = planets.map(planet => {
+        const terminals = byPlanet.get(planet).sort((a, b) => a.dateModified - b.dateModified);
+        const rows = terminals.map(t => `
+            <div class="terminal-row">
+                <span class="name">(${escapeHtml(t.systemCode)}) ${escapeHtml(t.terminalName)}</span>
+                <span class="date">${shortDate(t.dateModified)}</span>
+            </div>`).join('');
+        return `<div class="stale-column">
+            <h3>${escapeHtml(planet)} <small>(${terminals.length})</small></h3>
+            ${rows}
+        </div>`;
     }).join('');
 
+    const totalTerminals = perTerminal.size;
     const body = `
     <a class="back-hub" href="/touchportal">&larr; Hub</a>
     <div id="top">
@@ -253,14 +293,10 @@ function touchportalStale(cache, solar_system = '') {
             <a href="/touchportal/stale" style="${allSystemsStyle}">All systems</a>
         </div>
     </div>
-    <h2>Oldest Terminal Data (top 100${solar_system ? ` - ${escapeHtml(solar_system)}` : ''})</h2>
-    <table>
-        <tr>
-            <th>Last updated</th>
-            <th>Terminal</th>
-        </tr>
-        ${rows || '<tr><td colspan="2">No data available</td></tr>'}
-    </table>`;
+    <h2>Oldest Terminal Data${solar_system ? ` - ${escapeHtml(solar_system)}` : ''} (${totalTerminals} terminals, oldest first)</h2>
+    <div class="stale-columns">
+        ${columns || '<div class="stale-column">No data available</div>'}
+    </div>`;
 
     return shell('Oldest Data', body, true);
 }
