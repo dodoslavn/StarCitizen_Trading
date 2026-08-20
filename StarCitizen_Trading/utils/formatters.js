@@ -47,8 +47,19 @@ function formatDateTime(unixTimestampSeconds) {
     }) + ' UTC';
 }
 
+/**
+ * Format a UEX `container_sizes` string into a readable SCU box size list
+ * @param {string} containerSizes - Comma-separated SCU box sizes, e.g. "1,2,4,8,16,24,32"
+ * @returns {string} Formatted list, e.g. "1, 2, 4, 8, 16, 24, 32 SCU", or 'Unknown' if not available
+ */
+function formatContainerSizes(containerSizes) {
+    if (!containerSizes) return 'Unknown';
+    return containerSizes.split(',').join(', ') + ' SCU';
+}
+
 module.exports = {
     readable_number,
     getStalenessLevel,
-    formatDateTime
+    formatDateTime,
+    formatContainerSizes
 };

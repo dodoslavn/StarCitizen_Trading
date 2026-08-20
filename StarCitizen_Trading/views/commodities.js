@@ -3,7 +3,7 @@
  * Handles commodity table generation and profit calculations
  */
 
-const { readable_number, getStalenessLevel, formatDateTime } = require('../utils/formatters.js');
+const { readable_number, getStalenessLevel, formatDateTime, formatContainerSizes } = require('../utils/formatters.js');
 
 /**
  * Display single terminal data row
@@ -20,9 +20,10 @@ function displayTerminal(item, staleThresholds) {
     const staleness = getStalenessLevel(item.date_modified, staleThresholds);
     const rowClass = staleness !== 'fresh' ? ` class="${staleness}"` : '';
     const updatedTitle = `Last updated: ${formatDateTime(item.date_modified)}`;
+    const sizesTitle = `SCU box sizes: ${formatContainerSizes(item.container_sizes)}`;
 
     return `<tr${rowClass}>
-        <td title="${item.container_sizes}&#10;${updatedTitle}">${item.terminal_name}</td>
+        <td title="${sizesTitle}&#10;${updatedTitle}">${item.terminal_name}</td>
         <td>${readable_number(price)} (~${readable_number(price_avg)})</td>
         <td>${readable_number(stock)} (~${readable_number(stock_avg)})</td>
     </tr>`;
