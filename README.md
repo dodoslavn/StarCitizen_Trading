@@ -138,23 +138,44 @@ npm run lint:fix    # Auto-fix issues
 npm run dev
 ```
 
+### Max Inventory Scan
+
+The commodity table shows an estimated (or, once scanned, confirmed) max SCU
+capacity per terminal. Confirmed values come from a separate one-shot script
+that scans UEX's price history and is not run by the server itself:
+
+```bash
+npm run scan-inventory
+```
+
+It writes `max_inventory.json`, which the server reads on startup. The scan
+is resumable (safe to interrupt and re-run) and skips straight to a no-op if
+a completed scan already exists for the current live game version - a patch
+that changes terminal capacities/locations invalidates the old scan
+automatically. Run it before starting the server (e.g. a systemd
+`ExecStartPre`, or a scheduled CI job that commits the resulting
+`max_inventory.json` back to the repo) rather than alongside it.
+
 ## Architecture
 
 ### Project Structure
 
 ```
 StarCitizen_Trading/
-├── server.js           # Main server entry point
-├── functions.js        # Core business logic and HTTP handlers
-├── html.js             # HTML generation and rendering
-├── dataCache.js        # Data caching management
-├── logger.js           # Winston logger configuration
-├── favicon.js          # Base64 encoded favicon
-├── config.json         # Configuration (create from .example)
-├── config.json.example # Example configuration
-├── package.json        # Dependencies and scripts
-├── .eslintrc.json      # ESLint configuration
-└── tests/              # Unit tests
+├── server.js              # Main server entry point
+├── scan-max-inventory.js  # Standalone max-inventory history scan (see above)
+├── config.js              # Shared config.json loader
+├── functions.js           # Core business logic and HTTP handlers
+├── html.js                # HTML generation and rendering
+├── dataCache.js           # Data caching management
+├── logger.js              # Winston logger configuration
+├── favicon.js             # Base64 encoded favicon
+├── config.json            # Configuration (create from .example)
+├── config.json.example    # Example configuration
+├── max_inventory.json     # Output of scan-max-inventory.js
+├── package.json           # Dependencies and scripts
+├── .eslintrc.json         # ESLint configuration
+└── tests/                 # Unit tests
     ├── dataCache.test.js
     └── html.test.js
 ```

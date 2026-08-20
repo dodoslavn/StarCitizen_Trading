@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
+    "scan-inventory": "node scan-max-inventory.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint .",

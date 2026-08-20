@@ -9,26 +9,12 @@ const logger = require('./logger.js');
 const DataCache = require('./dataCache.js');
 const trading = require('./services/trading.js');
 const routes = require('./routes.js');
-const fs = require('fs');
+const { loadConfig } = require('./config.js');
 
 logger.info(`Node.js version: ${process.version}`);
 
-// Load configuration
-function loadConfig() {
-    const filename = './config.json';
-
-    try {
-        const data = fs.readFileSync(filename, 'utf8');
-        const config = JSON.parse(data);
-        logger.info('Configuration file loaded successfully');
-        return config;
-    } catch (error) {
-        console.error(`ERROR: Could not load config file (${filename}):`, error.message);
-        process.exit(1);
-    }
-}
-
 const config = loadConfig();
+logger.info('Configuration file loaded successfully');
 const cache = new DataCache();
 
 // Initial data fetch
@@ -39,16 +25,15 @@ async function initialize() {
         const gameVersion = await trading.fetchLiveGameVersion(config);
         cache.setGameVersion(gameVersion);
         logger.info(`Live game version: ${gameVersion || 'unknown'}`);
+
+        // Max inventory data is populated by the separate scan-max-inventory.js
+        // script (run e.g. as a systemd ExecStartPre step); the server only reads it.
         trading.loadConfirmedMaxInventory(cache);
 
         await trading.initializeData(config, cache);
         await trading.refreshData(config, cache);
 
         logger.info('Initial data loaded successfully');
-
-        trading.refreshConfirmedMaxInventory(config, cache).catch(err => {
-            logger.error('Initial confirmed max inventory scan failed:', err);
-        });
     } catch (error) {
         logger.error('Failed to initialize:', error);
         logger.warn('Server will continue, but data may not be available yet');
@@ -64,10 +49,6 @@ cron.schedule(cronExpression, () => {
     logger.debug('Running scheduled data refresh');
     trading.refreshData(config, cache).catch(err => {
         logger.error('Scheduled refresh failed:', err);
-    });
-
-    trading.refreshConfirmedMaxInventory(config, cache).catch(err => {
-        logger.error('Confirmed max inventory scan failed:', err);
     });
 });
 

@@ -119,31 +119,33 @@ function saveConfirmedMaxInventory(cache) {
 }
 
 /**
- * Slowly scan through commodity+terminal price history to replace estimated max
- * SCU values with confirmed ones (the highest stock actually observed in the last
- * ~30 days). Processes a small batch per call and remembers its position via the
- * cache's cursor, so repeated calls (e.g. once a minute) page through every
- * commodity+terminal pair over time without hammering the API. Stops after one
- * full pass and persists results to disk so a restart doesn't repeat the scan.
+ * Process one batch of the commodity+terminal price history scan, replacing
+ * estimated max SCU values with confirmed ones (the highest stock actually
+ * observed in the last ~30 days). Remembers its position via the cache's
+ * cursor and persists results to disk after every batch, so callers can call
+ * this repeatedly (in a tight loop, or spread over time) and safely stop or
+ * resume at any point without redoing work already done.
  * @param {Object} config - Configuration object
  * @param {Object} cache - DataCache instance
- * @returns {Promise<void>}
+ * @returns {Promise<{complete: boolean, cursor: number, total: number}>} Scan progress
  */
 async function refreshConfirmedMaxInventory(config, cache) {
-    if (cache.isMaxInventoryScanComplete()) return;
+    if (cache.isMaxInventoryScanComplete()) {
+        return { complete: true, cursor: cache.getMaxInventoryCursor(), total: cache.getMaxInventoryCursor() };
+    }
 
     const cachedData = cache.getData();
-    if (!cachedData) return;
+    if (!cachedData) return { complete: false, cursor: 0, total: 0 };
 
     const pairs = [...new Set(cachedData.data.map(item => `${item.id_commodity}_${item.id_terminal}`))];
-    if (pairs.length === 0) return;
+    if (pairs.length === 0) return { complete: false, cursor: 0, total: 0 };
 
     const cursor = cache.getMaxInventoryCursor();
     if (cursor >= pairs.length) {
         cache.setMaxInventoryScanComplete(true);
         saveConfirmedMaxInventory(cache);
         logger.info(`Confirmed max inventory scan complete (${pairs.length} pairs)`);
-        return;
+        return { complete: true, cursor, total: pairs.length };
     }
 
     const batchKeys = pairs.slice(cursor, cursor + CONFIRMED_MAX_BATCH_SIZE);
@@ -167,14 +169,16 @@ async function refreshConfirmedMaxInventory(config, cache) {
 
     const newCursor = cursor + batchKeys.length;
     cache.setMaxInventoryCursor(newCursor);
-    saveConfirmedMaxInventory(cache);
 
-    if (newCursor >= pairs.length) {
+    const complete = newCursor >= pairs.length;
+    if (complete) {
         cache.setMaxInventoryScanComplete(true);
         logger.info(`Confirmed max inventory scan complete (${pairs.length} pairs)`);
-    } else {
-        logger.debug(`Confirmed max inventory scan: cursor ${newCursor} / ${pairs.length}`);
     }
+
+    saveConfirmedMaxInventory(cache);
+
+    return { complete, cursor: newCursor, total: pairs.length };
 }
 
 /**
