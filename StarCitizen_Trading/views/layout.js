@@ -3,6 +3,29 @@
  * Contains page structure and static content
  */
 
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * Determine the deployed version string, evaluated once at module load.
+ * Prefers a VERSION file at the app root (populated at build time from the
+ * git SHA), falls back to package.json's version.
+ * @returns {string}
+ */
+function readVersion() {
+    try {
+        const v = fs.readFileSync(path.join(__dirname, '..', 'VERSION'), 'utf8').trim();
+        if (v) return v;
+    } catch { /* file absent, fall through */ }
+    try {
+        return require('../package.json').version || 'unknown';
+    } catch {
+        return 'unknown';
+    }
+}
+
+const version = readVersion();
+
 const header = `
 <!DOCTYPE html>
 <html>
@@ -46,7 +69,7 @@ const about = `
         </p>
 
         <p class="footer-text">
-            &copy; 2025
+            &copy; 2025 &middot; version: ${version}
         </p>
     </div>
     `;
