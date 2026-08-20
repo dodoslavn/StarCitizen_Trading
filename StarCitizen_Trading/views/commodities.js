@@ -16,16 +16,18 @@ function displayTerminal(item, staleThresholds) {
     const price_avg = (item.price_buy_avg || 0) + (item.price_sell_avg || 0);
     const stock = (item.scu_buy || 0) + (item.scu_sell || 0);
     const stock_avg = (item.scu_buy_avg || 0) + (item.scu_sell_avg || 0);
+    const max_inventory = (item.scu_buy_max || 0) + (item.scu_sell_max || 0);
 
     const staleness = getStalenessLevel(item.date_modified, staleThresholds);
     const rowClass = staleness !== 'fresh' ? ` class="${staleness}"` : '';
     const updatedTitle = `Last updated: ${formatDateTime(item.date_modified)}`;
     const sizesTitle = `SCU box sizes: ${formatContainerSizes(item.container_sizes)}`;
+    const maxSuffix = max_inventory > 0 ? ` / ${readable_number(max_inventory)}` : '';
 
     return `<tr${rowClass}>
         <td title="${sizesTitle}&#10;${updatedTitle}">${item.terminal_name}</td>
         <td>${readable_number(price)} (~${readable_number(price_avg)})</td>
-        <td>${readable_number(stock)} (~${readable_number(stock_avg)})</td>
+        <td title="Max inventory ever recorded at this terminal">${readable_number(stock)} (~${readable_number(stock_avg)})${maxSuffix}</td>
     </tr>`;
 }
 

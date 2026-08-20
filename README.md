@@ -88,6 +88,7 @@ Edit `config.json` to customize the application:
 | `api.timeout` | API request timeout (ms) | `10000` |
 | `api.retries` | Number of retry attempts | `3` |
 | `cache.refresh_interval_minutes` | Data refresh frequency | `1` |
+| `cache.max_inventory_refresh_interval_minutes` | Frequency for refreshing max SCU inventory data (one API call per commodity) | `60` |
 | `cache.stale_after_minutes` | Age (minutes) after which a terminal's price data is grayed out as outdated | `1440` |
 | `cache.very_stale_after_minutes` | Age (minutes) after which a terminal's price data is grayed out further as very outdated | `4320` |
 | `logging.level` | Log level (error/warn/info/debug) | `info` |

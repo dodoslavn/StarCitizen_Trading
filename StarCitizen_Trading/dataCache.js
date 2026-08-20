@@ -8,6 +8,7 @@ class DataCache {
         this.cachedInitData = null;
         this.profit = [];
         this.lastUpdate = null;
+        this.maxInventory = {};
     }
 
     /**
@@ -66,6 +67,22 @@ class DataCache {
      */
     getProfit() {
         return this.profit;
+    }
+
+    /**
+     * Set the max SCU inventory data (historical buy/sell max per commodity+terminal)
+     * @param {Object} data - Map keyed by "idCommodity_idTerminal" -> { scu_buy_max, scu_sell_max }
+     */
+    setMaxInventory(data) {
+        this.maxInventory = data;
+    }
+
+    /**
+     * Get the max SCU inventory data
+     * @returns {Object} Map keyed by "idCommodity_idTerminal" -> { scu_buy_max, scu_sell_max }
+     */
+    getMaxInventory() {
+        return this.maxInventory;
     }
 
     /**
