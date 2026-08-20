@@ -7,7 +7,8 @@ const {
     getStalenessLevel,
     formatDateTime,
     formatContainerSizes,
-    estimateMaxInventory
+    estimateMaxInventory,
+    escapeHtml
 } = require('../utils/formatters.js');
 
 describe('readable_number', () => {
@@ -72,9 +73,11 @@ describe('estimateMaxInventory', () => {
         expect(estimateMaxInventory(0, 5)).toBe(0);
     });
 
-    test('returns the current stock unchanged when status is missing', () => {
-        expect(estimateMaxInventory(100, 0)).toBe(100);
-        expect(estimateMaxInventory(100, undefined)).toBe(100);
+    test('returns 0 when status is missing so the display layer omits the fabricated max', () => {
+        // Rendering `100 / ~100` for status=0 would imply capacity really is 100;
+        // returning 0 lets the display layer skip the suffix entirely.
+        expect(estimateMaxInventory(100, 0)).toBe(0);
+        expect(estimateMaxInventory(100, undefined)).toBe(0);
     });
 
     test('scales linearly with status tier (tier/7)', () => {
@@ -86,5 +89,38 @@ describe('estimateMaxInventory', () => {
 
     test('clamps status above the max tier instead of exceeding 100%', () => {
         expect(estimateMaxInventory(500, 7)).toBe(estimateMaxInventory(500, 99));
+    });
+});
+
+describe('escapeHtml', () => {
+    test('escapes the five characters that break out of HTML text and attributes', () => {
+        expect(escapeHtml('a & b')).toBe('a &amp; b');
+        expect(escapeHtml('<script>')).toBe('&lt;script&gt;');
+        expect(escapeHtml('"quoted"')).toBe('&quot;quoted&quot;');
+        expect(escapeHtml('it\'s')).toBe('it&#39;s');
+    });
+
+    test('neutralises a hostile terminal name that would otherwise XSS', () => {
+        const hostile = 'Foo"><img src=x onerror=alert(1)>';
+        const escaped = escapeHtml(hostile);
+        // No unescaped '<' or unescaped '"' - the browser sees inert text, not an <img>
+        expect(escaped).not.toMatch(/</);
+        expect(escaped).not.toMatch(/"/);
+        expect(escaped).toContain('&lt;img');
+    });
+
+    test('leaves plain alphanumeric strings unchanged', () => {
+        expect(escapeHtml('Aluminum')).toBe('Aluminum');
+        expect(escapeHtml('TDD Area 18')).toBe('TDD Area 18');
+    });
+
+    test('coerces nullish to empty string', () => {
+        expect(escapeHtml(null)).toBe('');
+        expect(escapeHtml(undefined)).toBe('');
+    });
+
+    test('handles non-string values by coercing to string first', () => {
+        expect(escapeHtml(42)).toBe('42');
+        expect(escapeHtml(0)).toBe('0');
     });
 });

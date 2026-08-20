@@ -3,7 +3,7 @@
  * Generates best profit summaries
  */
 
-const { readable_number } = require('../utils/formatters.js');
+const { readable_number, escapeHtml } = require('../utils/formatters.js');
 
 /**
  * Generate profit table sorted by aUEC
@@ -16,8 +16,9 @@ function profit_uec(cache) {
 
     const header = '<tr><th>Commodity</th><th>Profit aUEC/SCU</th></tr>';
     const data = profit_sorted.map(item => {
+        const name = escapeHtml(item.commodity);
         return `<tr>
-            <td><a href="#comm-${item.commodity}">${item.commodity}</a></td>
+            <td><a href="#comm-${name}">${name}</a></td>
             <td>${readable_number(item.profit_uec_real)} (up to ${readable_number(item.profit_uec)})</td>
         </tr>`;
     }).join('');
@@ -41,9 +42,10 @@ function profit_perc(cache) {
 
     const header = '<tr><th>Commodity</th><th>Profit %</th></tr>';
     const data = profit_sorted.map(item => {
+        const name = escapeHtml(item.commodity);
         return `<tr>
-            <td><a href="#comm-${item.commodity}">${item.commodity}</a></td>
-            <td>${item.profit_perc_real} (up to ${item.profit_perc})</td>
+            <td><a href="#comm-${name}">${name}</a></td>
+            <td>${escapeHtml(item.profit_perc_real)} (up to ${escapeHtml(item.profit_perc)})</td>
         </tr>`;
     }).join('');
 

@@ -3,7 +3,7 @@
  * Handles commodity table generation and profit calculations
  */
 
-const { readable_number, getStalenessLevel, formatDateTime, formatContainerSizes } = require('../utils/formatters.js');
+const { readable_number, getStalenessLevel, formatDateTime, formatContainerSizes, escapeHtml } = require('../utils/formatters.js');
 
 /**
  * Display single terminal data row
@@ -29,9 +29,9 @@ function displayTerminal(item, staleThresholds) {
     const maxSuffix = max_inventory > 0 ? ` / ${max_is_estimate ? '~' : ''}${readable_number(max_inventory)}` : '';
 
     return `<tr${rowClass}>
-        <td title="${sizesTitle}&#10;${updatedTitle}">${item.terminal_name}</td>
+        <td title="${escapeHtml(sizesTitle)}&#10;${escapeHtml(updatedTitle)}">${escapeHtml(item.terminal_name)}</td>
         <td>${readable_number(price)} (~${readable_number(price_avg)})</td>
-        <td title="${maxTitle}">${readable_number(stock)} (~${readable_number(stock_avg)})${maxSuffix}</td>
+        <td title="${escapeHtml(maxTitle)}">${readable_number(stock)} (~${readable_number(stock_avg)})${maxSuffix}</td>
     </tr>`;
 }
 
@@ -150,8 +150,8 @@ function generateBestRouteHTML(routes) {
 
     return `<tr>
         <td title="Most profitable trip based on latest reported data">
-            (${cachedInitData?.[latest.buy.terminal_name]?.code ?? '?'}) ${latest.buy.terminal_name} →
-            (${cachedInitData?.[latest.sell.terminal_name]?.code ?? '?'}) ${latest.sell.terminal_name}
+            (${escapeHtml(cachedInitData?.[latest.buy.terminal_name]?.code ?? '?')}) ${escapeHtml(latest.buy.terminal_name)} →
+            (${escapeHtml(cachedInitData?.[latest.sell.terminal_name]?.code ?? '?')}) ${escapeHtml(latest.sell.terminal_name)}
         </td>
         <td class="text-right" title="Profit from the trip">${readable_number(latest.profit)} aUEC</td>
         <td class="text-right" title="Amount of SCU to trade">${readable_number(latest.amount)} SCU</td>
@@ -161,8 +161,8 @@ function generateBestRouteHTML(routes) {
     </tr>
     <tr>
         <td title="Most profitable trip based on average data">
-            (${cachedInitData?.[average.buy.terminal_name]?.code ?? '?'}) ${average.buy.terminal_name} →
-            (${cachedInitData?.[average.sell.terminal_name]?.code ?? '?'}) ${average.sell.terminal_name}
+            (${escapeHtml(cachedInitData?.[average.buy.terminal_name]?.code ?? '?')}) ${escapeHtml(average.buy.terminal_name)} →
+            (${escapeHtml(cachedInitData?.[average.sell.terminal_name]?.code ?? '?')}) ${escapeHtml(average.sell.terminal_name)}
         </td>
         <td class="text-right" title="Profit from the trip">~ ${readable_number(average.profit)} aUEC</td>
         <td class="text-right" title="Amount of SCU to trade">~ ${readable_number(average.amount)} SCU</td>
@@ -208,8 +208,8 @@ function displayCommodity(item, buy = [], sell = [], cache, staleThresholds = { 
     const best_route = generateBestRouteHTML(routes);
 
     return `
-    <table class="commodity" id="comm-${item}">
-        <tr><th colspan="4" class="text-center">${item} ${best_profit}</th></tr>
+    <table class="commodity" id="comm-${escapeHtml(item)}">
+        <tr><th colspan="4" class="text-center">${escapeHtml(item)} ${best_profit}</th></tr>
         ${best_route}
         <tr>
             <td colspan="2">(you) Sell</td>

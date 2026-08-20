@@ -127,14 +127,20 @@ function loadConfirmedMaxInventory(cache) {
 }
 
 /**
- * Persist the current confirmed max inventory scan state to disk
+ * Persist the current confirmed max inventory scan state to disk.
+ * Writes to a temp file and renames into place so a crash mid-write cannot
+ * leave the target truncated (rename is atomic on POSIX).
+ * Pretty-printed with 2-space indent so CI-committed diffs are reviewable.
  * @param {Object} cache - DataCache instance
  */
 function saveConfirmedMaxInventory(cache) {
+    const tempFile = `${MAX_INVENTORY_FILE}.tmp`;
     try {
-        fs.writeFileSync(MAX_INVENTORY_FILE, JSON.stringify(cache.exportMaxInventoryState()));
+        fs.writeFileSync(tempFile, JSON.stringify(cache.exportMaxInventoryState(), null, 2));
+        fs.renameSync(tempFile, MAX_INVENTORY_FILE);
     } catch (error) {
         logger.warn(`Failed to save max inventory data: ${error.message}`);
+        try { fs.unlinkSync(tempFile); } catch { /* nothing to clean up */ }
     }
 }
 
@@ -147,20 +153,24 @@ function saveConfirmedMaxInventory(cache) {
  * resume at any point without redoing work already done.
  * @param {Object} config - Configuration object
  * @param {Object} cache - DataCache instance
- * @returns {Promise<{complete: boolean, cursor: number, total: number}>} Scan progress
+ * @returns {Promise<{complete: boolean, cursor: number, total: number, failures: number}>}
+ *   Scan progress. `failures` counts pairs in this batch that couldn't be fetched
+ *   (network error, HTTP 5xx after retries, etc); the standalone scanner
+ *   aggregates these across the whole run so a transient UEX outage doesn't
+ *   silently produce a mostly-empty file.
  */
 async function refreshConfirmedMaxInventory(config, cache) {
     const cachedData = cache.getData();
     if (!cachedData) {
         // Data hasn't been loaded yet - not done, just not ready. Distinct from an
         // empty pair list below, which really does mean "nothing to scan."
-        return { complete: false, cursor: cache.getMaxInventoryCursor(), total: 0 };
+        return { complete: false, cursor: cache.getMaxInventoryCursor(), total: 0, failures: 0 };
     }
 
     const pairs = [...new Set(cachedData.data.map(item => `${item.id_commodity}_${item.id_terminal}`))];
 
     if (cache.isMaxInventoryScanComplete() || pairs.length === 0) {
-        return { complete: true, cursor: cache.getMaxInventoryCursor(), total: pairs.length };
+        return { complete: true, cursor: cache.getMaxInventoryCursor(), total: pairs.length, failures: 0 };
     }
 
     const cursor = cache.getMaxInventoryCursor();
@@ -168,10 +178,11 @@ async function refreshConfirmedMaxInventory(config, cache) {
         cache.setMaxInventoryScanComplete(true);
         saveConfirmedMaxInventory(cache);
         logger.info(`Confirmed max inventory scan complete (${pairs.length} pairs)`);
-        return { complete: true, cursor, total: pairs.length };
+        return { complete: true, cursor, total: pairs.length, failures: 0 };
     }
 
     const batchKeys = pairs.slice(cursor, cursor + CONFIRMED_MAX_BATCH_SIZE);
+    let failures = 0;
 
     await Promise.all(batchKeys.map(async key => {
         const [idCommodity, idTerminal] = key.split('_').map(Number);
@@ -186,6 +197,7 @@ async function refreshConfirmedMaxInventory(config, cache) {
             if (maxSell > 0) cache.setConfirmedMax(key, 'sell', maxSell);
             if (maxBuy > 0) cache.setConfirmedMax(key, 'buy', maxBuy);
         } catch (error) {
+            failures += 1;
             logger.debug(`Failed to fetch stock history for ${key}: ${error.message}`);
         }
     }));
@@ -201,7 +213,7 @@ async function refreshConfirmedMaxInventory(config, cache) {
 
     saveConfirmedMaxInventory(cache);
 
-    return { complete, cursor: newCursor, total: pairs.length };
+    return { complete, cursor: newCursor, total: pairs.length, failures };
 }
 
 /**

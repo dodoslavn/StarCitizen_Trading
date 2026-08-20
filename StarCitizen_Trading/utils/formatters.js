@@ -2,6 +2,22 @@
  * Number Formatting Utilities
  */
 
+const HTML_ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' };
+
+/**
+ * Escape a string for safe interpolation into HTML text or an HTML attribute.
+ * Anything that arrives from the UEX API (terminal names, commodity names,
+ * container sizes, system codes, etc.) must pass through this before being
+ * placed into a template string, since UEX data is community-submitted and
+ * cannot be trusted to be free of `<`, `>`, `"`, or `&`.
+ * @param {*} value - Value to escape (coerced to string; nullish becomes '')
+ * @returns {string}
+ */
+function escapeHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value).replace(/[&<>"']/g, ch => HTML_ESCAPE_MAP[ch]);
+}
+
 /**
  * Format number with thousand separators
  * @param {number|string} num - Number to format
@@ -55,14 +71,18 @@ function formatDateTime(unixTimestampSeconds) {
 const STOCK_STATUS_MAX_TIER = 7;
 
 /**
- * Estimate a terminal's max SCU capacity from its current stock and stock status tier
+ * Estimate a terminal's max SCU capacity from its current stock and stock status tier.
+ * Returns 0 when there is no meaningful signal (no stock, or status = 0 meaning
+ * "unknown"); callers should treat 0 as "don't render a max," not as "capacity is
+ * zero." The display layer already hides the `/ max` suffix when this is 0, so
+ * rows with no signal simply omit the estimate rather than fabricating one.
  * @param {number} currentStock - Current SCU stock (scu_sell_stock or scu_buy)
  * @param {number} status - UEX stock status tier (0-7)
- * @returns {number} Estimated max capacity, or the current stock if no estimate is possible
+ * @returns {number}
  */
 function estimateMaxInventory(currentStock, status) {
     if (!currentStock) return 0;
-    if (!status) return currentStock;
+    if (!status) return 0;
     const fraction = Math.min(status, STOCK_STATUS_MAX_TIER) / STOCK_STATUS_MAX_TIER;
     return Math.round(currentStock / fraction);
 }
@@ -82,5 +102,6 @@ module.exports = {
     getStalenessLevel,
     formatDateTime,
     formatContainerSizes,
-    estimateMaxInventory
+    estimateMaxInventory,
+    escapeHtml
 };
