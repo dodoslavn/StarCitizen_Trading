@@ -15,7 +15,8 @@
   },
   "cache": {
     "refresh_interval_minutes": 1,
-    "stale_after_minutes": 1440
+    "stale_after_minutes": 1440,
+    "very_stale_after_minutes": 4320
   },
   "logging": {
     "level": "info",

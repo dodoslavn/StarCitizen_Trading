@@ -18,14 +18,17 @@ function handle(req, res, cache, config) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.write(html.header);
 
-    const staleThresholdMinutes = config?.cache?.stale_after_minutes || 1440;
+    const staleThresholds = {
+        stale: config?.cache?.stale_after_minutes || 1440,
+        veryStale: config?.cache?.very_stale_after_minutes || 4320
+    };
 
     const unique_commodities = trading.getCommodities(cache);
     const sell_prices = trading.generateSellData(cache);
     const buy_prices = trading.generateBuyData(cache);
 
     const tables = unique_commodities
-        .map(commodity => html.displayCommodity(commodity, buy_prices[commodity], sell_prices[commodity], cache, staleThresholdMinutes))
+        .map(commodity => html.displayCommodity(commodity, buy_prices[commodity], sell_prices[commodity], cache, staleThresholds))
         .join('');
 
     const profit_uec = html.profit_uec(cache);

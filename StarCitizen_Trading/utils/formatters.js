@@ -15,15 +15,19 @@ function readable_number(num) {
 }
 
 /**
- * Check whether a UEX `date_modified` timestamp is older than a threshold
+ * Classify how stale a UEX `date_modified` timestamp is
  * @param {number} unixTimestampSeconds - Unix timestamp (seconds) from the API
- * @param {number} thresholdMinutes - Age in minutes after which data is considered stale
- * @returns {boolean} True if the timestamp is older than the threshold
+ * @param {Object} thresholds - Staleness thresholds in minutes
+ * @param {number} thresholds.stale - Age after which data is considered stale
+ * @param {number} thresholds.veryStale - Age after which data is considered very stale
+ * @returns {'fresh'|'stale'|'very-stale'} Staleness level
  */
-function isStale(unixTimestampSeconds, thresholdMinutes) {
-    if (!unixTimestampSeconds) return false;
-    const ageMs = Date.now() - (unixTimestampSeconds * 1000);
-    return ageMs > thresholdMinutes * 60 * 1000;
+function getStalenessLevel(unixTimestampSeconds, thresholds) {
+    if (!unixTimestampSeconds) return 'fresh';
+    const ageMinutes = (Date.now() - (unixTimestampSeconds * 1000)) / 60000;
+    if (ageMinutes > thresholds.veryStale) return 'very-stale';
+    if (ageMinutes > thresholds.stale) return 'stale';
+    return 'fresh';
 }
 
 /**
@@ -45,6 +49,6 @@ function formatDateTime(unixTimestampSeconds) {
 
 module.exports = {
     readable_number,
-    isStale,
+    getStalenessLevel,
     formatDateTime
 };

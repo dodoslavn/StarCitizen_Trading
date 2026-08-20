@@ -59,6 +59,10 @@ tr.stale td
     {
     color: #666;
     }
+tr.very-stale td
+    {
+    color: #444;
+    }
 
 a
     {

@@ -89,6 +89,7 @@ Edit `config.json` to customize the application:
 | `api.retries` | Number of retry attempts | `3` |
 | `cache.refresh_interval_minutes` | Data refresh frequency | `1` |
 | `cache.stale_after_minutes` | Age (minutes) after which a terminal's price data is grayed out as outdated | `1440` |
+| `cache.very_stale_after_minutes` | Age (minutes) after which a terminal's price data is grayed out further as very outdated | `4320` |
 | `logging.level` | Log level (error/warn/info/debug) | `info` |
 | `logging.file` | Log file path | `trading.log` |
 | `logging.console` | Enable console logging | `true` |
