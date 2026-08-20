@@ -22,12 +22,11 @@ function displayTerminal(item, staleThresholds) {
     const rowClass = staleness !== 'fresh' ? ` class="${staleness}"` : '';
     const updatedTitle = `Last updated: ${formatDateTime(item.date_modified)}`;
     const sizesTitle = `SCU box sizes: ${formatContainerSizes(item.container_sizes)}`;
-    const maxSuffix = max_inventory > 0 ? ` / ${readable_number(max_inventory)}` : '';
 
     return `<tr${rowClass}>
         <td title="${sizesTitle}&#10;${updatedTitle}">${item.terminal_name}</td>
         <td>${readable_number(price)} (~${readable_number(price_avg)})</td>
-        <td title="Max inventory ever recorded at this terminal">${readable_number(stock)} (~${readable_number(stock_avg)})${maxSuffix}</td>
+        <td title="Max inventory ever recorded at this terminal">${readable_number(stock)} (~${readable_number(stock_avg)}) / ${readable_number(max_inventory)}</td>
     </tr>`;
 }
 
