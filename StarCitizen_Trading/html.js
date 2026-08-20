@@ -15,7 +15,7 @@ const { css } = require('./views/styles.js');
 const { header, footer, about } = require('./views/layout.js');
 const { displayCommodity } = require('./views/commodities.js');
 const { profit_uec, profit_perc } = require('./views/profits.js');
-const { touchportal } = require('./views/touchportal.js');
+const { touchportal, touchportalHub, touchportalStale } = require('./views/touchportal.js');
 
 module.exports = {
     header,
@@ -25,5 +25,7 @@ module.exports = {
     profit_uec,
     profit_perc,
     touchportal,
+    touchportalHub,
+    touchportalStale,
     about
 };

@@ -1,35 +1,14 @@
 /**
  * Touchportal Handler
- * Serves the touch portal interface
+ * Serves the touch portal hub and its sub-pages:
+ *   /touchportal              -> hub
+ *   /touchportal/{scu}        -> best trading routes for given SCU
+ *   /touchportal/{scu}/{sys}  -> best trading routes filtered by system
+ *   /touchportal/stale        -> terminals with the oldest data (needs updates)
  */
 
 const html = require('../html.js');
 const { validateSCU, validateSystemName } = require('../utils/validation.js');
-
-/**
- * Parse and validate touchportal URL parameters
- * @param {string} url - Request URL
- * @returns {Object} Parsed parameters {scu, system}
- */
-function parseParams(url) {
-    const parts = url.split('/').filter(p => p);
-
-    let scu = 50;
-    let system = '';
-
-    if (parts.length === 1) {
-        return { scu, system };
-    } else if (parts.length === 2) {
-        scu = validateSCU(parts[1], 50);
-        return { scu, system };
-    } else if (parts.length >= 3) {
-        scu = validateSCU(parts[1], 50);
-        system = validateSystemName(parts[2]);
-        return { scu, system };
-    }
-
-    return { scu, system };
-}
 
 /**
  * Handle touchportal request
@@ -41,7 +20,22 @@ function handle(req, res, cache) {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
-    const { scu, system } = parseParams(req.url);
+    const parts = req.url.split('/').filter(p => p);
+    // parts[0] === 'touchportal' - already routed here by routes.js
+
+    if (parts.length === 1) {
+        res.end(html.touchportalHub());
+        return;
+    }
+
+    if (parts[1] === 'stale') {
+        res.end(html.touchportalStale(cache));
+        return;
+    }
+
+    // Best routes page: /touchportal/{scu}[/{system}]
+    const scu = validateSCU(parts[1], 50);
+    const system = parts[2] ? validateSystemName(parts[2]) : '';
     res.end(html.touchportal(scu, system, cache));
 }
 

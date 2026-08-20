@@ -3,7 +3,43 @@
  * Simplified trading interface for touchscreen displays
  */
 
-const { readable_number } = require('../utils/formatters.js');
+const { readable_number, formatDateTime, escapeHtml } = require('../utils/formatters.js');
+
+// Shared page chrome for all touchportal sub-pages so hub, routes, and stale
+// look and feel like siblings under one experience.
+const TOUCHPORTAL_STYLES = `
+    body { background-color: black; color: white; font-family: Arial, sans-serif; margin: 0; padding: 1rem; }
+    h1, h2 { text-align: center; color: #4ab8ff; }
+    body div#top { text-align: center; margin-bottom: 1rem; }
+    body div#top a { border-radius: 5px; text-align: center; padding: 0.5rem 0.8rem; margin: 0.2rem; display: inline-block; }
+    body div#top div.button-group { display: inline-block; margin: 0.2rem 0.5rem; }
+    body div.hub { max-width: 40rem; margin: 4rem auto; text-align: center; }
+    body div.hub a.hub-tile { display: block; margin: 1.5rem 0; padding: 2rem; background-color: #006fdd; border-radius: 0.5rem; font-size: 1.5rem; color: white; text-decoration: none; }
+    body div.hub a.hub-tile:hover { background-color: #4ab8ff; }
+    body div.hub a.hub-tile small { display: block; font-size: 1rem; opacity: 0.85; margin-top: 0.5rem; }
+    body a.back-hub { display: inline-block; background-color: #444; color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 5px; margin-bottom: 1rem; }
+    body a.back-hub:hover { background-color: #666; }
+    table { width: 100%; border-collapse: collapse; margin: auto; }
+    table tr th { background-color: #006fdd; border-radius: 3px; text-align: center; padding: 0.5rem; }
+    table tr td { text-align: center; padding: 0.3rem; border-bottom: 1px solid #333; }
+    a { text-decoration: none; color: white; }
+`;
+
+/**
+ * Wrap sub-page body content in the shared touchportal HTML shell.
+ * @param {string} title - Browser tab title (will be prefixed with "TouchPortal - ")
+ * @param {string} body - Inner HTML for the page body
+ * @param {boolean} autoRefresh - Whether to include the 60s meta refresh (data pages yes, hub no)
+ * @returns {string}
+ */
+function shell(title, body, autoRefresh = false) {
+    const refresh = autoRefresh ? '<meta http-equiv="refresh" content="60">' : '';
+    return `<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <title>TouchPortal - ${escapeHtml(title)}</title>
+    ${refresh}
+    <style>${TOUCHPORTAL_STYLES}</style></head><body>${body}</body></html>`;
+}
 
 /**
  * Get all available systems from cached data
@@ -53,7 +89,7 @@ function calculateBestRoutes(cache, scu, solar_system) {
             }
 
             // Calculate trade amount limited by SCU capacity
-            let amount = Math.min(sell.scu_sell_avg, buy.scu_buy_avg, scu);
+            const amount = Math.min(sell.scu_sell_avg, buy.scu_buy_avg, scu);
             if (amount <= 0) return;
 
             const profit = (sell.price_sell_avg - buy.price_buy_avg) * amount;
@@ -110,34 +146,21 @@ function touchportal(scu, solar_system = '', cache) {
         </tr>
     `).join('');
 
-    return `<!DOCTYPE html><html><head>
-    <meta charset="UTF-8">
-    <title>TouchPortal - ComTrading</title>
-    <meta http-equiv="refresh" content="60">
-    <style>
-        body { background-color: black; color: white; font-family: Arial, sans-serif; margin: 0; padding: 1rem; }
-        body div#top { text-align: center; margin-bottom: 1rem; }
-        body div#top a { border-radius: 5px; text-align: center; padding: 0.5rem 0.8rem; margin: 0.2rem; display: inline-block; }
-        body div#top div.button-group { display: inline-block; margin: 0.2rem 0.5rem; }
-        h2 { text-align: center; color: #4ab8ff; }
-        table { width: 100%; border-collapse: collapse; margin: auto; }
-        table tr th { background-color: #006fdd; border-radius: 3px; text-align: center; padding: 0.5rem; }
-        table tr td { text-align: center; padding: 0.3rem; border-bottom: 1px solid #333; }
-        a { text-decoration: none; color: white; }
-    </style></head><body>
+    const body = `
+    <a class="back-hub" href="/touchportal">&larr; Hub</a>
     <div id="top">
         <div class="button-group">
             ${systemButtons}
             <a href="/touchportal/${scu}/" style="${allSystemsStyle}">All systems</a>
         </div>
         <div class="button-group">
-            ${scu > 10 ? `<a href='/touchportal/${Number(scu) - 10}/${solar_system}' style='background-color: #006fdd;'>-10 SCU</a>` : ''}
-            <a href="/touchportal/${Number(scu) + 10}/${solar_system}" style='background-color: #006fdd;'>+10 SCU</a>
-            ${scu > 100 ? `<a href='/touchportal/${Number(scu) - 100}/${solar_system}' style='background-color: #006fdd;'>-100 SCU</a>` : ''}
-            <a href="/touchportal/${Number(scu) + 100}/${solar_system}" style='background-color: #006fdd;'>+100 SCU</a>
+            ${scu > 10 ? `<a href='/touchportal/${Number(scu) - 10}/${escapeHtml(solar_system)}' style='background-color: #006fdd;'>-10 SCU</a>` : ''}
+            <a href="/touchportal/${Number(scu) + 10}/${escapeHtml(solar_system)}" style='background-color: #006fdd;'>+10 SCU</a>
+            ${scu > 100 ? `<a href='/touchportal/${Number(scu) - 100}/${escapeHtml(solar_system)}' style='background-color: #006fdd;'>-100 SCU</a>` : ''}
+            <a href="/touchportal/${Number(scu) + 100}/${escapeHtml(solar_system)}" style='background-color: #006fdd;'>+100 SCU</a>
         </div>
     </div>
-    <h2>Best Trading Routes - ${scu} SCU${solar_system ? ` - ${solar_system}` : ''}</h2>
+    <h2>Best Trading Routes - ${scu} SCU${solar_system ? ` - ${escapeHtml(solar_system)}` : ''}</h2>
     <table>
         <tr>
             <th>Commodity</th>
@@ -147,10 +170,80 @@ function touchportal(scu, solar_system = '', cache) {
             <th>Amount</th>
         </tr>
         ${routeRows || '<tr><td colspan="5">No routes available</td></tr>'}
-    </table>
-    </body></html>`;
+    </table>`;
+
+    return shell('Best Routes', body, true);
+}
+
+/**
+ * Generate the touchportal hub page - a landing page with links to each
+ * sub-page (best routes, stale terminals).
+ * @returns {string} Complete HTML page
+ */
+function touchportalHub() {
+    const body = `
+    <div class="hub">
+        <h1>TouchPortal</h1>
+        <a class="hub-tile" href="/touchportal/50">
+            Best Trading Routes
+            <small>Sorted by profit, pick your SCU capacity and system</small>
+        </a>
+        <a class="hub-tile" href="/touchportal/stale">
+            Oldest Terminal Data
+            <small>Terminals whose prices haven't been updated in a while - good candidates to visit and report</small>
+        </a>
+    </div>`;
+    return shell('Hub', body, false);
+}
+
+/**
+ * Generate the "oldest terminal data" page - lists commodity/terminal pairs
+ * sorted by date_modified ascending (oldest first). Helps players see which
+ * data points need fresh reports to the UEX community.
+ * @param {Object} cache - Data cache instance
+ * @returns {string} Complete HTML page
+ */
+function touchportalStale(cache) {
+    const cachedData = cache.getData();
+    const cachedInitData = cache.getInitData();
+
+    const rows = cachedData.data
+        .filter(item => item.date_modified > 0)
+        .sort((a, b) => a.date_modified - b.date_modified)
+        .slice(0, 100)
+        .map(item => {
+            const systemCode = cachedInitData?.[item.terminal_name]?.code ?? '?';
+            const priceLabel = item.price_sell > 0
+                ? `sell ${readable_number(item.price_sell)} aUEC`
+                : item.price_buy > 0
+                    ? `buy ${readable_number(item.price_buy)} aUEC`
+                    : '-';
+            return `<tr>
+                <td>${formatDateTime(item.date_modified)}</td>
+                <td>(${escapeHtml(systemCode)}) ${escapeHtml(item.terminal_name)}</td>
+                <td>${escapeHtml(item.commodity_name)}</td>
+                <td>${escapeHtml(priceLabel)}</td>
+            </tr>`;
+        }).join('');
+
+    const body = `
+    <a class="back-hub" href="/touchportal">&larr; Hub</a>
+    <h2>Oldest Terminal Data (top 100)</h2>
+    <table>
+        <tr>
+            <th>Last updated</th>
+            <th>Terminal</th>
+            <th>Commodity</th>
+            <th>Price</th>
+        </tr>
+        ${rows || '<tr><td colspan="4">No data available</td></tr>'}
+    </table>`;
+
+    return shell('Oldest Data', body, true);
 }
 
 module.exports = {
-    touchportal
+    touchportal,
+    touchportalHub,
+    touchportalStale
 };
