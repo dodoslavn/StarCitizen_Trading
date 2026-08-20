@@ -17,8 +17,16 @@ function displayTerminal(item, staleThresholds, side) {
     const price_avg = (item.price_buy_avg || 0) + (item.price_sell_avg || 0);
     const stock = (item.scu_buy || 0) + (item.scu_sell || 0);
     const stock_avg = (item.scu_buy_avg || 0) + (item.scu_sell_avg || 0);
-    const max_inventory = (item.scu_buy_max || 0) + (item.scu_sell_max || 0);
-    const max_is_estimate = item.scu_buy_max_is_estimate || item.scu_sell_max_is_estimate;
+    const raw_max = (item.scu_buy_max || 0) + (item.scu_sell_max || 0);
+    const raw_max_is_estimate = item.scu_buy_max_is_estimate || item.scu_sell_max_is_estimate;
+
+    // Floor the displayed max at the current live stock: if the terminal is
+    // holding more right now than the scan ever recorded, that's a new high
+    // we can display immediately instead of waiting for the next scan to catch
+    // up. When the bump happens, the value stops being "confirmed from history"
+    // and becomes "confirmed from right-now observation" - still no tilde.
+    const max_inventory = raw_max > 0 ? Math.max(raw_max, stock) : 0;
+    const max_is_estimate = max_inventory > raw_max ? false : raw_max_is_estimate;
 
     const staleness = getStalenessLevel(item.date_modified, staleThresholds);
     const rowClass = staleness !== 'fresh' ? ` class="${staleness}"` : '';
@@ -26,7 +34,7 @@ function displayTerminal(item, staleThresholds, side) {
     const sizesTitle = `SCU box sizes: ${formatContainerSizes(item.container_sizes)}`;
     const maxTitle = max_is_estimate
         ? 'Estimated max capacity (based on current stock level)'
-        : 'Confirmed max stock observed in the last ~30 days';
+        : 'Confirmed max stock observed';
     const maxSuffix = max_inventory > 0 ? ` / ${max_is_estimate ? '~' : ''}${readable_number(max_inventory)}` : '';
 
     const usageClass = getStockUsageClass(stock, max_inventory, side, staleness);
