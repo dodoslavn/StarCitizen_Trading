@@ -3,9 +3,12 @@
  * Business logic for trading data processing and calculations
  */
 
+const fs = require('fs');
 const logger = require('../logger.js');
 const uexApi = require('./uexApi.js');
 const { estimateMaxInventory } = require('../utils/formatters.js');
+
+const MAX_INVENTORY_FILE = './max_inventory.json';
 
 /**
  * Normalize price data to numbers with validation
@@ -64,27 +67,86 @@ async function refreshData(config, cache) {
 const CONFIRMED_MAX_BATCH_SIZE = 10;
 
 /**
+ * Fetch the current live Star Citizen game version
+ * @param {Object} config - Configuration object
+ * @returns {Promise<string|null>} The live version string, or null if unavailable
+ */
+async function fetchLiveGameVersion(config) {
+    try {
+        const resp = await uexApi.fetchGameVersion(config);
+        return resp?.data?.live || null;
+    } catch (error) {
+        logger.warn(`Failed to fetch live game version: ${error.message}`);
+        return null;
+    }
+}
+
+/**
+ * Load previously scanned confirmed max inventory data from disk, if present.
+ * Discarded if it was scanned on a different game version than cache.getGameVersion(),
+ * since a patch can change terminal capacities/locations and invalidate old data.
+ * @param {Object} cache - DataCache instance (must have its game version set first)
+ */
+function loadConfirmedMaxInventory(cache) {
+    try {
+        const raw = fs.readFileSync(MAX_INVENTORY_FILE, 'utf8');
+        const state = JSON.parse(raw);
+        const currentVersion = cache.getGameVersion();
+
+        if (currentVersion && state.gameVersion && state.gameVersion !== currentVersion) {
+            logger.info(`Discarding saved max inventory data (scanned on game version ${state.gameVersion}, current live version is ${currentVersion})`);
+            return;
+        }
+
+        cache.importMaxInventoryState(state);
+        const pairCount = Object.keys(state.data || {}).length;
+        logger.info(`Loaded confirmed max inventory from disk (${pairCount} pairs, cursor ${state.cursor || 0}, complete=${!!state.complete}, game version ${state.gameVersion || 'unknown'})`);
+    } catch {
+        logger.info('No saved max inventory data found, will scan from scratch');
+    }
+}
+
+/**
+ * Persist the current confirmed max inventory scan state to disk
+ * @param {Object} cache - DataCache instance
+ */
+function saveConfirmedMaxInventory(cache) {
+    try {
+        fs.writeFileSync(MAX_INVENTORY_FILE, JSON.stringify(cache.exportMaxInventoryState()));
+    } catch (error) {
+        logger.warn(`Failed to save max inventory data: ${error.message}`);
+    }
+}
+
+/**
  * Slowly scan through commodity+terminal price history to replace estimated max
  * SCU values with confirmed ones (the highest stock actually observed in the last
  * ~30 days). Processes a small batch per call and remembers its position via the
  * cache's cursor, so repeated calls (e.g. once a minute) page through every
- * commodity+terminal pair over time without hammering the API.
+ * commodity+terminal pair over time without hammering the API. Stops after one
+ * full pass and persists results to disk so a restart doesn't repeat the scan.
  * @param {Object} config - Configuration object
  * @param {Object} cache - DataCache instance
  * @returns {Promise<void>}
  */
 async function refreshConfirmedMaxInventory(config, cache) {
+    if (cache.isMaxInventoryScanComplete()) return;
+
     const cachedData = cache.getData();
     if (!cachedData) return;
 
     const pairs = [...new Set(cachedData.data.map(item => `${item.id_commodity}_${item.id_terminal}`))];
     if (pairs.length === 0) return;
 
-    const cursor = cache.getMaxInventoryCursor() % pairs.length;
-    const batchKeys = [];
-    for (let i = 0; i < CONFIRMED_MAX_BATCH_SIZE && i < pairs.length; i++) {
-        batchKeys.push(pairs[(cursor + i) % pairs.length]);
+    const cursor = cache.getMaxInventoryCursor();
+    if (cursor >= pairs.length) {
+        cache.setMaxInventoryScanComplete(true);
+        saveConfirmedMaxInventory(cache);
+        logger.info(`Confirmed max inventory scan complete (${pairs.length} pairs)`);
+        return;
     }
+
+    const batchKeys = pairs.slice(cursor, cursor + CONFIRMED_MAX_BATCH_SIZE);
 
     await Promise.all(batchKeys.map(async key => {
         const [idCommodity, idTerminal] = key.split('_').map(Number);
@@ -103,8 +165,16 @@ async function refreshConfirmedMaxInventory(config, cache) {
         }
     }));
 
-    cache.setMaxInventoryCursor(cursor + CONFIRMED_MAX_BATCH_SIZE);
-    logger.debug(`Confirmed max inventory scan: ${batchKeys.length} pairs processed (cursor ${cursor + CONFIRMED_MAX_BATCH_SIZE} / ${pairs.length})`);
+    const newCursor = cursor + batchKeys.length;
+    cache.setMaxInventoryCursor(newCursor);
+    saveConfirmedMaxInventory(cache);
+
+    if (newCursor >= pairs.length) {
+        cache.setMaxInventoryScanComplete(true);
+        logger.info(`Confirmed max inventory scan complete (${pairs.length} pairs)`);
+    } else {
+        logger.debug(`Confirmed max inventory scan: cursor ${newCursor} / ${pairs.length}`);
+    }
 }
 
 /**
@@ -270,6 +340,8 @@ function generateBuyData(cache) {
 module.exports = {
     refreshData,
     refreshConfirmedMaxInventory,
+    loadConfirmedMaxInventory,
+    fetchLiveGameVersion,
     initializeData,
     getCommodities,
     generateSellData,

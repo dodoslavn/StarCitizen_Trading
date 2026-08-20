@@ -10,6 +10,24 @@ class DataCache {
         this.lastUpdate = null;
         this.confirmedMaxInventory = {};
         this.maxInventoryCursor = 0;
+        this.maxInventoryScanComplete = false;
+        this.gameVersion = null;
+    }
+
+    /**
+     * Set the current live Star Citizen game version (e.g. "4.9")
+     * @param {string|null} version
+     */
+    setGameVersion(version) {
+        this.gameVersion = version;
+    }
+
+    /**
+     * Get the current live Star Citizen game version
+     * @returns {string|null}
+     */
+    getGameVersion() {
+        return this.gameVersion;
     }
 
     /**
@@ -105,6 +123,45 @@ class DataCache {
      */
     setMaxInventoryCursor(value) {
         this.maxInventoryCursor = value;
+    }
+
+    /**
+     * Check whether the background history scan has finished one full pass
+     * @returns {boolean} True if the scan is complete
+     */
+    isMaxInventoryScanComplete() {
+        return this.maxInventoryScanComplete;
+    }
+
+    /**
+     * Mark the background history scan as complete (or not)
+     * @param {boolean} value
+     */
+    setMaxInventoryScanComplete(value) {
+        this.maxInventoryScanComplete = value;
+    }
+
+    /**
+     * Export the confirmed max inventory scan state for persistence to disk
+     * @returns {Object} { gameVersion, data, cursor, complete }
+     */
+    exportMaxInventoryState() {
+        return {
+            gameVersion: this.gameVersion,
+            data: this.confirmedMaxInventory,
+            cursor: this.maxInventoryCursor,
+            complete: this.maxInventoryScanComplete
+        };
+    }
+
+    /**
+     * Restore the confirmed max inventory scan state from a previously exported object
+     * @param {Object} state - { data, cursor, complete }
+     */
+    importMaxInventoryState(state) {
+        this.confirmedMaxInventory = state.data || {};
+        this.maxInventoryCursor = state.cursor || 0;
+        this.maxInventoryScanComplete = state.complete || false;
     }
 
     /**

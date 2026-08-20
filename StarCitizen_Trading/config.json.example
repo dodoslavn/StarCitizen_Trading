@@ -8,6 +8,7 @@
     "endpoints": {
       "prices_all": "/commodities_prices_all",
       "prices_history": "/commodities_prices_history",
+      "game_versions": "/game_versions",
       "solar_systems_all": "/star_systems",
       "terminals_all": "/terminals"
     },

@@ -5,6 +5,9 @@ package-lock.json
 # Configuration files (use .example files for templates)
 config.json
 
+# Persisted runtime data
+max_inventory.json
+
 # Logs
 *.log
 logs/

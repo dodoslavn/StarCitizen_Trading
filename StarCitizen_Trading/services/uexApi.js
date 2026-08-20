@@ -83,6 +83,16 @@ async function fetchStockHistory(idCommodity, idTerminal, config) {
 }
 
 /**
+ * Fetch the current live/PTU Star Citizen game version from UEX API
+ * @param {Object} config - Configuration object
+ * @returns {Promise<Object>} { status, data: { live, ptu }, ... }
+ */
+async function fetchGameVersion(config) {
+    const url = buildApiUrl(config, 'game_versions');
+    return await downloadJson(url, config);
+}
+
+/**
  * Fetch solar systems data from UEX API
  * @param {Object} config - Configuration object
  * @returns {Promise<Object>} Systems data
@@ -106,5 +116,6 @@ module.exports = {
     fetchPrices,
     fetchSolarSystems,
     fetchTerminals,
-    fetchStockHistory
+    fetchStockHistory,
+    fetchGameVersion
 };

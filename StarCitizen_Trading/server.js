@@ -36,6 +36,11 @@ async function initialize() {
     try {
         logger.info('Initializing application...');
 
+        const gameVersion = await trading.fetchLiveGameVersion(config);
+        cache.setGameVersion(gameVersion);
+        logger.info(`Live game version: ${gameVersion || 'unknown'}`);
+        trading.loadConfirmedMaxInventory(cache);
+
         await trading.initializeData(config, cache);
         await trading.refreshData(config, cache);
 
