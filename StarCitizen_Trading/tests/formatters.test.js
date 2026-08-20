@@ -51,9 +51,9 @@ describe('formatDateTime', () => {
         expect(formatDateTime(null)).toBe('Unknown');
     });
 
-    test('formats a timestamp as a readable UTC string', () => {
+    test('formats a timestamp as a readable UTC string in Slovak locale', () => {
         // 2026-01-01 00:00:00 UTC
-        expect(formatDateTime(1767225600)).toBe('Jan 01, 2026, 12:00 AM UTC');
+        expect(formatDateTime(1767225600)).toBe('1. 1. 2026 00:00 UTC');
     });
 });
 

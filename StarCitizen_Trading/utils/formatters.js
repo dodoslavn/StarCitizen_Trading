@@ -47,19 +47,21 @@ function getStalenessLevel(unixTimestampSeconds, thresholds) {
 }
 
 /**
- * Format a UEX unix timestamp (seconds) as a readable UTC date/time
+ * Format a UEX unix timestamp (seconds) as a readable UTC date/time in
+ * Slovak locale conventions (d. M. yyyy HH:mm, 24-hour).
  * @param {number} unixTimestampSeconds - Unix timestamp (seconds) from the API
  * @returns {string} Formatted date/time, or 'Unknown' if not available
  */
 function formatDateTime(unixTimestampSeconds) {
     if (!unixTimestampSeconds) return 'Unknown';
-    return new Date(unixTimestampSeconds * 1000).toLocaleString('en-US', {
+    return new Date(unixTimestampSeconds * 1000).toLocaleString('sk-SK', {
         timeZone: 'UTC',
         year: 'numeric',
-        month: 'short',
-        day: '2-digit',
+        month: 'numeric',
+        day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: false
     }) + ' UTC';
 }
 
