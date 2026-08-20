@@ -89,6 +89,42 @@ function estimateMaxInventory(currentStock, status) {
     return Math.round(currentStock / fraction);
 }
 
+const STOCK_USAGE_LOW = 0.30;
+const STOCK_USAGE_HIGH = 0.70;
+
+/**
+ * Pick a subtle color class for a terminal's stock cell based on fill fraction.
+ * Only applied to fresh rows (older data is already grayed out and shouldn't
+ * pull the eye with additional colour cues).
+ *
+ * Buy side (player buys from terminal):
+ *  - low stock  = orange (competitive - other players are draining stock)
+ *  - high stock = green  (plenty available to buy)
+ * Sell side (player sells to terminal):
+ *  - low stock  = green  (terminal has room to buy from you)
+ *  - high stock = red    (terminal maxed out, can't accept more)
+ *
+ * @param {number} stock - Current SCU in the terminal
+ * @param {number} max - Estimated or confirmed max SCU capacity
+ * @param {'buy'|'sell'} side - Which side of the trade this row represents
+ * @param {'fresh'|'stale'|'very-stale'} staleness - Data freshness classification
+ * @returns {string} CSS class name, or empty string for no colouring
+ */
+function getStockUsageClass(stock, max, side, staleness) {
+    if (staleness !== 'fresh') return '';
+    if (!max || max <= 0) return '';
+
+    const fraction = stock / max;
+    if (side === 'buy') {
+        if (fraction <= STOCK_USAGE_LOW) return 'stock-orange';
+        if (fraction >= STOCK_USAGE_HIGH) return 'stock-green';
+    } else if (side === 'sell') {
+        if (fraction <= STOCK_USAGE_LOW) return 'stock-green';
+        if (fraction >= STOCK_USAGE_HIGH) return 'stock-red';
+    }
+    return '';
+}
+
 /**
  * Format a UEX `container_sizes` string into a readable SCU box size list
  * @param {string} containerSizes - Comma-separated SCU box sizes, e.g. "1,2,4,8,16,24,32"
@@ -105,5 +141,6 @@ module.exports = {
     formatDateTime,
     formatContainerSizes,
     estimateMaxInventory,
-    escapeHtml
+    escapeHtml,
+    getStockUsageClass
 };

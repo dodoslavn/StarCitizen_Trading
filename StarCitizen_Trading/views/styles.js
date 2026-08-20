@@ -64,6 +64,20 @@ tr.very-stale td
     color: #3a3a3a;
     }
 
+/* Stock/demand cell tints, applied to fresh rows only */
+td.stock-orange
+    {
+    color: #ffcc99;
+    }
+td.stock-green
+    {
+    color: #b8e0b8;
+    }
+td.stock-red
+    {
+    color: #ffb0b0;
+    }
+
 a
     {
     text-decoration: none;

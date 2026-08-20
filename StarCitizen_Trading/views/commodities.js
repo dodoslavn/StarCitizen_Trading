@@ -3,15 +3,16 @@
  * Handles commodity table generation and profit calculations
  */
 
-const { readable_number, getStalenessLevel, formatDateTime, formatContainerSizes, escapeHtml } = require('../utils/formatters.js');
+const { readable_number, getStalenessLevel, formatDateTime, formatContainerSizes, escapeHtml, getStockUsageClass } = require('../utils/formatters.js');
 
 /**
  * Display single terminal data row
  * @param {Object} item - Terminal data
  * @param {Object} staleThresholds - Staleness thresholds in minutes ({ stale, veryStale })
+ * @param {'buy'|'sell'} side - Which side of the trade this row represents
  * @returns {string} HTML table row
  */
-function displayTerminal(item, staleThresholds) {
+function displayTerminal(item, staleThresholds, side) {
     const price = (item.price_buy || 0) + (item.price_sell || 0);
     const price_avg = (item.price_buy_avg || 0) + (item.price_sell_avg || 0);
     const stock = (item.scu_buy || 0) + (item.scu_sell || 0);
@@ -28,10 +29,13 @@ function displayTerminal(item, staleThresholds) {
         : 'Confirmed max stock observed in the last ~30 days';
     const maxSuffix = max_inventory > 0 ? ` / ${max_is_estimate ? '~' : ''}${readable_number(max_inventory)}` : '';
 
+    const usageClass = getStockUsageClass(stock, max_inventory, side, staleness);
+    const stockClassAttr = usageClass ? ` class="${usageClass}"` : '';
+
     return `<tr${rowClass}>
         <td title="${escapeHtml(sizesTitle)}&#10;${escapeHtml(updatedTitle)}">${escapeHtml(item.terminal_name)}</td>
         <td>${readable_number(price)} (~${readable_number(price_avg)})</td>
-        <td title="${escapeHtml(maxTitle)}">${readable_number(stock)} (~${readable_number(stock_avg)})${maxSuffix}</td>
+        <td${stockClassAttr} title="${escapeHtml(maxTitle)}">${readable_number(stock)} (~${readable_number(stock_avg)})${maxSuffix}</td>
     </tr>`;
 }
 
@@ -40,12 +44,13 @@ function displayTerminal(item, staleThresholds) {
  * @param {Array} pricings - Array of pricing data
  * @param {string} stock_demand - Label for stock/demand column
  * @param {Object} staleThresholds - Staleness thresholds in minutes ({ stale, veryStale })
+ * @param {'buy'|'sell'} side - Which side of the trade this table represents
  * @returns {string} HTML table content
  */
-function displayPricing(pricings, stock_demand, staleThresholds) {
+function displayPricing(pricings, stock_demand, staleThresholds, side) {
     const no_prices = pricings.length === 0 ? '<tr><td>-</td><td>-</td><td>-</td></tr>' : '';
     const header = `<tr><th>Location</th><th>Price (avg)</th><th>${stock_demand} (avg)</th></tr>`;
-    const rows = pricings.map(terminal => displayTerminal(terminal, staleThresholds)).join('');
+    const rows = pricings.map(terminal => displayTerminal(terminal, staleThresholds, side)).join('');
 
     return header + no_prices + rows;
 }
@@ -218,12 +223,12 @@ function displayCommodity(item, buy = [], sell = [], cache, staleThresholds = { 
         <tr>
             <td colspan="2">
                 <table>
-                    ${displayPricing(sell_sorted, 'Demand', staleThresholds)}
+                    ${displayPricing(sell_sorted, 'Demand', staleThresholds, 'sell')}
                 </table>
             </td>
             <td colspan="2">
                 <table>
-                    ${displayPricing(buy_sorted, 'In stock', staleThresholds)}
+                    ${displayPricing(buy_sorted, 'In stock', staleThresholds, 'buy')}
                 </table>
             </td>
         </tr>

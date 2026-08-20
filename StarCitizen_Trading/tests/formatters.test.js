@@ -8,7 +8,8 @@ const {
     formatDateTime,
     formatContainerSizes,
     estimateMaxInventory,
-    escapeHtml
+    escapeHtml,
+    getStockUsageClass
 } = require('../utils/formatters.js');
 
 describe('readable_number', () => {
@@ -89,6 +90,34 @@ describe('estimateMaxInventory', () => {
 
     test('clamps status above the max tier instead of exceeding 100%', () => {
         expect(estimateMaxInventory(500, 7)).toBe(estimateMaxInventory(500, 99));
+    });
+});
+
+describe('getStockUsageClass', () => {
+    test('returns empty string when data is stale', () => {
+        expect(getStockUsageClass(10, 100, 'buy', 'stale')).toBe('');
+        expect(getStockUsageClass(10, 100, 'buy', 'very-stale')).toBe('');
+    });
+
+    test('returns empty string when max is unknown', () => {
+        expect(getStockUsageClass(10, 0, 'buy', 'fresh')).toBe('');
+        expect(getStockUsageClass(10, null, 'buy', 'fresh')).toBe('');
+    });
+
+    test('buy side: low stock (<=30%) tinted orange, high stock (>=70%) tinted green', () => {
+        expect(getStockUsageClass(10, 100, 'buy', 'fresh')).toBe('stock-orange');
+        expect(getStockUsageClass(30, 100, 'buy', 'fresh')).toBe('stock-orange');
+        expect(getStockUsageClass(50, 100, 'buy', 'fresh')).toBe(''); // middle
+        expect(getStockUsageClass(70, 100, 'buy', 'fresh')).toBe('stock-green');
+        expect(getStockUsageClass(100, 100, 'buy', 'fresh')).toBe('stock-green');
+    });
+
+    test('sell side: low stock (<=30%) tinted green, high stock (>=70%) tinted red', () => {
+        expect(getStockUsageClass(10, 100, 'sell', 'fresh')).toBe('stock-green');
+        expect(getStockUsageClass(30, 100, 'sell', 'fresh')).toBe('stock-green');
+        expect(getStockUsageClass(50, 100, 'sell', 'fresh')).toBe(''); // middle
+        expect(getStockUsageClass(70, 100, 'sell', 'fresh')).toBe('stock-red');
+        expect(getStockUsageClass(100, 100, 'sell', 'fresh')).toBe('stock-red');
     });
 });
 
