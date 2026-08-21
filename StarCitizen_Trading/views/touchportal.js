@@ -3,16 +3,44 @@
  * Simplified trading interface for touchscreen displays
  */
 
-const { readable_number, escapeHtml, getStalenessLevel } = require('../utils/formatters.js');
+const { readable_number, escapeHtml } = require('../utils/formatters.js');
 
-// Thresholds for the stale-terminals page, distinct from the main commodity
-// table's thresholds because the two views have opposite priorities: on the
-// main table fresh is normal and old is dimmed; here recent updates are
-// the ones the player can safely skip while month-old data is urgent.
-const STALE_PAGE_THRESHOLDS = {
-    stale: 24 * 60,       // 24 hours
-    veryStale: 30 * 24 * 60 // 30 days
-};
+// Recency tiers for the stale-terminals page. Priorities are inverted vs the
+// main commodity table: rows updated in the last 24h are the ones the player
+// can safely skip, while month-old data is urgent to visit.
+const RECENCY_DAY_MS = 24 * 60 * 60 * 1000;
+function recencyClass(dateModified) {
+    const ageDays = (Date.now() - dateModified * 1000) / RECENCY_DAY_MS;
+    if (ageDays < 1) return 'recent';    // <1 day  -> gray (skip)
+    if (ageDays > 30) return 'very-old'; // >30 days -> red (urgent)
+    if (ageDays > 7) return 'aging';     // 7-30 days -> orange
+    return '';                            // 1-7 days -> default white
+}
+
+/**
+ * Build a human-readable "where is this terminal" breadcrumb from the
+ * location fields UEX carries in /terminals. Only non-null parts are joined,
+ * and the terminal's own name is left out (it's rendered next to the tooltip
+ * already).
+ * @param {Object} initEntry - cachedInitData[terminal_name]
+ * @returns {string}
+ */
+function locationBreadcrumb(initEntry) {
+    if (!initEntry) return '';
+    const parts = [
+        initEntry.name,             // star system
+        initEntry.planet_name,
+        initEntry.moon_name,
+        initEntry.orbit_name,
+        initEntry.space_station_name,
+        initEntry.city_name,
+        initEntry.outpost_name
+    ].filter(Boolean);
+    // Deduplicate any repeat (UEX often repeats a planet name as the orbit of
+    // its moons, e.g. "ArcCorp > Wala > ArcCorp > Samson" reads redundantly).
+    const seen = new Set();
+    return parts.filter(p => (seen.has(p) ? false : (seen.add(p), true))).join(' > ');
+}
 
 // Shared page chrome for all touchportal sub-pages so hub, routes, and stale
 // look and feel like siblings under one experience.
@@ -38,11 +66,10 @@ const TOUCHPORTAL_STYLES = `
     body div.stale-column div.terminal-row { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.35rem 0.4rem; border-bottom: 1px solid #222; font-size: 0.95rem; }
     body div.stale-column div.terminal-row:last-child { border-bottom: none; }
     body div.stale-column div.terminal-row span.date { color: #888; white-space: nowrap; }
-    /* Recency cues: gray for terminals updated in the last 24h (low priority),
-       red for anything older than 30 days (needs attention), default in between. */
+    /* Recency cues: gray <24h, default 1-7 days, orange 7-30 days, red >30 days. */
     body div.stale-column div.terminal-row.recent, body div.stale-column div.terminal-row.recent span.date { color: #666; }
-    body div.stale-column div.terminal-row.very-old { color: #ff8080; }
-    body div.stale-column div.terminal-row.very-old span.date { color: #ff8080; }
+    body div.stale-column div.terminal-row.aging, body div.stale-column div.terminal-row.aging span.date { color: #ffb366; }
+    body div.stale-column div.terminal-row.very-old, body div.stale-column div.terminal-row.very-old span.date { color: #ff8080; }
 `;
 
 /**
@@ -248,17 +275,17 @@ function touchportalStale(cache, solar_system = '') {
     // "Oldest newest-update" surfaces terminals that no one has visited in ages.
     const perTerminal = new Map();
     cachedData.data.forEach(item => {
+        const initEntry = cachedInitData?.[item.terminal_name];
         if (!item.date_modified) return;
-        if (solar_system) {
-            const systemName = cachedInitData?.[item.terminal_name]?.name;
-            if (systemName !== solar_system) return;
-        }
+        if (solar_system && initEntry?.name !== solar_system) return;
+
         const prev = perTerminal.get(item.terminal_name);
         if (!prev || item.date_modified > prev.dateModified) {
             perTerminal.set(item.terminal_name, {
                 dateModified: item.date_modified,
-                planet: cachedInitData?.[item.terminal_name]?.planet_name || 'Other',
-                systemCode: cachedInitData?.[item.terminal_name]?.code ?? '?'
+                planet: initEntry?.planet_name || 'Other',
+                systemCode: initEntry?.code ?? '?',
+                initEntry
             });
         }
     });
@@ -288,13 +315,12 @@ function touchportalStale(cache, solar_system = '') {
     const columns = planets.map(planet => {
         const terminals = byPlanet.get(planet).sort((a, b) => a.dateModified - b.dateModified);
         const rows = terminals.map(t => {
-            // fresh (<24h) -> "recent" (gray, safe to skip);
-            // very-stale (>30d) -> "very-old" (red, needs a visit);
-            // stale (in between) -> no class, default colour.
-            const level = getStalenessLevel(t.dateModified, STALE_PAGE_THRESHOLDS);
-            const rowClass = level === 'fresh' ? ' recent' : level === 'very-stale' ? ' very-old' : '';
+            const cls = recencyClass(t.dateModified);
+            const rowClass = cls ? ` ${cls}` : '';
+            const breadcrumb = locationBreadcrumb(t.initEntry);
+            const titleAttr = breadcrumb ? ` title="${escapeHtml(breadcrumb)}"` : '';
             return `
-            <div class="terminal-row${rowClass}">
+            <div class="terminal-row${rowClass}"${titleAttr}>
                 <span class="name">(${escapeHtml(t.systemCode)}) ${escapeHtml(t.terminalName)}</span>
                 <span class="date">${shortDate(t.dateModified)}</span>
             </div>`;

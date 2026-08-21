@@ -252,7 +252,12 @@ function processTerminals(rawData) {
         if (item && item.nickname && item.id_star_system) {
             acc[item.nickname] = {
                 id_star_system: item.id_star_system,
-                planet_name: item.planet_name || null
+                planet_name: item.planet_name || null,
+                moon_name: item.moon_name || null,
+                orbit_name: item.orbit_name || null,
+                space_station_name: item.space_station_name || null,
+                city_name: item.city_name || null,
+                outpost_name: item.outpost_name || null
             };
         }
         return acc;
@@ -277,12 +282,13 @@ async function initializeData(config, cache) {
         const systems = processSolarSystems(systemsResp);
         const terminals = processTerminals(terminalsResp);
 
-        // mergedDict[terminal_nickname] = { name (system), code (system), planet_name }
+        // mergedDict[terminal_nickname] = { name (system), code (system),
+        //   planet_name, moon_name, orbit_name, space_station_name, city_name, outpost_name }
         const mergedDict = [];
-        Object.entries(terminals).forEach(([nickname, { id_star_system, planet_name }]) => {
-            const system = systems[id_star_system];
+        Object.entries(terminals).forEach(([nickname, terminalMeta]) => {
+            const system = systems[terminalMeta.id_star_system];
             if (system) {
-                mergedDict[nickname] = { ...system, planet_name };
+                mergedDict[nickname] = { ...system, ...terminalMeta };
             }
         });
 
