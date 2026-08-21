@@ -6,6 +6,12 @@
  *   /touchportal/{scu}/{sys}   -> best trading routes filtered by system
  *   /touchportal/stale         -> terminals with the oldest data
  *   /touchportal/stale/{sys}   -> oldest-data list filtered by system
+ *   /touchportal/smart         -> smart routes (ranked by aUEC/hour, see
+ *                                  docs/smart-routes-plan.md). Reads its
+ *                                  filters (ship, wallet, sort, ...) from
+ *                                  the query string rather than path
+ *                                  segments, since those inputs are
+ *                                  independent of each other.
  */
 
 const html = require('../html.js');
@@ -21,7 +27,8 @@ function handle(req, res, cache) {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
-    const parts = req.url.split('/').filter(p => p);
+    const url = new URL(req.url, 'http://localhost');
+    const parts = url.pathname.split('/').filter(p => p);
     // parts[0] === 'touchportal' - already routed here by routes.js
 
     if (parts.length === 1) {
@@ -32,6 +39,12 @@ function handle(req, res, cache) {
     if (parts[1] === 'stale') {
         const system = parts[2] ? validateSystemName(parts[2]) : '';
         res.end(html.touchportalStale(cache, system));
+        return;
+    }
+
+    if (parts[1] === 'smart') {
+        const query = Object.fromEntries(url.searchParams);
+        res.end(html.touchportalSmart(cache, query));
         return;
     }
 
