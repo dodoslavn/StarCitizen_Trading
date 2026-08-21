@@ -123,4 +123,18 @@ describe('DataCache', () => {
         expect(cache.getMaxInventoryCursor()).toBe(0);
         expect(cache.isMaxInventoryScanComplete()).toBe(false);
     });
+
+    test('should set and get vehicles', () => {
+        expect(cache.getVehicles()).toEqual([]);
+        const ships = [{ slug: 'drak-cutlass-black', scu: 46 }];
+        cache.setVehicles(ships);
+        expect(cache.getVehicles()).toBe(ships);
+    });
+
+    test('should set and get terminal distances', () => {
+        expect(cache.getTerminalDistances()).toEqual({});
+        const distances = { '12_23': 42 };
+        cache.setTerminalDistances(distances);
+        expect(cache.getTerminalDistances()).toBe(distances);
+    });
 });

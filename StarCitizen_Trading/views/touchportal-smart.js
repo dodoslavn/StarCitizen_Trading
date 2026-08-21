@@ -100,6 +100,7 @@ function calculateSmartRoutes(cache, filters = {}) {
 
     const cachedData = cache.getData();
     const cachedInitData = cache.getInitData();
+    const terminalDistances = cache.getTerminalDistances();
     const routes = [];
 
     const sellRows = cachedData.data.filter(t => t.price_sell > 0 && t.scu_sell_stock > 0);
@@ -152,7 +153,7 @@ function calculateSmartRoutes(cache, filters = {}) {
             );
             const investment = amount * buy.price_buy;
             const discountedProfit = rawProfit * confidence;
-            const tripTimeMin = estimateTripTimeMin(buyInit, sellInit, amount);
+            const tripTimeMin = estimateTripTimeMin(buyInit, sellInit, amount, buy.id_terminal, sell.id_terminal, terminalDistances);
             const expectedProfit = discountedProfit * survival;
 
             routes.push({

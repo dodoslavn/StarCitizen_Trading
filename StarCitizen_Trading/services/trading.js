@@ -9,6 +9,7 @@ const uexApi = require('./uexApi.js');
 const { estimateMaxInventory } = require('../utils/formatters.js');
 
 const MAX_INVENTORY_FILE = './max_inventory.json';
+const TERMINAL_DISTANCES_FILE = './terminals_distances.json';
 
 /**
  * Normalize price data to numbers with validation
@@ -124,6 +125,40 @@ function loadConfirmedMaxInventory(cache) {
 
     const pairCount = Object.keys(state.data || {}).length;
     logger.info(`Loaded confirmed max inventory from disk (${pairCount} pairs, cursor ${state.cursor || 0}, complete=${!!state.complete}, game version ${state.gameVersion || 'unknown'})`);
+}
+
+/**
+ * Load the terminal-to-terminal distance backup from disk, if present.
+ * This is a static offline backup (see scan-terminal-distances.js) rather
+ * than something the running server ever scans or refreshes itself -
+ * terminal distances only change on major map reworks, so it's loaded
+ * once at startup and used as-is. Missing file is not an error: Smart
+ * Routes falls back to the M4 heuristic for any pair without real data.
+ * @param {Object} cache - DataCache instance
+ */
+function loadTerminalDistances(cache) {
+    let raw;
+    try {
+        raw = fs.readFileSync(TERMINAL_DISTANCES_FILE, 'utf8');
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            logger.info('No terminal distance backup found, Smart Routes will use the time heuristic only');
+        } else {
+            logger.warn(`Could not read ${TERMINAL_DISTANCES_FILE}: ${error.message}`);
+        }
+        return;
+    }
+
+    let state;
+    try {
+        state = JSON.parse(raw);
+    } catch (error) {
+        logger.warn(`Terminal distance backup is corrupted, ignoring: ${error.message}`);
+        return;
+    }
+
+    cache.setTerminalDistances(state.data || {});
+    logger.info(`Loaded ${Object.keys(state.data || {}).length} terminal distances`);
 }
 
 /**
@@ -438,6 +473,7 @@ module.exports = {
     refreshData,
     refreshConfirmedMaxInventory,
     loadConfirmedMaxInventory,
+    loadTerminalDistances,
     fetchLiveGameVersion,
     initializeData,
     getCommodities,

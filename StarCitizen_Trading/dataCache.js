@@ -13,6 +13,7 @@ class DataCache {
         this.maxInventoryScanComplete = false;
         this.gameVersion = null;
         this.vehicles = [];
+        this.terminalDistances = {};
     }
 
     /**
@@ -30,6 +31,23 @@ class DataCache {
      */
     getVehicles() {
         return this.vehicles;
+    }
+
+    /**
+     * Set the terminal-to-terminal distance backup (Gm), loaded once at
+     * startup from terminals_distances.json - see scan-terminal-distances.js
+     * @param {Object} distances - Map keyed "idTerminalOrigin_idTerminalDestination" -> Gm
+     */
+    setTerminalDistances(distances) {
+        this.terminalDistances = distances;
+    }
+
+    /**
+     * Get the terminal-to-terminal distance backup
+     * @returns {Object}
+     */
+    getTerminalDistances() {
+        return this.terminalDistances;
     }
 
     /**

@@ -151,6 +151,29 @@ describe('calculateSmartRoutes (no ship filter)', () => {
         expect(route.expectedProfit).toBeCloseTo(route.discountedProfit * route.survival);
     });
 
+    test('uses cache.getTerminalDistances() for trip time when available (M6)', () => {
+        const cache = new DataCache();
+        cache.setData({
+            data: [
+                { commodity_name: 'Aluminum', terminal_name: 'A', id_commodity: 5, id_terminal: 12, price_sell: 100, scu_sell_stock: 50, price_buy: 0, scu_buy: 0, date_modified: now() },
+                { commodity_name: 'Aluminum', terminal_name: 'B', id_commodity: 5, id_terminal: 466, price_sell: 0, scu_sell_stock: 0, price_buy: 40, scu_buy: 80, date_modified: now() }
+            ]
+        });
+        cache.setInitData({
+            A: { name: 'Stanton', code: 'ST' },
+            B: { name: 'Pyro', code: 'PY' }
+        });
+
+        const { routes: [withoutDistance] } = calculateSmartRoutes(cache);
+
+        cache.setTerminalDistances({ '12_466': 99 }); // real Gm value from a spot check
+        const { routes: [withDistance] } = calculateSmartRoutes(cache);
+
+        // Real distance (99 Gm) gives a different trip time than the flat
+        // 20-minute cross-system heuristic used when no distance data exists.
+        expect(withDistance.tripTimeMin).not.toBeCloseTo(withoutDistance.tripTimeMin, 0);
+    });
+
     test('sorts by ROI when sort=roi', () => {
         const cache = new DataCache();
         cache.setData({

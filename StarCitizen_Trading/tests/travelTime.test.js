@@ -71,6 +71,34 @@ describe('travelTimeMin', () => {
     test('cross-system is longer than same-planet', () => {
         expect(travelTimeMin(stanton, pyro)).toBeGreaterThan(travelTimeMin(stanton, stantonSamePlanet));
     });
+
+    test('uses real distance data when both terminal IDs are found in the map (M6)', () => {
+        const distances = { '12_23': 99 }; // 99 Gm, matches a real spot-checked pair
+        const result = travelTimeMin(stanton, pyro, 12, 23, distances);
+        // 99 Gm / 150,000,000 m/s = 660s = 11 min - should NOT be the heuristic's flat 20
+        expect(result).toBeCloseTo(11, 0);
+        expect(result).not.toBe(20);
+    });
+
+    test('checks both key orders in the distance map (order-independent)', () => {
+        const distances = { '23_12': 99 }; // reversed key order
+        const result = travelTimeMin(stanton, pyro, 12, 23, distances);
+        expect(result).toBeCloseTo(11, 0);
+    });
+
+    test('falls back to the heuristic when the pair is not in the distance map', () => {
+        const distances = { '999_888': 50 }; // unrelated pair
+        const result = travelTimeMin(stanton, pyro, 12, 23, distances);
+        expect(result).toBe(20); // heuristic cross-system value
+    });
+
+    test('falls back to the heuristic when terminal IDs are not provided at all', () => {
+        expect(travelTimeMin(stanton, pyro)).toBe(20);
+    });
+
+    test('falls back to the heuristic when no distances map is provided', () => {
+        expect(travelTimeMin(stanton, pyro, 12, 23)).toBe(20);
+    });
 });
 
 describe('estimateTripTimeMin', () => {
@@ -79,6 +107,17 @@ describe('estimateTripTimeMin', () => {
         const sellInit = { space_station_name: 'B', is_auto_load: true, name: 'Stanton', planet_name: 'ArcCorp' };
         // 3 (approach) + 4 (auto load) + 5 (travel) + 3 (approach) + 4 (auto load)
         expect(estimateTripTimeMin(buyInit, sellInit, 100)).toBe(19);
+    });
+
+    test('uses real distance data when terminal IDs + distances are passed through (M6)', () => {
+        const buyInit = { space_station_name: 'A', is_auto_load: true, name: 'Stanton', planet_name: 'ArcCorp' };
+        const sellInit = { space_station_name: 'B', is_auto_load: true, name: 'Pyro', planet_name: 'Bloom' };
+        const distances = { '12_466': 99 };
+
+        const withDistance = estimateTripTimeMin(buyInit, sellInit, 100, 12, 466, distances);
+        const withoutDistance = estimateTripTimeMin(buyInit, sellInit, 100); // heuristic: cross-system 20 min travel
+        // Real distance (11 min travel) should differ from the heuristic (20 min travel)
+        expect(withDistance).not.toBeCloseTo(withoutDistance, 0);
     });
 
     test('auto-load <-> auto-load routes are shorter than manual <-> manual routes', () => {
