@@ -3,7 +3,16 @@
  * Simplified trading interface for touchscreen displays
  */
 
-const { readable_number, escapeHtml } = require('../utils/formatters.js');
+const { readable_number, escapeHtml, getStalenessLevel } = require('../utils/formatters.js');
+
+// Thresholds for the stale-terminals page, distinct from the main commodity
+// table's thresholds because the two views have opposite priorities: on the
+// main table fresh is normal and old is dimmed; here recent updates are
+// the ones the player can safely skip while month-old data is urgent.
+const STALE_PAGE_THRESHOLDS = {
+    stale: 24 * 60,       // 24 hours
+    veryStale: 30 * 24 * 60 // 30 days
+};
 
 // Shared page chrome for all touchportal sub-pages so hub, routes, and stale
 // look and feel like siblings under one experience.
@@ -29,6 +38,11 @@ const TOUCHPORTAL_STYLES = `
     body div.stale-column div.terminal-row { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.35rem 0.4rem; border-bottom: 1px solid #222; font-size: 0.95rem; }
     body div.stale-column div.terminal-row:last-child { border-bottom: none; }
     body div.stale-column div.terminal-row span.date { color: #888; white-space: nowrap; }
+    /* Recency cues: gray for terminals updated in the last 24h (low priority),
+       red for anything older than 30 days (needs attention), default in between. */
+    body div.stale-column div.terminal-row.recent, body div.stale-column div.terminal-row.recent span.date { color: #666; }
+    body div.stale-column div.terminal-row.very-old { color: #ff8080; }
+    body div.stale-column div.terminal-row.very-old span.date { color: #ff8080; }
 `;
 
 /**
@@ -273,11 +287,18 @@ function touchportalStale(cache, solar_system = '') {
 
     const columns = planets.map(planet => {
         const terminals = byPlanet.get(planet).sort((a, b) => a.dateModified - b.dateModified);
-        const rows = terminals.map(t => `
-            <div class="terminal-row">
+        const rows = terminals.map(t => {
+            // fresh (<24h) -> "recent" (gray, safe to skip);
+            // very-stale (>30d) -> "very-old" (red, needs a visit);
+            // stale (in between) -> no class, default colour.
+            const level = getStalenessLevel(t.dateModified, STALE_PAGE_THRESHOLDS);
+            const rowClass = level === 'fresh' ? ' recent' : level === 'very-stale' ? ' very-old' : '';
+            return `
+            <div class="terminal-row${rowClass}">
                 <span class="name">(${escapeHtml(t.systemCode)}) ${escapeHtml(t.terminalName)}</span>
                 <span class="date">${shortDate(t.dateModified)}</span>
-            </div>`).join('');
+            </div>`;
+        }).join('');
         return `<div class="stale-column">
             <h3>${escapeHtml(planet)} <small>(${terminals.length})</small></h3>
             ${rows}
