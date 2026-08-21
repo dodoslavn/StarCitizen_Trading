@@ -1,14 +1,25 @@
 /**
- * Tests for Smart Routes ranking logic (Milestone 2)
+ * Tests for Smart Routes ranking logic (Milestones 2 & 3)
  */
 
 const DataCache = require('../dataCache.js');
-const { calculateSmartRoutes, confidenceBadge, touchportalSmart } = require('../views/touchportal-smart.js');
+const {
+    calculateSmartRoutes,
+    confidenceBadge,
+    resolveShip,
+    terminalReachable,
+    containerSizesCompatible,
+    touchportalSmart
+} = require('../views/touchportal-smart.js');
 
 const now = () => Math.floor(Date.now() / 1000);
 const daysAgo = n => now() - n * 24 * 60 * 60;
 
-describe('calculateSmartRoutes', () => {
+const SMALL_SHIP = { slug: 'small-ship', name: 'Small Ship', scu: 20, pad_type: 'S', container_sizes: '1,2,4', canLand: true, needsAutoLoad: false };
+const BIG_MANUAL_SHIP = { slug: 'big-ship', name: 'Big Ship', scu: 500, pad_type: 'L', container_sizes: '1,2,4,8,16', canLand: true, needsAutoLoad: true };
+const CAPITAL_SHIP = { slug: 'capital-ship', name: 'Capital Ship', scu: 1000, pad_type: 'XL', container_sizes: '1,2,4,8,16', canLand: false, needsAutoLoad: true };
+
+describe('calculateSmartRoutes (no ship filter)', () => {
     test('pairs a sell row and a buy row of the same commodity into a route', () => {
         const cache = new DataCache();
         cache.setData({
@@ -19,17 +30,19 @@ describe('calculateSmartRoutes', () => {
         });
         cache.setInitData({});
 
-        const routes = calculateSmartRoutes(cache);
+        const { routes } = calculateSmartRoutes(cache);
         expect(routes).toHaveLength(1);
         expect(routes[0]).toMatchObject({
             commodity: 'Aluminum',
             sellTerminal: 'Terminal A',
             buyTerminal: 'Terminal B',
             priceDelta: 60,
-            amount: 50, // min(50, 80)
+            amount: 50, // no ship/wallet/demand cap in play -> limited by sell stock only
             rawProfit: 3000,
             confidence: 1.0,
-            discountedProfit: 3000
+            discountedProfit: 3000,
+            investment: 2000, // 50 * 40
+            roi: 150 // (100-40)/40 * 100
         });
     });
 
@@ -43,7 +56,7 @@ describe('calculateSmartRoutes', () => {
         });
         cache.setInitData({});
 
-        expect(calculateSmartRoutes(cache)).toHaveLength(0);
+        expect(calculateSmartRoutes(cache).routes).toHaveLength(0);
     });
 
     test('drops routes with zero or negative price delta (no profit)', () => {
@@ -56,7 +69,7 @@ describe('calculateSmartRoutes', () => {
         });
         cache.setInitData({});
 
-        expect(calculateSmartRoutes(cache)).toHaveLength(0);
+        expect(calculateSmartRoutes(cache).routes).toHaveLength(0);
     });
 
     test('discounts profit by the lower of the two sides confidence', () => {
@@ -70,7 +83,7 @@ describe('calculateSmartRoutes', () => {
         });
         cache.setInitData({});
 
-        const [route] = calculateSmartRoutes(cache);
+        const { routes: [route] } = calculateSmartRoutes(cache);
         expect(route.confidence).toBe(0.3); // min(1.0, 0.3)
         expect(route.rawProfit).toBe(3000);
         expect(route.discountedProfit).toBe(900); // 3000 * 0.3
@@ -86,25 +99,155 @@ describe('calculateSmartRoutes', () => {
         cache.setData({ data });
         cache.setInitData({});
 
-        const routes = calculateSmartRoutes(cache);
+        const { routes } = calculateSmartRoutes(cache);
         expect(routes).toHaveLength(30);
         for (let i = 1; i < routes.length; i++) {
             expect(routes[i - 1].discountedProfit).toBeGreaterThanOrEqual(routes[i].discountedProfit);
         }
     });
 
-    test('caps amount at the smaller of sell stock and buy demand', () => {
+    test('sorts by ROI when sort=roi', () => {
         const cache = new DataCache();
         cache.setData({
             data: [
-                { commodity_name: 'Aluminum', terminal_name: 'A', price_sell: 100, scu_sell_stock: 5000, price_buy: 0, scu_buy: 0, date_modified: now() },
-                { commodity_name: 'Aluminum', terminal_name: 'B', price_sell: 0, scu_sell_stock: 0, price_buy: 40, scu_buy: 12, date_modified: now() }
+                // Low absolute profit, high ROI
+                { commodity_name: 'Cheap', terminal_name: 'S1', price_sell: 20, scu_sell_stock: 10, price_buy: 0, scu_buy: 0, date_modified: now() },
+                { commodity_name: 'Cheap', terminal_name: 'B1', price_sell: 0, scu_sell_stock: 0, price_buy: 5, scu_buy: 80, date_modified: now() },
+                // High absolute profit, low ROI
+                { commodity_name: 'Expensive', terminal_name: 'S2', price_sell: 10100, scu_sell_stock: 10, price_buy: 0, scu_buy: 0, date_modified: now() },
+                { commodity_name: 'Expensive', terminal_name: 'B2', price_sell: 0, scu_sell_stock: 0, price_buy: 10000, scu_buy: 80, date_modified: now() }
             ]
         });
         cache.setInitData({});
 
-        const [route] = calculateSmartRoutes(cache);
-        expect(route.amount).toBe(12);
+        const { routes } = calculateSmartRoutes(cache, { sort: 'roi' });
+        expect(routes[0].commodity).toBe('Cheap'); // ROI 300% vs 1%
+    });
+
+    test('demand cap uses confirmed max inventory at the buy terminal, not raw scu_buy', () => {
+        const cache = new DataCache();
+        cache.setData({
+            data: [
+                { commodity_name: 'Aluminum', terminal_name: 'A', price_sell: 100, scu_sell_stock: 5000, price_buy: 0, scu_buy: 0, date_modified: now() },
+                { commodity_name: 'Aluminum', terminal_name: 'B', id_commodity: 5, id_terminal: 12, price_sell: 0, scu_sell_stock: 0, price_buy: 40, scu_buy: 999999, date_modified: now() }
+            ]
+        });
+        cache.setInitData({});
+        cache.setConfirmedMax('5_12', 'buy', 300);
+
+        const { routes: [route] } = calculateSmartRoutes(cache);
+        expect(route.amount).toBe(300);
+    });
+
+    test('demand cap is unconstrained when no confirmed/estimated max exists', () => {
+        const cache = new DataCache();
+        cache.setData({
+            data: [
+                { commodity_name: 'Aluminum', terminal_name: 'A', price_sell: 100, scu_sell_stock: 5000, price_buy: 0, scu_buy: 0, date_modified: now() },
+                { commodity_name: 'Aluminum', terminal_name: 'B', price_sell: 0, scu_sell_stock: 0, price_buy: 40, scu_buy: 80, date_modified: now() }
+            ]
+        });
+        cache.setInitData({});
+
+        const { routes: [route] } = calculateSmartRoutes(cache);
+        expect(route.amount).toBe(5000); // limited by sell stock only
+    });
+});
+
+describe('calculateSmartRoutes (ship + wallet constraints)', () => {
+    function buildCache() {
+        const cache = new DataCache();
+        cache.setData({
+            data: [
+                { commodity_name: 'Aluminum', terminal_name: 'A', price_sell: 100, scu_sell_stock: 5000, price_buy: 0, scu_buy: 0, date_modified: now() },
+                { commodity_name: 'Aluminum', terminal_name: 'B', price_sell: 0, scu_sell_stock: 0, price_buy: 40, scu_buy: 5000, date_modified: now() }
+            ]
+        });
+        cache.setInitData({
+            A: { name: 'Stanton', code: 'ST' },
+            B: { name: 'Stanton', code: 'ST' }
+        });
+        cache.setVehicles([SMALL_SHIP]);
+        return cache;
+    }
+
+    test('caps amount at ship SCU capacity', () => {
+        const { routes: [route] } = calculateSmartRoutes(buildCache(), { shipSlug: 'small-ship' });
+        expect(route.amount).toBe(20); // SMALL_SHIP.scu
+    });
+
+    test('caps amount by wallet / acquisition price', () => {
+        const { routes: [route] } = calculateSmartRoutes(buildCache(), { shipSlug: 'small-ship', wallet: 100 });
+        expect(route.amount).toBe(2); // floor(100 / 40) = 2, tighter than ship's 20
+    });
+
+    test('wallet of 0 means unlimited', () => {
+        const { routes: [route] } = calculateSmartRoutes(buildCache(), { shipSlug: 'small-ship', wallet: 0 });
+        expect(route.amount).toBe(20); // ship cap only
+    });
+
+    test('falls back to the smallest-SCU ship when shipSlug does not match any cached vehicle', () => {
+        const { ship } = calculateSmartRoutes(buildCache(), { shipSlug: 'nonexistent' });
+        expect(ship.slug).toBe('small-ship');
+    });
+
+    test('drops the route entirely when amount would be 0', () => {
+        const cache = buildCache();
+        const { routes } = calculateSmartRoutes(cache, { shipSlug: 'small-ship', wallet: 10 }); // floor(10/40) = 0
+        expect(routes).toHaveLength(0);
+    });
+});
+
+describe('resolveShip', () => {
+    test('returns null when no vehicles are cached', () => {
+        const cache = new DataCache();
+        expect(resolveShip(cache, 'anything')).toBeNull();
+    });
+
+    test('returns the matching ship by slug', () => {
+        const cache = new DataCache();
+        cache.setVehicles([SMALL_SHIP, BIG_MANUAL_SHIP]);
+        expect(resolveShip(cache, 'big-ship')).toBe(BIG_MANUAL_SHIP);
+    });
+
+    test('falls back to the first (smallest-SCU) vehicle when slug is missing or unknown', () => {
+        const cache = new DataCache();
+        cache.setVehicles([SMALL_SHIP, BIG_MANUAL_SHIP]);
+        expect(resolveShip(cache, '')).toBe(SMALL_SHIP);
+        expect(resolveShip(cache, 'unknown-slug')).toBe(SMALL_SHIP);
+    });
+});
+
+describe('terminalReachable', () => {
+    test('non-landing ships need a space station or docking port', () => {
+        expect(terminalReachable({ space_station_name: 'Some Station' }, CAPITAL_SHIP)).toBe(true);
+        expect(terminalReachable({ has_docking_port: true }, CAPITAL_SHIP)).toBe(true);
+        expect(terminalReachable({ outpost_name: 'Some Outpost' }, CAPITAL_SHIP)).toBe(false);
+    });
+
+    test('ships needing auto-load are blocked at manual-load terminals', () => {
+        expect(terminalReachable({ is_auto_load: true }, BIG_MANUAL_SHIP)).toBe(true);
+        expect(terminalReachable({ is_auto_load: false }, BIG_MANUAL_SHIP)).toBe(false);
+    });
+
+    test('small landing ships needing manual load work anywhere landable', () => {
+        expect(terminalReachable({ outpost_name: 'Remote Outpost' }, SMALL_SHIP)).toBe(true);
+        expect(terminalReachable({ is_auto_load: false }, SMALL_SHIP)).toBe(true);
+    });
+});
+
+describe('containerSizesCompatible', () => {
+    test('returns true when there is an overlap', () => {
+        expect(containerSizesCompatible('1,2,4', { container_sizes: '4,8,16' })).toBe(true);
+    });
+
+    test('returns false when sizes are disjoint', () => {
+        expect(containerSizesCompatible('1,2', { container_sizes: '8,16,24,32' })).toBe(false);
+    });
+
+    test('assumes compatible when either side is unknown', () => {
+        expect(containerSizesCompatible('', { container_sizes: '1,2' })).toBe(true);
+        expect(containerSizesCompatible('1,2', {})).toBe(true);
     });
 });
 
@@ -139,13 +282,24 @@ describe('touchportalSmart', () => {
         expect(html).toContain('Fresh');
     });
 
-    test('shows unapplied query params as a debug hint', () => {
+    test('renders ship dropdown options from cache.getVehicles()', () => {
         const cache = new DataCache();
         cache.setData({ data: [] });
         cache.setInitData({});
+        cache.setVehicles([SMALL_SHIP, BIG_MANUAL_SHIP]);
 
-        const html = touchportalSmart(cache, { ship: 'corsair' });
-        expect(html).toContain('ship');
-        expect(html).toContain('corsair');
+        const html = touchportalSmart(cache, {});
+        expect(html).toContain('Small Ship');
+        expect(html).toContain('Big Ship');
+    });
+
+    test('preselects the ship passed in filters', () => {
+        const cache = new DataCache();
+        cache.setData({ data: [] });
+        cache.setInitData({});
+        cache.setVehicles([SMALL_SHIP, BIG_MANUAL_SHIP]);
+
+        const html = touchportalSmart(cache, { shipSlug: 'big-ship' });
+        expect(html).toMatch(/value="big-ship" selected/);
     });
 });

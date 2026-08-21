@@ -6,16 +6,20 @@
  *   /touchportal/{scu}/{sys}   -> best trading routes filtered by system
  *   /touchportal/stale         -> terminals with the oldest data
  *   /touchportal/stale/{sys}   -> oldest-data list filtered by system
- *   /touchportal/smart         -> smart routes (ranked by aUEC/hour, see
+ *   /touchportal/smart         -> smart routes (ranked by profit or ROI, see
  *                                  docs/smart-routes-plan.md). Reads its
- *                                  filters (ship, wallet, sort, ...) from
- *                                  the query string rather than path
- *                                  segments, since those inputs are
- *                                  independent of each other.
+ *                                  filters from the query string rather than
+ *                                  path segments, since those inputs are
+ *                                  independent of each other:
+ *                                    ?ship=<uex-slug>  (e.g. drak-corsair)
+ *                                    ?wallet=<aUEC>    (omit/0 = unlimited)
+ *                                    ?sort=profit|roi
  */
 
 const html = require('../html.js');
-const { validateSCU, validateSystemName } = require('../utils/validation.js');
+const { validateSCU, validateSystemName, validateShipId, validateWallet } = require('../utils/validation.js');
+
+const VALID_SORTS = ['profit', 'roi'];
 
 /**
  * Handle touchportal request
@@ -43,8 +47,13 @@ function handle(req, res, cache) {
     }
 
     if (parts[1] === 'smart') {
-        const query = Object.fromEntries(url.searchParams);
-        res.end(html.touchportalSmart(cache, query));
+        const rawSort = url.searchParams.get('sort');
+        const filters = {
+            shipSlug: validateShipId(url.searchParams.get('ship') || ''),
+            wallet: validateWallet(url.searchParams.get('wallet')),
+            sort: VALID_SORTS.includes(rawSort) ? rawSort : 'profit'
+        };
+        res.end(html.touchportalSmart(cache, filters));
         return;
     }
 

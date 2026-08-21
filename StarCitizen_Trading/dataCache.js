@@ -12,6 +12,24 @@ class DataCache {
         this.maxInventoryCursor = 0;
         this.maxInventoryScanComplete = false;
         this.gameVersion = null;
+        this.vehicles = [];
+    }
+
+    /**
+     * Set the cargo-capable vehicles/ships list (from UEX /vehicles, filtered
+     * and processed by services/trading.js processVehicles)
+     * @param {Array} vehicles
+     */
+    setVehicles(vehicles) {
+        this.vehicles = vehicles;
+    }
+
+    /**
+     * Get the cargo-capable vehicles/ships list
+     * @returns {Array}
+     */
+    getVehicles() {
+        return this.vehicles;
     }
 
     /**

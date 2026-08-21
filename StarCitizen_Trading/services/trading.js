@@ -257,11 +257,49 @@ function processTerminals(rawData) {
                 orbit_name: item.orbit_name || null,
                 space_station_name: item.space_station_name || null,
                 city_name: item.city_name || null,
-                outpost_name: item.outpost_name || null
+                outpost_name: item.outpost_name || null,
+                // Loading-mechanics flags for Smart Routes feasibility filtering
+                // (docs/smart-routes-plan.md M3) - three orthogonal booleans,
+                // see CLAUDE.md for why they're not collapsed into one flag.
+                has_freight_elevator: !!item.has_freight_elevator,
+                has_docking_port: !!item.has_docking_port,
+                is_auto_load: !!item.is_auto_load
             };
         }
         return acc;
     }, {});
+}
+
+// SCU threshold above which manual box-by-box loading is considered
+// impractical - see docs/smart-routes-plan.md M3 for the reasoning.
+const NEEDS_AUTO_LOAD_SCU_THRESHOLD = 400;
+
+/**
+ * Filter UEX's ~280 vehicles down to cargo-relevant spaceships and derive
+ * the feasibility flags Smart Routes needs (canLand, needsAutoLoad aren't
+ * UEX fields - they're heuristics derived from pad_type and scu).
+ * @param {Object} rawData - Raw API response
+ * @returns {Array} Cargo-capable ships sorted by SCU ascending
+ */
+function processVehicles(rawData) {
+    if (!rawData || !Array.isArray(rawData.data)) {
+        logger.warn('Invalid vehicles data structure');
+        return [];
+    }
+
+    return rawData.data
+        .filter(v => v.is_spaceship && v.is_quantum_capable && (v.scu || 0) > 0)
+        .map(v => ({
+            id: v.id,
+            slug: v.slug,
+            name: v.name_full || v.name,
+            scu: Number(v.scu) || 0,
+            pad_type: v.pad_type || '',
+            container_sizes: v.container_sizes || '',
+            canLand: ['XS', 'S', 'M', 'L'].includes(v.pad_type || ''),
+            needsAutoLoad: (Number(v.scu) || 0) >= NEEDS_AUTO_LOAD_SCU_THRESHOLD
+        }))
+        .sort((a, b) => a.scu - b.scu);
 }
 
 /**
@@ -274,16 +312,19 @@ async function initializeData(config, cache) {
     try {
         logger.info('Fetching initialization data...');
 
-        const [systemsResp, terminalsResp] = await Promise.all([
+        const [systemsResp, terminalsResp, vehiclesResp] = await Promise.all([
             uexApi.fetchSolarSystems(config),
-            uexApi.fetchTerminals(config)
+            uexApi.fetchTerminals(config),
+            uexApi.fetchVehicles(config)
         ]);
 
         const systems = processSolarSystems(systemsResp);
         const terminals = processTerminals(terminalsResp);
+        const vehicles = processVehicles(vehiclesResp);
 
         // mergedDict[terminal_nickname] = { name (system), code (system),
-        //   planet_name, moon_name, orbit_name, space_station_name, city_name, outpost_name }
+        //   planet_name, moon_name, orbit_name, space_station_name, city_name,
+        //   outpost_name, has_freight_elevator, has_docking_port, is_auto_load }
         const mergedDict = [];
         Object.entries(terminals).forEach(([nickname, terminalMeta]) => {
             const system = systems[terminalMeta.id_star_system];
@@ -293,6 +334,8 @@ async function initializeData(config, cache) {
         });
 
         cache.setInitData(mergedDict);
+        cache.setVehicles(vehicles);
+        logger.info(`Loaded ${vehicles.length} vehicles from UEX`);
         logger.info('Initialization data processed successfully');
     } catch (error) {
         logger.error('Failed to fetch init data:', error);
@@ -399,5 +442,6 @@ module.exports = {
     initializeData,
     getCommodities,
     generateSellData,
-    generateBuyData
+    generateBuyData,
+    processVehicles
 };

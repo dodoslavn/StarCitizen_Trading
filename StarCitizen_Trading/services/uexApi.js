@@ -112,10 +112,22 @@ async function fetchTerminals(config) {
     return await downloadJson(url, config);
 }
 
+/**
+ * Fetch vehicle/ship data from UEX API (used by Smart Routes for the ship
+ * dropdown and cargo/pad-type feasibility filtering)
+ * @param {Object} config - Configuration object
+ * @returns {Promise<Object>} Vehicles data
+ */
+async function fetchVehicles(config) {
+    const url = buildApiUrl(config, 'vehicles');
+    return await downloadJson(url, config);
+}
+
 module.exports = {
     fetchPrices,
     fetchSolarSystems,
     fetchTerminals,
     fetchStockHistory,
-    fetchGameVersion
+    fetchGameVersion,
+    fetchVehicles
 };

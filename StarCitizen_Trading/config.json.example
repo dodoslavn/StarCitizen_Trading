@@ -10,7 +10,8 @@
       "prices_history": "/commodities_prices_history",
       "game_versions": "/game_versions",
       "solar_systems_all": "/star_systems",
-      "terminals_all": "/terminals"
+      "terminals_all": "/terminals",
+      "vehicles": "/vehicles"
     },
     "timeout": 10000,
     "retries": 3
