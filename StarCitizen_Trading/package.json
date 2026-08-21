@@ -7,6 +7,7 @@
     "start": "node server.js",
     "dev": "node server.js",
     "scan-inventory": "node scan-max-inventory.js",
+    "scan-distances": "node scan-terminal-distances.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint .",
