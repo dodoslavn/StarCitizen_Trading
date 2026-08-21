@@ -47,6 +47,26 @@ function getStalenessLevel(unixTimestampSeconds, thresholds) {
 }
 
 /**
+ * Confidence multiplier for how much to trust a route built from data this
+ * old. Used by Smart Routes (docs/smart-routes-plan.md M2) to discount
+ * profit estimates so month-old ghost quotes don't dominate the ranking.
+ * Deliberately more aggressive than getStalenessLevel's thresholds/tiers:
+ * a missing timestamp gets the *lowest* confidence here (there's no reason
+ * to trust data we can't even date), whereas getStalenessLevel treats a
+ * missing timestamp as fresh for the main commodity table's purposes.
+ * @param {number} unixTimestampSeconds - Unix timestamp (seconds) from the API
+ * @returns {number} 0.05 - 1.0
+ */
+function dataAgeConfidence(unixTimestampSeconds) {
+    if (!unixTimestampSeconds) return 0.05;
+    const ageDays = (Date.now() - unixTimestampSeconds * 1000) / (24 * 60 * 60 * 1000);
+    if (ageDays < 1) return 1.0;
+    if (ageDays < 7) return 0.7;
+    if (ageDays < 30) return 0.3;
+    return 0.05;
+}
+
+/**
  * Format a UEX unix timestamp (seconds) as a readable UTC date/time in
  * Slovak locale conventions (d. M. yyyy HH:mm, 24-hour).
  * @param {number} unixTimestampSeconds - Unix timestamp (seconds) from the API
@@ -142,5 +162,6 @@ module.exports = {
     formatContainerSizes,
     estimateMaxInventory,
     escapeHtml,
-    getStockUsageClass
+    getStockUsageClass,
+    dataAgeConfidence
 };
