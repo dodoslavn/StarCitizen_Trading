@@ -54,11 +54,30 @@ root (not the app subdir).
 - **Always `escapeHtml()` anything from the UEX API before interpolating into
   HTML.** Terminal names and commodity names are community-submitted; treat
   them as untrusted. `escapeHtml` lives in `utils/formatters.js`.
-- **UEX field semantics** — the confusing bit:
-  - `scu_sell_stock` = terminal's current inventory available to buy (real number)
-  - `scu_sell` = last player-reported *transaction* size (often 0, unreliable)
-  - Same on the buy side: `scu_buy` is a reported transaction, not inventory
-  - Bug we already hit: reading `scu_sell` when `scu_sell_stock` was meant.
+- **UEX field semantics** — the confusing bit. Fields are named from the
+  *player's* action, not the terminal's:
+  - `price_buy` / `scu_buy` — relevant when **the player buys** from the
+    terminal (this is the player's *cost*). Verified by cross-referencing
+    UEX's own website: the page titled "Buy" for a commodity displays
+    `price_buy`/`scu_buy` values (checked against raw API data for two
+    independent commodity/terminal pairs, 2026-08-21).
+  - `price_sell` / `scu_sell` / `scu_sell_stock` — relevant when **the
+    player sells** to the terminal (this is the player's *revenue*). The
+    page titled "Sell" displays these.
+  - **Do not "fix" `profit = sell.price_sell - buy.price_buy` in
+    `calculateBestRoutes`/`calculateSmartRoutes`/`calculateProfit` thinking
+    the subtraction looks backward** - it is not. `sell.price_sell` is
+    revenue (disposal terminal), `buy.price_buy` is cost (acquisition
+    terminal); revenue minus cost is correct. This looks backward if you
+    assume `price_buy` means "terminal buys" rather than "player buys" -
+    that assumption is wrong, verify against the live site before touching
+    this formula.
+  - Separately, `scu_sell_stock` is the terminal's real current inventory
+    count; `scu_sell` is a much less reliable player-reported *transaction*
+    size (often 0). Same relationship holds for `scu_buy` (no
+    `scu_buy_stock` field exists - `scu_buy` is the only "current" figure
+    on that side). Bug we already hit: reading `scu_sell` when
+    `scu_sell_stock` was meant.
 - **`date_modified`** on price rows is Unix seconds (not ms) and reflects when
   a player last submitted a report for that commodity/terminal pair.
 - **Terminal loading fields** from `/terminals` are three orthogonal booleans,
