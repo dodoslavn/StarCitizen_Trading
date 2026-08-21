@@ -5,17 +5,19 @@
  * constraints, travel+loading time, and system risk - built incrementally
  * per docs/smart-routes-plan.md.
  *
- * Milestone 2: data-age confidence discount (see calculateSmartRoutes/
- * confidenceBadge history for that logic - unchanged here).
- * Milestone 3 (current): ship + wallet constraints. A route is only shown
- * if the chosen ship can physically reach both terminals and load/unload
- * there, and the traded amount is capped by wallet, ship SCU, terminal
- * stock, and terminal demand capacity. Adds Investment and ROI% columns
- * and a profit/ROI sort toggle.
+ * Milestone 2: data-age confidence discount.
+ * Milestone 3: ship + wallet constraints - a route is only shown if the
+ * chosen ship can physically reach both terminals and load/unload there,
+ * and the traded amount is capped by wallet, ship SCU, terminal stock, and
+ * terminal demand capacity. Added Investment and ROI% columns.
+ * Milestone 4 (current): estimated door-to-door trip time (approach + load
+ * at both terminals + travel between them), ranking by aUEC/hour instead
+ * of raw profit per trip. This is now the default sort.
  */
 
 const { shell } = require('./touchportal.js');
 const { escapeHtml, readable_number, dataAgeConfidence, estimateMaxInventory } = require('../utils/formatters.js');
+const { estimateTripTimeMin } = require('../utils/travelTime.js');
 
 const MAX_ROUTES_SHOWN = 30;
 
@@ -88,7 +90,7 @@ function containerSizesCompatible(shipSizesCsv, terminalRow) {
  *   MAX_ROUTES_SHOWN) plus the resolved ship used for the constraints
  */
 function calculateSmartRoutes(cache, filters = {}) {
-    const { shipSlug = '', wallet = 0, sort = 'profit' } = filters;
+    const { shipSlug = '', wallet = 0, sort = 'hour' } = filters;
     const ship = resolveShip(cache, shipSlug);
 
     const cachedData = cache.getData();
@@ -136,6 +138,8 @@ function calculateSmartRoutes(cache, filters = {}) {
                 dataAgeConfidence(buy.date_modified)
             );
             const investment = amount * buy.price_buy;
+            const discountedProfit = rawProfit * confidence;
+            const tripTimeMin = estimateTripTimeMin(buyInit, sellInit, amount);
 
             routes.push({
                 commodity: sell.commodity_name,
@@ -147,14 +151,17 @@ function calculateSmartRoutes(cache, filters = {}) {
                 amount,
                 rawProfit,
                 confidence,
-                discountedProfit: rawProfit * confidence,
+                discountedProfit,
                 investment,
-                roi: (priceDelta / buy.price_buy) * 100
+                roi: (priceDelta / buy.price_buy) * 100,
+                tripTimeMin,
+                perHour: discountedProfit / (tripTimeMin / 60)
             });
         });
     });
 
-    const sortKey = sort === 'roi' ? 'roi' : 'discountedProfit';
+    const sortKeys = { profit: 'discountedProfit', roi: 'roi', hour: 'perHour' };
+    const sortKey = sortKeys[sort] || sortKeys.hour;
     routes.sort((a, b) => b[sortKey] - a[sortKey]);
 
     return { routes: routes.slice(0, MAX_ROUTES_SHOWN), ship };
@@ -171,6 +178,20 @@ function confidenceBadge(confidence) {
     if (confidence >= 0.7) return { label: 'Recent', color: '#c2e08a' };
     if (confidence >= 0.3) return { label: 'Aging', color: '#ffb366' };
     return { label: 'Stale', color: '#ff8080' };
+}
+
+/**
+ * Format an estimated trip time in minutes as a compact "~18 min" or
+ * "~1h 15m" string for the table.
+ * @param {number} minutes
+ * @returns {string}
+ */
+function formatDuration(minutes) {
+    const rounded = Math.round(minutes);
+    if (rounded < 60) return `~${rounded} min`;
+    const hours = Math.floor(rounded / 60);
+    const mins = rounded % 60;
+    return mins > 0 ? `~${hours}h ${mins}m` : `~${hours}h`;
 }
 
 /**
@@ -218,7 +239,7 @@ function touchportalSmart(cache, filters = {}) {
         return shell('Smart Routes', body, false);
     }
 
-    const { shipSlug = '', wallet = 0, sort = 'profit' } = filters;
+    const { shipSlug = '', wallet = 0, sort = 'hour' } = filters;
     const { routes, ship } = calculateSmartRoutes(cache, filters);
     const vehicles = cache.getVehicles();
 
@@ -238,6 +259,8 @@ function touchportalSmart(cache, filters = {}) {
             <td>${readable_number(Math.round(r.investment))} aUEC</td>
             <td title="Raw profit before confidence discount: ${readable_number(r.rawProfit)} aUEC">${readable_number(Math.round(r.discountedProfit))} aUEC</td>
             <td>${r.roi.toFixed(1)}%</td>
+            <td title="Estimated door-to-door time: approach + load at both terminals + travel between them">${formatDuration(r.tripTimeMin)}</td>
+            <td>${readable_number(Math.round(r.perHour))} aUEC/h</td>
             <td><span style="color: ${badge.color};">${badge.label}</span></td>
         </tr>`;
     }).join('');
@@ -247,14 +270,14 @@ function touchportalSmart(cache, filters = {}) {
     const sortLink = targetSort => {
         const isActive = sort === targetSort;
         const style = isActive ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
-        const label = targetSort === 'roi' ? 'Sort by ROI' : 'Sort by profit';
-        return `<a href="/touchportal/smart?sort=${targetSort}${shipQuery}${walletQuery}" style="${style}">${label}</a>`;
+        const labels = { profit: 'Sort by profit', roi: 'Sort by ROI', hour: 'Sort by aUEC/hour' };
+        return `<a href="/touchportal/smart?sort=${targetSort}${shipQuery}${walletQuery}" style="${style}">${labels[targetSort]}</a>`;
     };
 
     const body = `
     <a class="back-hub" href="/touchportal">&larr; Hub</a>
     <h2>Smart Routes</h2>
-    <p style="text-align: center; color: #888;">Ranked by profit (discounted for data age) or ROI, filtered to routes your ship can actually fly and afford. Travel time and risk filters land in later milestones.</p>
+    <p style="text-align: center; color: #888;">Ranked by aUEC/hour, profit, or ROI - filtered to routes your ship can actually fly and afford, with an estimated door-to-door trip time. Risk filters land in a later milestone.</p>
     <div id="top">
         <div class="button-group">
             <form method="get" action="/touchportal/smart" style="display: inline-block;">
@@ -267,6 +290,7 @@ function touchportalSmart(cache, filters = {}) {
             </form>
         </div>
         <div class="button-group">
+            ${sortLink('hour')}
             ${sortLink('profit')}
             ${sortLink('roi')}
         </div>
@@ -282,9 +306,11 @@ function touchportalSmart(cache, filters = {}) {
             <th>Investment</th>
             <th title="Raw profit x confidence multiplier">Discounted profit</th>
             <th>ROI</th>
+            <th title="Approach + load at both terminals + travel between them">Est. time</th>
+            <th>aUEC/hour</th>
             <th>Confidence</th>
         </tr>
-        ${rows || '<tr><td colspan="9">No routes available for this ship/wallet combination</td></tr>'}
+        ${rows || '<tr><td colspan="11">No routes available for this ship/wallet combination</td></tr>'}
     </table>`;
 
     return shell('Smart Routes', body, true);
@@ -296,5 +322,6 @@ module.exports = {
     confidenceBadge,
     resolveShip,
     terminalReachable,
-    containerSizesCompatible
+    containerSizesCompatible,
+    formatDuration
 };

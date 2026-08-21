@@ -6,20 +6,20 @@
  *   /touchportal/{scu}/{sys}   -> best trading routes filtered by system
  *   /touchportal/stale         -> terminals with the oldest data
  *   /touchportal/stale/{sys}   -> oldest-data list filtered by system
- *   /touchportal/smart         -> smart routes (ranked by profit or ROI, see
- *                                  docs/smart-routes-plan.md). Reads its
- *                                  filters from the query string rather than
- *                                  path segments, since those inputs are
- *                                  independent of each other:
+ *   /touchportal/smart         -> smart routes (ranked by aUEC/hour, profit,
+ *                                  or ROI, see docs/smart-routes-plan.md).
+ *                                  Reads its filters from the query string
+ *                                  rather than path segments, since those
+ *                                  inputs are independent of each other:
  *                                    ?ship=<uex-slug>  (e.g. drak-corsair)
  *                                    ?wallet=<aUEC>    (omit/0 = unlimited)
- *                                    ?sort=profit|roi
+ *                                    ?sort=hour|profit|roi (default hour)
  */
 
 const html = require('../html.js');
 const { validateSCU, validateSystemName, validateShipId, validateWallet } = require('../utils/validation.js');
 
-const VALID_SORTS = ['profit', 'roi'];
+const VALID_SORTS = ['profit', 'roi', 'hour'];
 
 /**
  * Handle touchportal request
@@ -51,7 +51,7 @@ function handle(req, res, cache) {
         const filters = {
             shipSlug: validateShipId(url.searchParams.get('ship') || ''),
             wallet: validateWallet(url.searchParams.get('wallet')),
-            sort: VALID_SORTS.includes(rawSort) ? rawSort : 'profit'
+            sort: VALID_SORTS.includes(rawSort) ? rawSort : 'hour'
         };
         res.end(html.touchportalSmart(cache, filters));
         return;

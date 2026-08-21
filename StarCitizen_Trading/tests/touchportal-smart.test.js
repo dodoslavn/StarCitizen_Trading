@@ -1,5 +1,5 @@
 /**
- * Tests for Smart Routes ranking logic (Milestones 2 & 3)
+ * Tests for Smart Routes ranking logic (Milestones 2, 3 & 4)
  */
 
 const DataCache = require('../dataCache.js');
@@ -9,6 +9,7 @@ const {
     resolveShip,
     terminalReachable,
     containerSizesCompatible,
+    formatDuration,
     touchportalSmart
 } = require('../views/touchportal-smart.js');
 
@@ -99,11 +100,52 @@ describe('calculateSmartRoutes (no ship filter)', () => {
         cache.setData({ data });
         cache.setInitData({});
 
-        const { routes } = calculateSmartRoutes(cache);
+        const { routes } = calculateSmartRoutes(cache, { sort: 'profit' });
         expect(routes).toHaveLength(30);
         for (let i = 1; i < routes.length; i++) {
             expect(routes[i - 1].discountedProfit).toBeGreaterThanOrEqual(routes[i].discountedProfit);
         }
+    });
+
+    test('sorts by aUEC/hour by default (M4)', () => {
+        const cache = new DataCache();
+        cache.setData({
+            data: [
+                // Same profit, but route A is a long cross-system manual-load
+                // trip while route B is a quick same-orbit auto-load hop -
+                // B should rank first once time is factored in.
+                { commodity_name: 'SlowGoods', terminal_name: 'SlowSell', price_sell: 200, scu_sell_stock: 50, price_buy: 0, scu_buy: 0, date_modified: now() },
+                { commodity_name: 'SlowGoods', terminal_name: 'SlowBuy', price_sell: 0, scu_sell_stock: 0, price_buy: 100, scu_buy: 80, date_modified: now() },
+                { commodity_name: 'FastGoods', terminal_name: 'FastSell', price_sell: 200, scu_sell_stock: 50, price_buy: 0, scu_buy: 0, date_modified: now() },
+                { commodity_name: 'FastGoods', terminal_name: 'FastBuy', price_sell: 0, scu_sell_stock: 0, price_buy: 100, scu_buy: 80, date_modified: now() }
+            ]
+        });
+        cache.setInitData({
+            SlowSell: { name: 'Pyro', planet_name: 'Bloom', outpost_name: 'Remote Outpost', is_auto_load: false },
+            SlowBuy: { name: 'Stanton', planet_name: 'ArcCorp', outpost_name: 'Another Outpost', is_auto_load: false },
+            FastSell: { name: 'Stanton', planet_name: 'ArcCorp', space_station_name: 'Station A', is_auto_load: true },
+            FastBuy: { name: 'Stanton', planet_name: 'ArcCorp', space_station_name: 'Station B', is_auto_load: true }
+        });
+
+        const { routes } = calculateSmartRoutes(cache); // no explicit sort -> default 'hour'
+        expect(routes[0].commodity).toBe('FastGoods');
+        expect(routes[0].perHour).toBeGreaterThan(routes[1].perHour);
+    });
+
+    test('every route has a positive tripTimeMin and perHour', () => {
+        const cache = new DataCache();
+        cache.setData({
+            data: [
+                { commodity_name: 'Aluminum', terminal_name: 'A', price_sell: 100, scu_sell_stock: 50, price_buy: 0, scu_buy: 0, date_modified: now() },
+                { commodity_name: 'Aluminum', terminal_name: 'B', price_sell: 0, scu_sell_stock: 0, price_buy: 40, scu_buy: 80, date_modified: now() }
+            ]
+        });
+        cache.setInitData({});
+
+        const { routes: [route] } = calculateSmartRoutes(cache);
+        expect(route.tripTimeMin).toBeGreaterThan(0);
+        expect(route.perHour).toBeGreaterThan(0);
+        expect(route.perHour).toBeCloseTo(route.discountedProfit / (route.tripTimeMin / 60));
     });
 
     test('sorts by ROI when sort=roi', () => {
@@ -248,6 +290,27 @@ describe('containerSizesCompatible', () => {
     test('assumes compatible when either side is unknown', () => {
         expect(containerSizesCompatible('', { container_sizes: '1,2' })).toBe(true);
         expect(containerSizesCompatible('1,2', {})).toBe(true);
+    });
+});
+
+describe('formatDuration', () => {
+    test('formats sub-hour durations as "~N min"', () => {
+        expect(formatDuration(18)).toBe('~18 min');
+        expect(formatDuration(59)).toBe('~59 min');
+    });
+
+    test('formats hour-plus durations as "~Nh Mm"', () => {
+        expect(formatDuration(75)).toBe('~1h 15m');
+        expect(formatDuration(150)).toBe('~2h 30m');
+    });
+
+    test('omits the minutes part on an exact hour', () => {
+        expect(formatDuration(120)).toBe('~2h');
+    });
+
+    test('rounds to the nearest minute', () => {
+        expect(formatDuration(18.4)).toBe('~18 min');
+        expect(formatDuration(18.6)).toBe('~19 min');
     });
 });
 
