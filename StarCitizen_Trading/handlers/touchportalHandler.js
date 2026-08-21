@@ -14,6 +14,9 @@
  *                                    ?ship=<uex-slug>  (e.g. drak-corsair)
  *                                    ?wallet=<aUEC>    (omit/0 = unlimited)
  *                                    ?sort=hour|profit|roi (default hour)
+ *                                    ?system=<name>    (e.g. Stanton; omit = all)
+ *                                    ?safe=1           (hide <90% survival routes)
+ *                                    ?sameSystem=1     (hide cross-system routes)
  */
 
 const html = require('../html.js');
@@ -51,7 +54,10 @@ function handle(req, res, cache) {
         const filters = {
             shipSlug: validateShipId(url.searchParams.get('ship') || ''),
             wallet: validateWallet(url.searchParams.get('wallet')),
-            sort: VALID_SORTS.includes(rawSort) ? rawSort : 'hour'
+            sort: VALID_SORTS.includes(rawSort) ? rawSort : 'hour',
+            system: validateSystemName(url.searchParams.get('system') || ''),
+            safeOnly: url.searchParams.get('safe') === '1',
+            sameSystemOnly: url.searchParams.get('sameSystem') === '1'
         };
         res.end(html.touchportalSmart(cache, filters));
         return;

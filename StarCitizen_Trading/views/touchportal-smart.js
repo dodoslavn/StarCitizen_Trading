@@ -10,14 +10,19 @@
  * chosen ship can physically reach both terminals and load/unload there,
  * and the traded amount is capped by wallet, ship SCU, terminal stock, and
  * terminal demand capacity. Added Investment and ROI% columns.
- * Milestone 4 (current): estimated door-to-door trip time (approach + load
- * at both terminals + travel between them), ranking by aUEC/hour instead
- * of raw profit per trip. This is now the default sort.
+ * Milestone 4: estimated door-to-door trip time (approach + load at both
+ * terminals + travel between them), ranking by aUEC/hour instead of raw
+ * profit per trip. This is the default sort.
+ * Milestone 5 (current): per-system survival estimate factored into
+ * aUEC/hour (expectedProfit = discountedProfit * survival), a risk badge
+ * per route, system/safe-only/same-system filters, and capital-at-risk
+ * for wallet-constrained runs.
  */
 
 const { shell } = require('./touchportal.js');
 const { escapeHtml, readable_number, dataAgeConfidence, estimateMaxInventory } = require('../utils/formatters.js');
 const { estimateTripTimeMin } = require('../utils/travelTime.js');
+const { SYSTEM_SURVIVAL, routeSurvival } = require('../utils/risk.js');
 
 const MAX_ROUTES_SHOWN = 30;
 
@@ -85,12 +90,12 @@ function containerSizesCompatible(shipSizesCsv, terminalRow) {
  *   website, not backward.
  *
  * @param {Object} cache - Data cache instance
- * @param {Object} filters - { shipSlug, wallet, sort }
+ * @param {Object} filters - { shipSlug, wallet, sort, system, safeOnly, sameSystemOnly }
  * @returns {{routes: Array, ship: Object|null}} Ranked routes (capped at
  *   MAX_ROUTES_SHOWN) plus the resolved ship used for the constraints
  */
 function calculateSmartRoutes(cache, filters = {}) {
-    const { shipSlug = '', wallet = 0, sort = 'hour' } = filters;
+    const { shipSlug = '', wallet = 0, sort = 'hour', system = '', safeOnly = false, sameSystemOnly = false } = filters;
     const ship = resolveShip(cache, shipSlug);
 
     const cachedData = cache.getData();
@@ -109,6 +114,14 @@ function calculateSmartRoutes(cache, filters = {}) {
 
             const sellInit = cachedInitData?.[sell.terminal_name];
             const buyInit = cachedInitData?.[buy.terminal_name];
+
+            // System filter: both ends must be in the requested system
+            // (matches the existing best-routes page's convention).
+            if (system && (buyInit?.name !== system || sellInit?.name !== system)) return;
+            if (sameSystemOnly && buyInit?.name !== sellInit?.name) return;
+
+            const survival = routeSurvival(buyInit, sellInit);
+            if (safeOnly && survival < 0.90) return;
 
             if (ship) {
                 if (!terminalReachable(sellInit, ship)) return;
@@ -140,13 +153,16 @@ function calculateSmartRoutes(cache, filters = {}) {
             const investment = amount * buy.price_buy;
             const discountedProfit = rawProfit * confidence;
             const tripTimeMin = estimateTripTimeMin(buyInit, sellInit, amount);
+            const expectedProfit = discountedProfit * survival;
 
             routes.push({
                 commodity: sell.commodity_name,
                 buyTerminal: buy.terminal_name,
                 buyCode: buyInit?.code || '?',
+                buySystem: buyInit?.name || '',
                 sellTerminal: sell.terminal_name,
                 sellCode: sellInit?.code || '?',
+                sellSystem: sellInit?.name || '',
                 priceDelta,
                 amount,
                 rawProfit,
@@ -155,7 +171,10 @@ function calculateSmartRoutes(cache, filters = {}) {
                 investment,
                 roi: (priceDelta / buy.price_buy) * 100,
                 tripTimeMin,
-                perHour: discountedProfit / (tripTimeMin / 60)
+                survival,
+                expectedProfit,
+                capitalAtRisk: investment * (1 - survival),
+                perHour: expectedProfit / (tripTimeMin / 60)
             });
         });
     });
@@ -178,6 +197,17 @@ function confidenceBadge(confidence) {
     if (confidence >= 0.7) return { label: 'Recent', color: '#c2e08a' };
     if (confidence >= 0.3) return { label: 'Aging', color: '#ffb366' };
     return { label: 'Stale', color: '#ff8080' };
+}
+
+/**
+ * Map a route survival estimate to a short label + colour for the badge.
+ * @param {number} survival - 0-1
+ * @returns {{label: string, color: string}}
+ */
+function riskBadge(survival) {
+    if (survival >= 0.95) return { label: 'Safe', color: '#8fd68f' };
+    if (survival >= 0.80) return { label: 'Moderate', color: '#ffb366' };
+    return { label: 'Risky', color: '#ff8080' };
 }
 
 /**
@@ -225,9 +255,29 @@ function renderShipOptions(vehicles, selectedShip) {
 }
 
 /**
+ * Build a query string from the current filters with some keys overridden -
+ * used by every filter link/form on the page so toggling one filter never
+ * drops the others.
+ * @param {Object} filters - { shipSlug, wallet, sort, system, safeOnly, sameSystemOnly }
+ * @param {Object} overrides - Keys to replace
+ * @returns {string} Query string (no leading '?')
+ */
+function buildQueryString(filters, overrides = {}) {
+    const merged = { ...filters, ...overrides };
+    const params = new URLSearchParams();
+    if (merged.sort) params.set('sort', merged.sort);
+    if (merged.shipSlug) params.set('ship', merged.shipSlug);
+    if (merged.wallet > 0) params.set('wallet', merged.wallet);
+    if (merged.system) params.set('system', merged.system);
+    if (merged.safeOnly) params.set('safe', '1');
+    if (merged.sameSystemOnly) params.set('sameSystem', '1');
+    return params.toString();
+}
+
+/**
  * Generate the smart routes page.
  * @param {Object} cache - Data cache instance
- * @param {Object} filters - { shipSlug, wallet, sort } (already validated by the handler)
+ * @param {Object} filters - { shipSlug, wallet, sort, system, safeOnly, sameSystemOnly } (already validated by the handler)
  * @returns {string} Complete HTML page
  */
 function touchportalSmart(cache, filters = {}) {
@@ -239,7 +289,7 @@ function touchportalSmart(cache, filters = {}) {
         return shell('Smart Routes', body, false);
     }
 
-    const { shipSlug = '', wallet = 0, sort = 'hour' } = filters;
+    const { wallet = 0, sort = 'hour', system = '', safeOnly = false, sameSystemOnly = false } = filters;
     const { routes, ship } = calculateSmartRoutes(cache, filters);
     const vehicles = cache.getVehicles();
 
@@ -247,8 +297,14 @@ function touchportalSmart(cache, filters = {}) {
         ? `Pad: ${escapeHtml(ship.pad_type || 'n/a')} &middot; Boxes: ${escapeHtml(ship.container_sizes || 'n/a')} SCU`
         : 'Vehicle data not loaded yet - showing unconstrained routes.';
 
+    const showCapitalAtRisk = wallet > 0;
+
     const rows = routes.map(r => {
-        const badge = confidenceBadge(r.confidence);
+        const confBadge = confidenceBadge(r.confidence);
+        const risk = riskBadge(r.survival);
+        const capitalAtRiskCell = showCapitalAtRisk
+            ? `<td title="Investment x (1 - survival chance)">${readable_number(Math.round(r.capitalAtRisk))} aUEC</td>`
+            : '';
         return `
         <tr>
             <td>${escapeHtml(r.commodity)}</td>
@@ -260,28 +316,42 @@ function touchportalSmart(cache, filters = {}) {
             <td title="Raw profit before confidence discount: ${readable_number(r.rawProfit)} aUEC">${readable_number(Math.round(r.discountedProfit))} aUEC</td>
             <td>${r.roi.toFixed(1)}%</td>
             <td title="Estimated door-to-door time: approach + load at both terminals + travel between them">${formatDuration(r.tripTimeMin)}</td>
-            <td>${readable_number(Math.round(r.perHour))} aUEC/h</td>
-            <td><span style="color: ${badge.color};">${badge.label}</span></td>
+            <td title="Expected profit (discounted profit x survival chance) per hour of estimated trip time">${readable_number(Math.round(r.perHour))} aUEC/h</td>
+            <td><span style="color: ${risk.color};" title="${Math.round(r.survival * 100)}% estimated survival chance">${risk.label}</span></td>
+            ${capitalAtRiskCell}
+            <td><span style="color: ${confBadge.color};">${confBadge.label}</span></td>
         </tr>`;
     }).join('');
 
-    const walletQuery = wallet > 0 ? `&wallet=${wallet}` : '';
-    const shipQuery = shipSlug ? `&ship=${encodeURIComponent(shipSlug)}` : '';
-    const sortLink = targetSort => {
-        const isActive = sort === targetSort;
+    const filterLink = (overrides, label, isActive) => {
         const style = isActive ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
-        const labels = { profit: 'Sort by profit', roi: 'Sort by ROI', hour: 'Sort by aUEC/hour' };
-        return `<a href="/touchportal/smart?sort=${targetSort}${shipQuery}${walletQuery}" style="${style}">${labels[targetSort]}</a>`;
+        return `<a href="/touchportal/smart?${buildQueryString(filters, overrides)}" style="${style}">${label}</a>`;
     };
+
+    const sortLink = targetSort => {
+        const labels = { profit: 'Sort by profit', roi: 'Sort by ROI', hour: 'Sort by aUEC/hour' };
+        return filterLink({ sort: targetSort }, labels[targetSort], sort === targetSort);
+    };
+
+    const systemButtons = Object.keys(SYSTEM_SURVIVAL).map(sys =>
+        filterLink({ system: sys }, sys, system === sys)
+    ).join('\n            ');
+    const allSystemsButton = filterLink({ system: '' }, 'All systems', !system);
+
+    const hiddenInputs = ['sort', 'system'].map(key => filters[key]
+        ? `<input type="hidden" name="${key}" value="${escapeHtml(filters[key])}">`
+        : '').join('');
 
     const body = `
     <a class="back-hub" href="/touchportal">&larr; Hub</a>
     <h2>Smart Routes</h2>
-    <p style="text-align: center; color: #888;">Ranked by aUEC/hour, profit, or ROI - filtered to routes your ship can actually fly and afford, with an estimated door-to-door trip time. Risk filters land in a later milestone.</p>
+    <p style="text-align: center; color: #888;">Ranked by aUEC/hour (profit discounted for data age and route risk), profit, or ROI - filtered to routes your ship can actually fly and afford, with an estimated door-to-door trip time.</p>
     <div id="top">
         <div class="button-group">
             <form method="get" action="/touchportal/smart" style="display: inline-block;">
-                <input type="hidden" name="sort" value="${escapeHtml(sort)}">
+                ${hiddenInputs}
+                ${safeOnly ? '<input type="hidden" name="safe" value="1">' : ''}
+                ${sameSystemOnly ? '<input type="hidden" name="sameSystem" value="1">' : ''}
                 <select name="ship" onchange="this.form.submit()" style="padding: 0.4rem; border-radius: 5px;">
                     ${renderShipOptions(vehicles, ship)}
                 </select>
@@ -293,6 +363,14 @@ function touchportalSmart(cache, filters = {}) {
             ${sortLink('hour')}
             ${sortLink('profit')}
             ${sortLink('roi')}
+        </div>
+        <div class="button-group">
+            ${systemButtons}
+            ${allSystemsButton}
+        </div>
+        <div class="button-group">
+            ${filterLink({ safeOnly: !safeOnly }, 'Safe routes only', safeOnly)}
+            ${filterLink({ sameSystemOnly: !sameSystemOnly }, 'Same system only', sameSystemOnly)}
         </div>
     </div>
     <p style="text-align: center; color: #666; font-size: 0.85rem;">${shipInfo}</p>
@@ -307,10 +385,12 @@ function touchportalSmart(cache, filters = {}) {
             <th title="Raw profit x confidence multiplier">Discounted profit</th>
             <th>ROI</th>
             <th title="Approach + load at both terminals + travel between them">Est. time</th>
-            <th>aUEC/hour</th>
+            <th title="Expected profit per hour, factoring in route risk">aUEC/hour</th>
+            <th>Risk</th>
+            ${showCapitalAtRisk ? '<th title="Investment x (1 - survival chance)">Capital at risk</th>' : ''}
             <th>Confidence</th>
         </tr>
-        ${rows || '<tr><td colspan="11">No routes available for this ship/wallet combination</td></tr>'}
+        ${rows || `<tr><td colspan="${showCapitalAtRisk ? 12 : 11}">No routes available for this ship/wallet/system combination</td></tr>`}
     </table>`;
 
     return shell('Smart Routes', body, true);
@@ -320,6 +400,7 @@ module.exports = {
     touchportalSmart,
     calculateSmartRoutes,
     confidenceBadge,
+    riskBadge,
     resolveShip,
     terminalReachable,
     containerSizesCompatible,

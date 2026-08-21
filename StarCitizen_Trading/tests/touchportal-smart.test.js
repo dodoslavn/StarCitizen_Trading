@@ -6,6 +6,7 @@ const DataCache = require('../dataCache.js');
 const {
     calculateSmartRoutes,
     confidenceBadge,
+    riskBadge,
     resolveShip,
     terminalReachable,
     containerSizesCompatible,
@@ -145,7 +146,9 @@ describe('calculateSmartRoutes (no ship filter)', () => {
         const { routes: [route] } = calculateSmartRoutes(cache);
         expect(route.tripTimeMin).toBeGreaterThan(0);
         expect(route.perHour).toBeGreaterThan(0);
-        expect(route.perHour).toBeCloseTo(route.discountedProfit / (route.tripTimeMin / 60));
+        // perHour is risk-adjusted (expectedProfit = discountedProfit * survival), not raw discountedProfit
+        expect(route.perHour).toBeCloseTo(route.expectedProfit / (route.tripTimeMin / 60));
+        expect(route.expectedProfit).toBeCloseTo(route.discountedProfit * route.survival);
     });
 
     test('sorts by ROI when sort=roi', () => {
@@ -240,6 +243,57 @@ describe('calculateSmartRoutes (ship + wallet constraints)', () => {
     });
 });
 
+describe('calculateSmartRoutes (system + safety filters, M5)', () => {
+    // One sell terminal (Stanton), two buy terminals - one in Stanton (same-
+    // system route) and one in Pyro (cross-system route touching a risky
+    // system). Exactly 2 candidate routes, deliberately minimal.
+    function buildCrossSystemCache() {
+        const cache = new DataCache();
+        cache.setData({
+            data: [
+                { commodity_name: 'Aluminum', terminal_name: 'StantonSell', price_sell: 100, scu_sell_stock: 50, price_buy: 0, scu_buy: 0, date_modified: now() },
+                { commodity_name: 'Aluminum', terminal_name: 'StantonBuy', price_sell: 0, scu_sell_stock: 0, price_buy: 40, scu_buy: 80, date_modified: now() },
+                { commodity_name: 'Aluminum', terminal_name: 'PyroBuy', price_sell: 0, scu_sell_stock: 0, price_buy: 40, scu_buy: 80, date_modified: now() }
+            ]
+        });
+        cache.setInitData({
+            StantonSell: { name: 'Stanton', code: 'ST' },
+            StantonBuy: { name: 'Stanton', code: 'ST' },
+            PyroBuy: { name: 'Pyro', code: 'PY' }
+        });
+        return cache;
+    }
+
+    test('system filter requires both terminals in the requested system', () => {
+        const { routes } = calculateSmartRoutes(buildCrossSystemCache(), { system: 'Stanton' });
+        expect(routes).toHaveLength(1);
+        expect(routes[0].buyTerminal).toBe('StantonBuy');
+        expect(routes[0].sellTerminal).toBe('StantonSell');
+    });
+
+    test('sameSystemOnly drops routes that cross systems, keeping same-system ones regardless of which', () => {
+        const { routes } = calculateSmartRoutes(buildCrossSystemCache(), { sameSystemOnly: true });
+        expect(routes).toHaveLength(1);
+        expect(routes[0].sellTerminal).toBe('StantonSell');
+    });
+
+    test('safeOnly drops routes touching a system with survival < 0.90 (Pyro)', () => {
+        const { routes } = calculateSmartRoutes(buildCrossSystemCache(), { safeOnly: true });
+        // Only the fully-Stanton route survives; the Pyro-touching one is filtered
+        expect(routes).toHaveLength(1);
+        expect(routes[0].sellTerminal).toBe('StantonSell');
+        expect(routes[0].buyTerminal).toBe('StantonBuy');
+    });
+
+    test('each route carries survival, expectedProfit, and capitalAtRisk', () => {
+        const { routes } = calculateSmartRoutes(buildCrossSystemCache(), { system: 'Stanton', wallet: 1000 });
+        const [route] = routes;
+        expect(route.survival).toBe(0.98); // Stanton <-> Stanton
+        expect(route.expectedProfit).toBeCloseTo(route.discountedProfit * 0.98);
+        expect(route.capitalAtRisk).toBeCloseTo(route.investment * (1 - 0.98));
+    });
+});
+
 describe('resolveShip', () => {
     test('returns null when no vehicles are cached', () => {
         const cache = new DataCache();
@@ -323,6 +377,16 @@ describe('confidenceBadge', () => {
     });
 });
 
+describe('riskBadge', () => {
+    test('labels tiers matching the 0.95/0.80 thresholds', () => {
+        expect(riskBadge(0.98)).toMatchObject({ label: 'Safe' });
+        expect(riskBadge(0.95)).toMatchObject({ label: 'Safe' });
+        expect(riskBadge(0.90)).toMatchObject({ label: 'Moderate' });
+        expect(riskBadge(0.80)).toMatchObject({ label: 'Moderate' });
+        expect(riskBadge(0.60)).toMatchObject({ label: 'Risky' });
+    });
+});
+
 describe('touchportalSmart', () => {
     test('shows a waiting message when no data is cached yet', () => {
         const cache = new DataCache();
@@ -364,5 +428,36 @@ describe('touchportalSmart', () => {
 
         const html = touchportalSmart(cache, { shipSlug: 'big-ship' });
         expect(html).toMatch(/value="big-ship" selected/);
+    });
+
+    test('renders system filter buttons for every known system plus All systems', () => {
+        const cache = new DataCache();
+        cache.setData({ data: [] });
+        cache.setInitData({});
+
+        const html = touchportalSmart(cache, {});
+        expect(html).toContain('system=Stanton');
+        expect(html).toContain('system=Pyro');
+        expect(html).toContain('system=Nyx');
+        expect(html).toContain('All systems');
+    });
+
+    test('shows the Capital at risk column only when a wallet is set', () => {
+        const cache = new DataCache();
+        cache.setData({ data: [] });
+        cache.setInitData({});
+
+        expect(touchportalSmart(cache, {})).not.toContain('Capital at risk');
+        expect(touchportalSmart(cache, { wallet: 100000 })).toContain('Capital at risk');
+    });
+
+    test('preserves system/safe/sameSystem filters across the sort links', () => {
+        const cache = new DataCache();
+        cache.setData({ data: [] });
+        cache.setInitData({});
+
+        const html = touchportalSmart(cache, { system: 'Stanton', safeOnly: true, sameSystemOnly: true });
+        // Every sort link should carry all three filters forward
+        expect(html).toMatch(/sort=profit[^"]*system=Stanton[^"]*safe=1[^"]*sameSystem=1/);
     });
 });
