@@ -319,9 +319,12 @@ function touchportalStale(cache, solar_system = '') {
             const rowClass = cls ? ` ${cls}` : '';
             const breadcrumb = locationBreadcrumb(t.initEntry);
             const titleAttr = breadcrumb ? ` title="${escapeHtml(breadcrumb)}"` : '';
+            // Include the system code prefix only when browsing all systems;
+            // once a specific system is picked the prefix would just be noise.
+            const namePrefix = solar_system ? '' : `(${escapeHtml(t.systemCode)}) `;
             return `
             <div class="terminal-row${rowClass}"${titleAttr}>
-                <span class="name">(${escapeHtml(t.systemCode)}) ${escapeHtml(t.terminalName)}</span>
+                <span class="name">${namePrefix}${escapeHtml(t.terminalName)}</span>
                 <span class="date">${shortDate(t.dateModified)}</span>
             </div>`;
         }).join('');
