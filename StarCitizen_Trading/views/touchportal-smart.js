@@ -266,7 +266,7 @@ function renderShipPicker(vehicles, filters, selectedShip, activeBracketKey) {
         const isActive = b.key === activeBracketKey;
         const style = isActive ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
         const qs = buildQueryString(filters, { shipBracket: b.key });
-        return `<a href="/touchportal/smart?${qs}" style="${style}">${escapeHtml(b.label)}</a>`;
+        return `<a class="bracket-button" href="/touchportal/smart?${qs}" style="${style}">${escapeHtml(b.label)}</a>`;
     }).join('\n            ');
 
     const bracket = SHIP_BRACKETS.find(b => b.key === activeBracketKey) || SHIP_BRACKETS[0];
