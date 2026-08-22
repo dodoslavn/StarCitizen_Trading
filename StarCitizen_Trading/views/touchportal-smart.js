@@ -285,9 +285,9 @@ function touchportalSmart(cache, filters = {}) {
     if (!cache.hasData()) {
         const body = `
         <a class="back-hub" href="/touchportal">&larr; Hub</a>
-        <h2>Smart Routes</h2>
+        <h2>AI Trade Routes</h2>
         <p style="text-align: center; color: #888;">Waiting for commodity data to load...</p>`;
-        return shell('Smart Routes', body, false);
+        return shell('AI Trade Routes', body, false);
     }
 
     const { wallet = 0, sort = 'hour', system = '', safeOnly = false, sameSystemOnly = false } = filters;
@@ -345,7 +345,7 @@ function touchportalSmart(cache, filters = {}) {
 
     const body = `
     <a class="back-hub" href="/touchportal">&larr; Hub</a>
-    <h2>Smart Routes</h2>
+    <h2>AI Trade Routes</h2>
     <p style="text-align: center; color: #888;">Ranked by aUEC/hour (profit discounted for data age and route risk), profit, or ROI - filtered to routes your ship can actually fly and afford, with an estimated door-to-door trip time.</p>
     <div id="top">
         <div class="button-group">
@@ -394,7 +394,7 @@ function touchportalSmart(cache, filters = {}) {
         ${rows || `<tr><td colspan="${showCapitalAtRisk ? 12 : 11}">No routes available for this ship/wallet/system combination</td></tr>`}
     </table>`;
 
-    return shell('Smart Routes', body, true);
+    return shell('AI Trade Routes', body, true);
 }
 
 module.exports = {
