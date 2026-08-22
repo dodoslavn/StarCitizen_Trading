@@ -226,54 +226,72 @@ function formatDuration(minutes) {
 }
 
 /**
- * Render the ship <select>, grouped into rough SCU brackets since the
- * cached vehicle list runs 100+ ships.
- * @param {Array} vehicles - cache.getVehicles()
- * @param {Object|null} selectedShip - currently resolved ship
- * @returns {string}
+ * Ship-size tiers for the picker. `key` is what travels in the
+ * ?shipBracket= query param (validated by utils/validation.js
+ * validateShipBracket, which must be kept in sync with this list).
  */
+const SHIP_BRACKETS = [
+    { key: 'small', label: 'Small (< 50 SCU)', min: 0, max: 50 },
+    { key: 'medium', label: 'Medium (50-150 SCU)', min: 50, max: 150 },
+    { key: 'large', label: 'Large (150-500 SCU)', min: 150, max: 500 },
+    { key: 'very-large', label: 'Very Large (500+ SCU)', min: 500, max: Infinity }
+];
+
 /**
- * Render the ship picker as plain grouped links rather than a native
- * <select>. TouchPortal's embedded panel doesn't handle a large native
- * dropdown overlay reliably (selecting an option there was observed to
- * kick the panel back to its home/hub URL, even though the underlying
- * page and server behave correctly in a regular browser) - plain links
- * avoid any native picker UI entirely.
+ * Which bracket a ship falls into, by SCU.
+ * @param {Object} ship - { scu, ... }
+ * @returns {string} A SHIP_BRACKETS key
+ */
+function bracketForShip(ship) {
+    return SHIP_BRACKETS.find(b => ship.scu >= b.min && ship.scu < b.max).key;
+}
+
+/**
+ * Render the ship picker as plain links, one size bracket at a time -
+ * with 100+ ships in the cached vehicle list, showing them all at once
+ * (as the old grouped-but-single-page layout did) was too much for the
+ * TouchPortal panel to usefully display. A native <select> isn't an
+ * option either: TouchPortal's embedded panel doesn't handle a large
+ * native dropdown overlay reliably (selecting an option there was
+ * observed to kick the panel back to its home/hub URL, even though the
+ * underlying page and server behave correctly in a regular browser).
  * @param {Array} vehicles - Ships sorted ascending by SCU
  * @param {Object} filters - Current filters (for buildQueryString)
  * @param {Object|null} selectedShip
+ * @param {string} activeBracketKey - Which SHIP_BRACKETS key to show ships for
  * @returns {string}
  */
-function renderShipLinks(vehicles, filters, selectedShip) {
-    const brackets = [
-        { label: 'Small (< 50 SCU)', max: 50 },
-        { label: 'Medium (50-150 SCU)', max: 150 },
-        { label: 'Large (150-500 SCU)', max: 500 },
-        { label: 'Very Large (500+ SCU)', max: Infinity }
-    ];
+function renderShipPicker(vehicles, filters, selectedShip, activeBracketKey) {
+    const bracketButtons = SHIP_BRACKETS.map(b => {
+        const isActive = b.key === activeBracketKey;
+        const style = isActive ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
+        const qs = buildQueryString(filters, { shipBracket: b.key });
+        return `<a href="/touchportal/smart?${qs}" style="${style}">${escapeHtml(b.label)}</a>`;
+    }).join('\n            ');
 
-    let cursor = 0;
-    return brackets.map(bracket => {
-        const links = [];
-        while (cursor < vehicles.length && vehicles[cursor].scu < bracket.max) {
-            const v = vehicles[cursor];
+    const bracket = SHIP_BRACKETS.find(b => b.key === activeBracketKey) || SHIP_BRACKETS[0];
+    const links = vehicles
+        .filter(v => v.scu >= bracket.min && v.scu < bracket.max)
+        .map(v => {
             const isSelected = selectedShip && v.slug === selectedShip.slug;
             const style = isSelected ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #333;';
-            const qs = buildQueryString(filters, { shipSlug: v.slug });
-            links.push(`<a href="/touchportal/smart?${qs}" style="${style}" title="${v.scu} SCU">${escapeHtml(v.name)}</a>`);
-            cursor += 1;
-        }
-        return links.length
-            ? `<div class="ship-bracket"><h4>${escapeHtml(bracket.label)}</h4><div class="ship-links">${links.join('\n')}</div></div>`
-            : '';
-    }).join('');
+            const qs = buildQueryString(filters, { shipSlug: v.slug, shipBracket: activeBracketKey });
+            return `<a href="/touchportal/smart?${qs}" style="${style}" title="${v.scu} SCU">${escapeHtml(v.name)}</a>`;
+        })
+        .join('\n');
+
+    return `
+    <div class="button-group">
+        ${bracketButtons}
+    </div>
+    <div class="ship-links">${links}</div>`;
 }
 
 /**
  * Build a query string from the current filters with some keys overridden -
  * used by every filter link/form on the page so toggling one filter never
  * drops the others.
- * @param {Object} filters - { shipSlug, wallet, sort, system, safeOnly, sameSystemOnly }
+ * @param {Object} filters - { shipSlug, shipBracket, wallet, sort, system, safeOnly, sameSystemOnly }
  * @param {Object} overrides - Keys to replace
  * @returns {string} Query string (no leading '?')
  */
@@ -282,6 +300,7 @@ function buildQueryString(filters, overrides = {}) {
     const params = new URLSearchParams();
     if (merged.sort) params.set('sort', merged.sort);
     if (merged.shipSlug) params.set('ship', merged.shipSlug);
+    if (merged.shipBracket) params.set('shipBracket', merged.shipBracket);
     if (merged.wallet > 0) params.set('wallet', merged.wallet);
     if (merged.system) params.set('system', merged.system);
     if (merged.safeOnly) params.set('safe', '1');
@@ -352,9 +371,11 @@ function touchportalSmart(cache, filters = {}) {
     ).join('\n            ');
     const allSystemsButton = filterLink({ system: '' }, 'All systems', !system);
 
-    const hiddenInputs = ['sort', 'system'].map(key => filters[key]
+    const hiddenInputs = ['sort', 'system', 'shipBracket'].map(key => filters[key]
         ? `<input type="hidden" name="${key}" value="${escapeHtml(filters[key])}">`
         : '').join('');
+
+    const activeBracket = filters.shipBracket || (ship ? bracketForShip(ship) : SHIP_BRACKETS[0].key);
 
     const body = `
     <h2>Trade Routes by AI</h2>
@@ -386,7 +407,7 @@ function touchportalSmart(cache, filters = {}) {
     </div>
     <p style="text-align: center; color: #666; font-size: 0.85rem;">${shipInfo}</p>
     <div class="ship-picker">
-        ${renderShipLinks(vehicles, filters, ship)}
+        ${renderShipPicker(vehicles, filters, ship, activeBracket)}
     </div>
     <table>
         <tr>

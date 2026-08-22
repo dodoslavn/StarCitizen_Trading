@@ -94,10 +94,23 @@ function validateWallet(input, max = 1000000000) {
     return Math.floor(Math.min(num, max));
 }
 
+const VALID_SHIP_BRACKETS = ['small', 'medium', 'large', 'very-large'];
+
+/**
+ * Validate a ship-size bracket key used to page through the ship picker
+ * (there are 100+ ships, too many to show all at once - see views/touchportal-smart.js SHIP_BRACKETS)
+ * @param {string} input - Bracket key from the query string
+ * @returns {string} One of VALID_SHIP_BRACKETS, or '' if invalid/missing
+ */
+function validateShipBracket(input) {
+    return VALID_SHIP_BRACKETS.includes(input) ? input : '';
+}
+
 module.exports = {
     validateSCU,
     validateSystemName,
     sanitizePath,
     validateShipId,
-    validateWallet
+    validateWallet,
+    validateShipBracket
 };
