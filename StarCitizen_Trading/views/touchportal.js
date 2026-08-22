@@ -251,6 +251,10 @@ function touchportalHub() {
             Oldest Terminal Data
             <small>Terminals whose prices haven't been updated in a while - good candidates to visit and report</small>
         </a>
+        <a class="hub-tile" href="/">
+            Full Trading Site
+            <small>The regular commodity table with all prices</small>
+        </a>
     </div>`;
     return shell('Hub', body, false);
 }
