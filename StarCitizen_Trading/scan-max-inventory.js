@@ -41,7 +41,7 @@ async function main() {
     // previous run) at least preserves the confirmed maxes we've already seen -
     // new-scan results will overwrite existing keys with the fresh value.
     // Cursor and complete flag get reset so this run does a full pass.
-    trading.loadConfirmedMaxInventory(cache);
+    trading.loadConfirmedMaxInventory(cache, config);
     cache.setMaxInventoryCursor(0);
     cache.setMaxInventoryScanComplete(false);
     logger.info('Starting fresh full pass');

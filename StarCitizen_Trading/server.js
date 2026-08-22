@@ -28,12 +28,12 @@ async function initialize() {
 
         // Max inventory data is populated by the separate scan-max-inventory.js
         // script (run e.g. as a systemd ExecStartPre step); the server only reads it.
-        trading.loadConfirmedMaxInventory(cache);
+        trading.loadConfirmedMaxInventory(cache, config);
 
         // Terminal distance backup is populated by the separate
         // scan-terminal-distances.js script, run manually/rarely since
         // distances barely change; the server only reads it.
-        trading.loadTerminalDistances(cache);
+        trading.loadTerminalDistances(cache, config);
 
         await trading.initializeData(config, cache);
         await trading.refreshData(config, cache);

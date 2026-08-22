@@ -8,8 +8,23 @@ const logger = require('../logger.js');
 const uexApi = require('./uexApi.js');
 const { estimateMaxInventory } = require('../utils/formatters.js');
 
-const MAX_INVENTORY_FILE = './max_inventory.json';
-const TERMINAL_DISTANCES_FILE = './terminals_distances.json';
+const DEFAULT_MAX_INVENTORY_FILE = './max_inventory.json';
+const DEFAULT_TERMINAL_DISTANCES_FILE = './terminals_distances.json';
+
+/**
+ * Resolve a configurable data file path, falling back to its hardcoded
+ * default when config or config.data_files doesn't have the key - keeps
+ * this backward compatible with any host's config.json that predates
+ * this option (config.json is gitignored and deployed separately per host,
+ * so it can lag behind what's in config.json.example).
+ * @param {Object} config - Configuration object (may be undefined)
+ * @param {string} key - Key under config.data_files
+ * @param {string} fallback - Default path
+ * @returns {string}
+ */
+function resolveDataFile(config, key, fallback) {
+    return config?.data_files?.[key] || fallback;
+}
 
 /**
  * Normalize price data to numbers with validation
@@ -87,16 +102,18 @@ async function fetchLiveGameVersion(config) {
  * Discarded if it was scanned on a different game version than cache.getGameVersion(),
  * since a patch can change terminal capacities/locations and invalidate old data.
  * @param {Object} cache - DataCache instance (must have its game version set first)
+ * @param {Object} [config] - Configuration object (for data_files.max_inventory override)
  */
-function loadConfirmedMaxInventory(cache) {
+function loadConfirmedMaxInventory(cache, config) {
+    const file = resolveDataFile(config, 'max_inventory', DEFAULT_MAX_INVENTORY_FILE);
     let raw;
     try {
-        raw = fs.readFileSync(MAX_INVENTORY_FILE, 'utf8');
+        raw = fs.readFileSync(file, 'utf8');
     } catch (error) {
         if (error.code === 'ENOENT') {
             logger.info('No saved max inventory data found, will scan from scratch');
         } else {
-            logger.warn(`Could not read ${MAX_INVENTORY_FILE}, will scan from scratch: ${error.message}`);
+            logger.warn(`Could not read ${file}, will scan from scratch: ${error.message}`);
         }
         return;
     }
@@ -135,16 +152,18 @@ function loadConfirmedMaxInventory(cache) {
  * once at startup and used as-is. Missing file is not an error: Smart
  * Routes falls back to the M4 heuristic for any pair without real data.
  * @param {Object} cache - DataCache instance
+ * @param {Object} [config] - Configuration object (for data_files.terminal_distances override)
  */
-function loadTerminalDistances(cache) {
+function loadTerminalDistances(cache, config) {
+    const file = resolveDataFile(config, 'terminal_distances', DEFAULT_TERMINAL_DISTANCES_FILE);
     let raw;
     try {
-        raw = fs.readFileSync(TERMINAL_DISTANCES_FILE, 'utf8');
+        raw = fs.readFileSync(file, 'utf8');
     } catch (error) {
         if (error.code === 'ENOENT') {
             logger.info('No terminal distance backup found, Smart Routes will use the time heuristic only');
         } else {
-            logger.warn(`Could not read ${TERMINAL_DISTANCES_FILE}: ${error.message}`);
+            logger.warn(`Could not read ${file}: ${error.message}`);
         }
         return;
     }
@@ -167,12 +186,14 @@ function loadTerminalDistances(cache) {
  * leave the target truncated (rename is atomic on POSIX).
  * Pretty-printed with 2-space indent so CI-committed diffs are reviewable.
  * @param {Object} cache - DataCache instance
+ * @param {Object} [config] - Configuration object (for data_files.max_inventory override)
  */
-function saveConfirmedMaxInventory(cache) {
-    const tempFile = `${MAX_INVENTORY_FILE}.tmp`;
+function saveConfirmedMaxInventory(cache, config) {
+    const file = resolveDataFile(config, 'max_inventory', DEFAULT_MAX_INVENTORY_FILE);
+    const tempFile = `${file}.tmp`;
     try {
         fs.writeFileSync(tempFile, JSON.stringify(cache.exportMaxInventoryState(), null, 2));
-        fs.renameSync(tempFile, MAX_INVENTORY_FILE);
+        fs.renameSync(tempFile, file);
     } catch (error) {
         logger.warn(`Failed to save max inventory data: ${error.message}`);
         try { fs.unlinkSync(tempFile); } catch { /* nothing to clean up */ }
@@ -211,7 +232,7 @@ async function refreshConfirmedMaxInventory(config, cache) {
     const cursor = cache.getMaxInventoryCursor();
     if (cursor >= pairs.length) {
         cache.setMaxInventoryScanComplete(true);
-        saveConfirmedMaxInventory(cache);
+        saveConfirmedMaxInventory(cache, config);
         logger.info(`Confirmed max inventory scan complete (${pairs.length} pairs)`);
         return { complete: true, cursor, total: pairs.length, failures: 0 };
     }
@@ -246,7 +267,7 @@ async function refreshConfirmedMaxInventory(config, cache) {
         logger.info(`Confirmed max inventory scan complete (${pairs.length} pairs)`);
     }
 
-    saveConfirmedMaxInventory(cache);
+    saveConfirmedMaxInventory(cache, config);
 
     return { complete, cursor: newCursor, total: pairs.length, failures };
 }

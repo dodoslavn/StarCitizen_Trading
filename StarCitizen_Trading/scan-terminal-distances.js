@@ -31,7 +31,8 @@ const trading = require('./services/trading.js');
 const uexApi = require('./services/uexApi.js');
 const { loadConfig } = require('./config.js');
 
-const DISTANCES_FILE = './terminals_distances.json';
+const DEFAULT_DISTANCES_FILE = './terminals_distances.json';
+let DISTANCES_FILE = DEFAULT_DISTANCES_FILE;
 const BATCH_SIZE = 10;
 const PROGRESS_LOG_INTERVAL = 20;
 
@@ -73,6 +74,7 @@ function saveState(state) {
 
 async function main() {
     const config = loadConfig();
+    DISTANCES_FILE = config?.data_files?.terminal_distances || DEFAULT_DISTANCES_FILE;
     logger.info('Configuration file loaded successfully');
 
     const cache = new DataCache();
