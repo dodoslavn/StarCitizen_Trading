@@ -252,7 +252,7 @@ function touchportalHub() {
             <small>Terminals whose prices haven't been updated in a while - good candidates to visit and report</small>
         </a>
         <a class="hub-tile" href="/touchportal/smart">
-            AI Trade Routes
+            Trade Routes by AI
             <small>Route ranking that accounts for data freshness, ship, wallet, and travel time (in progress)</small>
         </a>
     </div>`;
