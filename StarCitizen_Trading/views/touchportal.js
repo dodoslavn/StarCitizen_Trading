@@ -18,6 +18,19 @@ function recencyClass(dateModified) {
 }
 
 /**
+ * Build a stable, URL-hash-safe element id for a planet column (e.g.
+ * "Pyro I" -> "planet-Pyro-I"). Used so clicking a column heading sets
+ * #planet-X in the URL - since the page's meta-refresh reloads the same
+ * URL (hash included), the browser re-scrolls to that column on every
+ * auto-refresh instead of jumping back to the top.
+ * @param {string} planet
+ * @returns {string}
+ */
+function planetAnchorId(planet) {
+    return 'planet-' + planet.replace(/[^a-zA-Z0-9]+/g, '-');
+}
+
+/**
  * Build a human-readable "where is this terminal" breadcrumb from the
  * location fields UEX carries in /terminals. Only non-null parts are joined,
  * and the terminal's own name is left out (it's rendered next to the tooltip
@@ -63,6 +76,8 @@ const TOUCHPORTAL_STYLES = `
     body div.stale-columns { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
     body div.stale-column { flex: 1 1 18rem; background-color: #111; border-radius: 0.5rem; padding: 0.5rem; }
     body div.stale-column h3 { margin: 0.25rem 0 0.75rem; text-align: center; color: #4ab8ff; border-bottom: 1px solid #333; padding-bottom: 0.4rem; }
+    body div.stale-column h3 a { color: inherit; }
+    body div.stale-column h3 a:hover { text-decoration: underline; }
     body div.stale-column div.terminal-row { display: flex; justify-content: space-between; gap: 0.5rem; padding: 0.35rem 0.4rem; border-bottom: 1px solid #222; font-size: 0.95rem; }
     body div.stale-column div.terminal-row:last-child { border-bottom: none; }
     body div.stale-column div.terminal-row span.date { color: #888; white-space: nowrap; }
@@ -328,8 +343,9 @@ function touchportalStale(cache, solar_system = '') {
                 <span class="date">${shortDate(t.dateModified)}</span>
             </div>`;
         }).join('');
-        return `<div class="stale-column">
-            <h3>${escapeHtml(planet)} <small>(${terminals.length})</small></h3>
+        const anchorId = planetAnchorId(planet);
+        return `<div class="stale-column" id="${anchorId}">
+            <h3><a href="#${anchorId}" title="Click to bookmark this planet - stays scrolled here across auto-refresh">${escapeHtml(planet)}</a> <small>(${terminals.length})</small></h3>
             ${rows}
         </div>`;
     }).join('');
