@@ -232,7 +232,19 @@ function formatDuration(minutes) {
  * @param {Object|null} selectedShip - currently resolved ship
  * @returns {string}
  */
-function renderShipOptions(vehicles, selectedShip) {
+/**
+ * Render the ship picker as plain grouped links rather than a native
+ * <select>. TouchPortal's embedded panel doesn't handle a large native
+ * dropdown overlay reliably (selecting an option there was observed to
+ * kick the panel back to its home/hub URL, even though the underlying
+ * page and server behave correctly in a regular browser) - plain links
+ * avoid any native picker UI entirely.
+ * @param {Array} vehicles - Ships sorted ascending by SCU
+ * @param {Object} filters - Current filters (for buildQueryString)
+ * @param {Object|null} selectedShip
+ * @returns {string}
+ */
+function renderShipLinks(vehicles, filters, selectedShip) {
     const brackets = [
         { label: 'Small (< 50 SCU)', max: 50 },
         { label: 'Medium (50-150 SCU)', max: 150 },
@@ -242,15 +254,17 @@ function renderShipOptions(vehicles, selectedShip) {
 
     let cursor = 0;
     return brackets.map(bracket => {
-        const options = [];
+        const links = [];
         while (cursor < vehicles.length && vehicles[cursor].scu < bracket.max) {
             const v = vehicles[cursor];
-            const selected = selectedShip && v.slug === selectedShip.slug ? ' selected' : '';
-            options.push(`<option value="${escapeHtml(v.slug)}"${selected}>${escapeHtml(v.name)} (${v.scu} SCU)</option>`);
+            const isSelected = selectedShip && v.slug === selectedShip.slug;
+            const style = isSelected ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #333;';
+            const qs = buildQueryString(filters, { shipSlug: v.slug });
+            links.push(`<a href="/touchportal/smart?${qs}" style="${style}" title="${v.scu} SCU">${escapeHtml(v.name)}</a>`);
             cursor += 1;
         }
-        return options.length
-            ? `<optgroup label="${escapeHtml(bracket.label)}">${options.join('')}</optgroup>`
+        return links.length
+            ? `<div class="ship-bracket"><h4>${escapeHtml(bracket.label)}</h4><div class="ship-links">${links.join('\n')}</div></div>`
             : '';
     }).join('');
 }
@@ -349,13 +363,11 @@ function touchportalSmart(cache, filters = {}) {
         <div class="button-group">
             <form method="get" action="/touchportal/smart" style="display: inline-block;">
                 ${hiddenInputs}
+                ${filters.shipSlug ? `<input type="hidden" name="ship" value="${escapeHtml(filters.shipSlug)}">` : ''}
                 ${safeOnly ? '<input type="hidden" name="safe" value="1">' : ''}
                 ${sameSystemOnly ? '<input type="hidden" name="sameSystem" value="1">' : ''}
-                <select name="ship" onchange="this.form.submit()" style="padding: 0.4rem; border-radius: 5px;">
-                    ${renderShipOptions(vehicles, ship)}
-                </select>
                 <input type="number" name="wallet" placeholder="Wallet (aUEC, blank = unlimited)" value="${wallet > 0 ? wallet : ''}" min="0" style="padding: 0.4rem; border-radius: 5px; width: 14rem;">
-                <button type="submit" style="padding: 0.4rem 0.8rem; border-radius: 5px; background-color: #006fdd; color: white; border: none;">Apply</button>
+                <button type="submit" style="padding: 0.4rem 0.8rem; border-radius: 5px; background-color: #006fdd; color: white; border: none;">Apply wallet</button>
             </form>
         </div>
         <div class="button-group">
@@ -373,6 +385,9 @@ function touchportalSmart(cache, filters = {}) {
         </div>
     </div>
     <p style="text-align: center; color: #666; font-size: 0.85rem;">${shipInfo}</p>
+    <div class="ship-picker">
+        ${renderShipLinks(vehicles, filters, ship)}
+    </div>
     <table>
         <tr>
             <th>Commodity</th>

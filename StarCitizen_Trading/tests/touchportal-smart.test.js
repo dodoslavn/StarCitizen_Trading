@@ -450,7 +450,8 @@ describe('touchportalSmart', () => {
         cache.setVehicles([SMALL_SHIP, BIG_MANUAL_SHIP]);
 
         const html = touchportalSmart(cache, { shipSlug: 'big-ship' });
-        expect(html).toMatch(/value="big-ship" selected/);
+        expect(html).toContain('<input type="hidden" name="ship" value="big-ship">');
+        expect(html).toMatch(/ship=big-ship"[^>]*background-color: #4ab8ff[^>]*>Big Ship</);
     });
 
     test('renders system filter buttons for every known system plus All systems', () => {
