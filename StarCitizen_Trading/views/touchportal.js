@@ -67,8 +67,6 @@ const TOUCHPORTAL_STYLES = `
     body div.hub a.hub-tile { flex: 1 1 20rem; padding: 2rem; background-color: #006fdd; border-radius: 0.5rem; font-size: 1.5rem; color: white; text-decoration: none; text-align: center; }
     body div.hub a.hub-tile:hover { background-color: #4ab8ff; }
     body div.hub a.hub-tile small { display: block; font-size: 1rem; opacity: 0.85; margin-top: 0.5rem; }
-    body a.back-hub { display: inline-block; background-color: #444; color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 5px; margin-bottom: 1rem; }
-    body a.back-hub:hover { background-color: #666; }
     table { width: 100%; border-collapse: collapse; margin: auto; }
     table tr th { background-color: #006fdd; border-radius: 3px; text-align: center; padding: 0.5rem; }
     table tr td { text-align: center; padding: 0.3rem; border-bottom: 1px solid #333; }
@@ -89,7 +87,7 @@ const TOUCHPORTAL_STYLES = `
 
 /**
  * Wrap sub-page body content in the shared touchportal HTML shell.
- * @param {string} title - Browser tab title (will be prefixed with "TouchPortal - ")
+ * @param {string} title - Browser tab title (will be prefixed with "SC Trading - ")
  * @param {string} body - Inner HTML for the page body
  * @param {boolean} autoRefresh - Whether to include the 60s meta refresh (data pages yes, hub no)
  * @returns {string}
@@ -98,7 +96,7 @@ function shell(title, body, autoRefresh = false) {
     const refresh = autoRefresh ? '<meta http-equiv="refresh" content="60">' : '';
     return `<!DOCTYPE html><html><head>
     <meta charset="UTF-8">
-    <title>TouchPortal - ${escapeHtml(title)}</title>
+    <title>SC Trading - ${escapeHtml(title)}</title>
     ${refresh}
     <style>${TOUCHPORTAL_STYLES}</style></head><body>${body}</body></html>`;
 }
@@ -209,7 +207,6 @@ function touchportal(scu, solar_system = '', cache) {
     `).join('');
 
     const body = `
-    <a class="back-hub" href="/touchportal">&larr; Hub</a>
     <div id="top">
         <div class="button-group">
             ${systemButtons}
@@ -244,7 +241,7 @@ function touchportal(scu, solar_system = '', cache) {
  */
 function touchportalHub() {
     const body = `
-    <h1>TouchPortal</h1>
+    <h1>SC Trading</h1>
     <div class="hub">
         <a class="hub-tile" href="/touchportal/50">
             Best Trading Routes
@@ -357,7 +354,6 @@ function touchportalStale(cache, solar_system = '') {
 
     const totalTerminals = perTerminal.size;
     const body = `
-    <a class="back-hub" href="/touchportal">&larr; Hub</a>
     <div id="top">
         <div class="button-group">
             ${systemButtons}
