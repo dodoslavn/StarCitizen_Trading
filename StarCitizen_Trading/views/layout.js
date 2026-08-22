@@ -60,7 +60,7 @@ function loadingPage() {
         <meta http-equiv="refresh" content="3">
         <style>
             body {
-                background-color: #121212;
+                background-color: #000000;
                 color: white;
                 font-family: Open Sans, Arial, sans-serif;
                 min-height: 100vh;
