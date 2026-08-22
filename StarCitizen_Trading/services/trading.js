@@ -349,6 +349,7 @@ function processVehicles(rawData) {
             id: v.id,
             slug: v.slug,
             name: v.name_full || v.name,
+            manufacturer: v.company_name || 'Unknown',
             scu: Number(v.scu) || 0,
             pad_type: v.pad_type || '',
             container_sizes: v.container_sizes || '',

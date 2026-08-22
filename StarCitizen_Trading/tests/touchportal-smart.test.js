@@ -17,8 +17,10 @@ const {
 const now = () => Math.floor(Date.now() / 1000);
 const daysAgo = n => now() - n * 24 * 60 * 60;
 
-const SMALL_SHIP = { slug: 'small-ship', name: 'Small Ship', scu: 20, pad_type: 'S', container_sizes: '1,2,4', canLand: true, needsAutoLoad: false };
-const BIG_MANUAL_SHIP = { slug: 'big-ship', name: 'Big Ship', scu: 500, pad_type: 'L', container_sizes: '1,2,4,8,16', canLand: true, needsAutoLoad: true };
+// Manufacturer names deliberately alphabetize as Alpha < Zulu, so tests can
+// rely on which one the ship picker defaults to (first alphabetically).
+const SMALL_SHIP = { slug: 'small-ship', name: 'Small Ship', manufacturer: 'Alpha Corp', scu: 20, pad_type: 'S', container_sizes: '1,2,4', canLand: true, needsAutoLoad: false };
+const BIG_MANUAL_SHIP = { slug: 'big-ship', name: 'Big Ship', manufacturer: 'Zulu Corp', scu: 500, pad_type: 'L', container_sizes: '1,2,4,8,16', canLand: true, needsAutoLoad: true };
 const CAPITAL_SHIP = { slug: 'capital-ship', name: 'Capital Ship', scu: 1000, pad_type: 'XL', container_sizes: '1,2,4,8,16', canLand: false, needsAutoLoad: true };
 
 describe('calculateSmartRoutes (no ship filter)', () => {
@@ -439,21 +441,22 @@ describe('touchportalSmart', () => {
         cache.setVehicles([SMALL_SHIP, BIG_MANUAL_SHIP]);
 
         // No shipSlug -> ship selection is a required first step, so this
-        // should render the picker page (defaulting to the "small" bracket),
-        // not the routes table - and definitely not every ship at once.
+        // should render the picker page (defaulting to the first
+        // manufacturer alphabetically, "Alpha Corp"), not the routes table
+        // - and definitely not every ship from every manufacturer at once.
         const html = touchportalSmart(cache, {});
         expect(html).toContain('Small Ship');
         expect(html).not.toContain('Big Ship');
         expect(html).not.toContain('<table>');
     });
 
-    test('ship-picker page shows ships from the requested shipBracket', () => {
+    test('ship-picker page shows ships from the requested manufacturer', () => {
         const cache = new DataCache();
         cache.setData({ data: [] });
         cache.setInitData({});
         cache.setVehicles([SMALL_SHIP, BIG_MANUAL_SHIP]);
 
-        const html = touchportalSmart(cache, { shipBracket: 'very-large' });
+        const html = touchportalSmart(cache, { manufacturer: 'zulu-corp' });
         expect(html).toContain('Big Ship');
         expect(html).not.toContain('Small Ship');
     });

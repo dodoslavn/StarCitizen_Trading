@@ -3,7 +3,7 @@
  * added for Smart Routes M3; other validators here predate this file)
  */
 
-const { validateShipId, validateWallet } = require('../utils/validation.js');
+const { validateShipId, validateWallet, validateManufacturer } = require('../utils/validation.js');
 
 describe('validateShipId', () => {
     test('lowercases and strips characters outside [a-z0-9-]', () => {
@@ -27,6 +27,26 @@ describe('validateShipId', () => {
 
     test('passes through an already-valid slug unchanged', () => {
         expect(validateShipId('drak-cutlass-black')).toBe('drak-cutlass-black');
+    });
+});
+
+describe('validateManufacturer', () => {
+    test('lowercases and strips characters outside [a-z0-9-]', () => {
+        expect(validateManufacturer('Grey\'s Market!')).toBe('greysmarket');
+    });
+
+    test('returns empty string for non-string input', () => {
+        expect(validateManufacturer(null)).toBe('');
+        expect(validateManufacturer(undefined)).toBe('');
+    });
+
+    test('caps length at 50 characters', () => {
+        const long = 'a'.repeat(100);
+        expect(validateManufacturer(long)).toHaveLength(50);
+    });
+
+    test('passes through an already-valid slug unchanged', () => {
+        expect(validateManufacturer('drake-interplanetary')).toBe('drake-interplanetary');
     });
 });
 
