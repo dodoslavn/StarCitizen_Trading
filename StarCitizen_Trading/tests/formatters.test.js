@@ -9,7 +9,8 @@ const {
     formatContainerSizes,
     estimateMaxInventory,
     escapeHtml,
-    getStockUsageClass
+    getStockUsageClass,
+    dataAgeConfidence
 } = require('../utils/formatters.js');
 
 describe('readable_number', () => {
@@ -43,6 +44,36 @@ describe('getStalenessLevel', () => {
     test('classifies a timestamp past the very-stale threshold as very-stale', () => {
         const tenDaysAgo = Math.floor(Date.now() / 1000) - 10 * 24 * 60 * 60;
         expect(getStalenessLevel(tenDaysAgo, thresholds)).toBe('very-stale');
+    });
+});
+
+describe('dataAgeConfidence', () => {
+    const daysAgo = n => Math.floor(Date.now() / 1000) - n * 24 * 60 * 60;
+
+    test('treats a missing timestamp as lowest confidence (unlike getStalenessLevel)', () => {
+        expect(dataAgeConfidence(0)).toBe(0.05);
+        expect(dataAgeConfidence(null)).toBe(0.05);
+    });
+
+    test('full confidence for data under 1 day old', () => {
+        expect(dataAgeConfidence(Math.floor(Date.now() / 1000))).toBe(1.0);
+        expect(dataAgeConfidence(daysAgo(0.5))).toBe(1.0);
+    });
+
+    test('0.7 confidence for data 1-6 days old', () => {
+        expect(dataAgeConfidence(daysAgo(3))).toBe(0.7);
+        expect(dataAgeConfidence(daysAgo(6))).toBe(0.7);
+    });
+
+    test('0.3 confidence for data 7-29 days old', () => {
+        expect(dataAgeConfidence(daysAgo(7))).toBe(0.3);
+        expect(dataAgeConfidence(daysAgo(14))).toBe(0.3);
+        expect(dataAgeConfidence(daysAgo(29))).toBe(0.3);
+    });
+
+    test('0.05 confidence for data 30+ days old', () => {
+        expect(dataAgeConfidence(daysAgo(30))).toBe(0.05);
+        expect(dataAgeConfidence(daysAgo(100))).toBe(0.05);
     });
 });
 

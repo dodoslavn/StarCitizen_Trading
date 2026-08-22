@@ -30,6 +30,11 @@ async function initialize() {
         // script (run e.g. as a systemd ExecStartPre step); the server only reads it.
         trading.loadConfirmedMaxInventory(cache);
 
+        // Terminal distance backup is populated by the separate
+        // scan-terminal-distances.js script, run manually/rarely since
+        // distances barely change; the server only reads it.
+        trading.loadTerminalDistances(cache);
+
         await trading.initializeData(config, cache);
         await trading.refreshData(config, cache);
 

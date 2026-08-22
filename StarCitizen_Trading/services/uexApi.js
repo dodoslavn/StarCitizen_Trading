@@ -112,10 +112,38 @@ async function fetchTerminals(config) {
     return await downloadJson(url, config);
 }
 
+/**
+ * Fetch vehicle/ship data from UEX API (used by Smart Routes for the ship
+ * dropdown and cargo/pad-type feasibility filtering)
+ * @param {Object} config - Configuration object
+ * @returns {Promise<Object>} Vehicles data
+ */
+async function fetchVehicles(config) {
+    const url = buildApiUrl(config, 'vehicles');
+    return await downloadJson(url, config);
+}
+
+/**
+ * Fetch the routing distance between two terminals. Note: the "distance"
+ * value's unit is not documented and does not appear to be literal km -
+ * a cross-system hop has measured smaller than an intra-system one in
+ * spot checks. Treat as an unverified relative score until confirmed.
+ * @param {number} originId - Origin terminal ID
+ * @param {number} destinationId - Destination terminal ID
+ * @param {Object} config - Configuration object
+ * @returns {Promise<Object>} { status, data: { distance, ...terminal names }, ... }
+ */
+async function fetchTerminalDistance(originId, destinationId, config) {
+    const url = `${buildApiUrl(config, 'terminals_distances')}?id_terminal_origin=${originId}&id_terminal_destination=${destinationId}`;
+    return await downloadJson(url, config);
+}
+
 module.exports = {
     fetchPrices,
     fetchSolarSystems,
     fetchTerminals,
     fetchStockHistory,
-    fetchGameVersion
+    fetchGameVersion,
+    fetchVehicles,
+    fetchTerminalDistance
 };

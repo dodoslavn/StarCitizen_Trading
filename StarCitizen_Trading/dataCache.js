@@ -12,6 +12,42 @@ class DataCache {
         this.maxInventoryCursor = 0;
         this.maxInventoryScanComplete = false;
         this.gameVersion = null;
+        this.vehicles = [];
+        this.terminalDistances = {};
+    }
+
+    /**
+     * Set the cargo-capable vehicles/ships list (from UEX /vehicles, filtered
+     * and processed by services/trading.js processVehicles)
+     * @param {Array} vehicles
+     */
+    setVehicles(vehicles) {
+        this.vehicles = vehicles;
+    }
+
+    /**
+     * Get the cargo-capable vehicles/ships list
+     * @returns {Array}
+     */
+    getVehicles() {
+        return this.vehicles;
+    }
+
+    /**
+     * Set the terminal-to-terminal distance backup (Gm), loaded once at
+     * startup from terminals_distances.json - see scan-terminal-distances.js
+     * @param {Object} distances - Map keyed "idTerminalOrigin_idTerminalDestination" -> Gm
+     */
+    setTerminalDistances(distances) {
+        this.terminalDistances = distances;
+    }
+
+    /**
+     * Get the terminal-to-terminal distance backup
+     * @returns {Object}
+     */
+    getTerminalDistances() {
+        return this.terminalDistances;
     }
 
     /**

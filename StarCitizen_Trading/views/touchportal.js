@@ -236,7 +236,7 @@ function touchportal(scu, solar_system = '', cache) {
 
 /**
  * Generate the touchportal hub page - a landing page with links to each
- * sub-page (best routes, stale terminals).
+ * sub-page (best routes, stale terminals, smart routes).
  * @returns {string} Complete HTML page
  */
 function touchportalHub() {
@@ -250,6 +250,10 @@ function touchportalHub() {
         <a class="hub-tile" href="/touchportal/stale">
             Oldest Terminal Data
             <small>Terminals whose prices haven't been updated in a while - good candidates to visit and report</small>
+        </a>
+        <a class="hub-tile" href="/touchportal/smart">
+            AI Trade Routes
+            <small>Route ranking that accounts for data freshness, ship, wallet, and travel time (in progress)</small>
         </a>
         <a class="hub-tile" href="/">
             Full Trading Site
@@ -375,8 +379,11 @@ function touchportalStale(cache, solar_system = '') {
     return shell('Oldest Data', body, true);
 }
 
+// shell is exported so other touchportal sub-page view files (e.g.
+// touchportal-smart.js) can reuse the same chrome/styles.
 module.exports = {
     touchportal,
     touchportalHub,
-    touchportalStale
+    touchportalStale,
+    shell
 };

@@ -16,6 +16,7 @@ const { header, footer, loadingPage, about } = require('./views/layout.js');
 const { displayCommodity } = require('./views/commodities.js');
 const { profit_uec, profit_perc } = require('./views/profits.js');
 const { touchportal, touchportalHub, touchportalStale } = require('./views/touchportal.js');
+const { touchportalSmart } = require('./views/touchportal-smart.js');
 
 module.exports = {
     header,
@@ -28,5 +29,6 @@ module.exports = {
     touchportal,
     touchportalHub,
     touchportalStale,
+    touchportalSmart,
     about
 };
