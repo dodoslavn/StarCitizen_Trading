@@ -284,7 +284,6 @@ function buildQueryString(filters, overrides = {}) {
 function touchportalSmart(cache, filters = {}) {
     if (!cache.hasData()) {
         const body = `
-        <a class="back-hub" href="/touchportal">&larr; Hub</a>
         <h2>AI Trade Routes</h2>
         <p style="text-align: center; color: #888;">Waiting for commodity data to load...</p>`;
         return shell('AI Trade Routes', body, false);
@@ -344,7 +343,6 @@ function touchportalSmart(cache, filters = {}) {
         : '').join('');
 
     const body = `
-    <a class="back-hub" href="/touchportal">&larr; Hub</a>
     <h2>AI Trade Routes</h2>
     <p style="text-align: center; color: #888;">Ranked by aUEC/hour (profit discounted for data age and route risk), profit, or ROI - filtered to routes your ship can actually fly and afford, with an estimated door-to-door trip time.</p>
     <div id="top">

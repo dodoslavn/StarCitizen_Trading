@@ -255,10 +255,6 @@ function touchportalHub() {
             AI Trade Routes
             <small>Route ranking that accounts for data freshness, ship, wallet, and travel time (in progress)</small>
         </a>
-        <a class="hub-tile" href="/">
-            Full Trading Site
-            <small>The regular commodity table with all prices</small>
-        </a>
     </div>`;
     return shell('Hub', body, false);
 }
