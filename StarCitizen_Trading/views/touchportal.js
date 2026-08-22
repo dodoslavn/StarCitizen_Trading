@@ -350,6 +350,11 @@ function touchportalStale(cache, solar_system = '') {
         </div>`;
     }).join('');
 
+    const planetButtons = planets.map(planet => {
+        const anchorId = planetAnchorId(planet);
+        return `<a href="#${anchorId}" style="background-color: #333;">${escapeHtml(planet)}</a>`;
+    }).join('\n            ');
+
     const totalTerminals = perTerminal.size;
     const body = `
     <a class="back-hub" href="/touchportal">&larr; Hub</a>
@@ -357,6 +362,9 @@ function touchportalStale(cache, solar_system = '') {
         <div class="button-group">
             ${systemButtons}
             <a href="/touchportal/stale" style="${allSystemsStyle}">All systems</a>
+        </div>
+        <div class="button-group">
+            ${planetButtons}
         </div>
     </div>
     <h2>Oldest Terminal Data${solar_system ? ` - ${escapeHtml(solar_system)}` : ''} (${totalTerminals} terminals, oldest first)</h2>
