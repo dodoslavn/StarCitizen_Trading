@@ -67,9 +67,9 @@ const TOUCHPORTAL_STYLES = `
     body div.hub a.hub-tile { flex: 1 1 20rem; padding: 2rem; background-color: #006fdd; border-radius: 0.5rem; font-size: 1.5rem; color: white; text-decoration: none; text-align: center; }
     body div.hub a.hub-tile:hover { background-color: #4ab8ff; }
     body div.hub a.hub-tile small { display: block; font-size: 1rem; opacity: 0.85; margin-top: 0.5rem; }
-    table { width: 100%; border-collapse: collapse; margin: auto; }
-    table tr th { background-color: #006fdd; border-radius: 3px; text-align: center; padding: 0.5rem; }
-    table tr td { text-align: center; padding: 0.3rem; border-bottom: 1px solid #333; }
+    table { width: 100%; border-collapse: collapse; margin: auto; font-size: 0.8rem; }
+    table tr th { background-color: #006fdd; border-radius: 3px; text-align: center; padding: 0.3rem 0.2rem; }
+    table tr td { text-align: center; padding: 0.2rem; border-bottom: 1px solid #333; }
     a { text-decoration: none; color: white; }
     body div.stale-columns { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start; }
     body div.stale-column { flex: 1 1 18rem; background-color: #111; border-radius: 0.5rem; padding: 0.5rem; }
