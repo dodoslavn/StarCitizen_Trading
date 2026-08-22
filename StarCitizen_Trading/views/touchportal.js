@@ -290,7 +290,13 @@ function shortDate(unixTimestampSeconds) {
     });
 }
 
-function touchportalStale(cache, solar_system = '') {
+// "Platinum Bay" runs small single-item kiosks (e.g. "Platinum CRU-L1"),
+// distinct from the main trade terminal at the same station (e.g. plain
+// "CRU-L1"). They're almost never updated and clutter the stale list with
+// terminals that aren't realistically worth a special trip.
+const PLATINUM_TERMINAL_PREFIX = 'Platinum ';
+
+function touchportalStale(cache, solar_system = '', hidePlatinum = false) {
     const cachedData = cache.getData();
     const cachedInitData = cache.getInitData();
 
@@ -301,6 +307,7 @@ function touchportalStale(cache, solar_system = '') {
         const initEntry = cachedInitData?.[item.terminal_name];
         if (!item.date_modified) return;
         if (solar_system && initEntry?.name !== solar_system) return;
+        if (hidePlatinum && item.terminal_name.startsWith(PLATINUM_TERMINAL_PREFIX)) return;
 
         const prev = perTerminal.get(item.terminal_name);
         if (!prev || item.date_modified > prev.dateModified) {
@@ -313,14 +320,26 @@ function touchportalStale(cache, solar_system = '') {
         }
     });
 
+    // Build a /touchportal/stale[/system][?hidePlatinum=1] URL, so every
+    // link on this page (system switch, platinum toggle) carries both
+    // filters forward instead of silently resetting one when the other changes.
+    const staleUrl = (system, hide) => {
+        const path = `/touchportal/stale${system ? '/' + encodeURIComponent(system) : ''}`;
+        return hide ? `${path}?hidePlatinum=1` : path;
+    };
+
     // System filter buttons - reuse the same set of systems as the routes page.
     const systems = getAvailableSystems(cache);
     const systemButtons = systems.map(system => {
         const isActive = solar_system === system;
         const style = isActive ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
-        return `<a href="/touchportal/stale/${encodeURIComponent(system)}" style="${style}">${escapeHtml(system)}</a>`;
+        return `<a href="${staleUrl(system, hidePlatinum)}" style="${style}">${escapeHtml(system)}</a>`;
     }).join('\n        ');
     const allSystemsStyle = !solar_system ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
+
+    const platinumToggleStyle = hidePlatinum ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
+    const platinumToggleLabel = hidePlatinum ? 'Show Platinum terminals' : 'Hide Platinum terminals';
+    const platinumToggleLink = `<a href="${staleUrl(solar_system, !hidePlatinum)}" style="${platinumToggleStyle}">${platinumToggleLabel}</a>`;
 
     // Group terminals by planet. Sort planets alphabetically for a stable
     // column layout, put the "Other" bucket last since it's the miscellaneous one.
@@ -368,7 +387,10 @@ function touchportalStale(cache, solar_system = '') {
     <div id="top">
         <div class="button-group">
             ${systemButtons}
-            <a href="/touchportal/stale" style="${allSystemsStyle}">All systems</a>
+            <a href="${staleUrl('', hidePlatinum)}" style="${allSystemsStyle}">All systems</a>
+        </div>
+        <div class="button-group">
+            ${platinumToggleLink}
         </div>
         ${planetButtons ? `<div class="button-group" style="display: block;">
             ${planetButtons}

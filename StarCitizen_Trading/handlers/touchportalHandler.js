@@ -6,6 +6,9 @@
  *   /touchportal/{scu}/{sys}   -> best trading routes filtered by system
  *   /touchportal/stale         -> terminals with the oldest data
  *   /touchportal/stale/{sys}   -> oldest-data list filtered by system
+ *                                  ?hidePlatinum=1 hides "Platinum Bay" kiosk
+ *                                  terminals (single-item shops that are
+ *                                  almost always stale and rarely worth a visit)
  *   /touchportal/smart         -> smart routes (ranked by aUEC/hour, profit,
  *                                  or ROI, see docs/smart-routes-plan.md).
  *                                  Reads its filters from the query string
@@ -47,7 +50,8 @@ function handle(req, res, cache) {
 
     if (parts[1] === 'stale') {
         const system = parts[2] ? validateSystemName(parts[2]) : '';
-        res.end(html.touchportalStale(cache, system));
+        const hidePlatinum = url.searchParams.get('hidePlatinum') === '1';
+        res.end(html.touchportalStale(cache, system, hidePlatinum));
         return;
     }
 
