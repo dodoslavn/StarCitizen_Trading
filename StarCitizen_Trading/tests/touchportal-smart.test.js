@@ -432,23 +432,22 @@ describe('touchportalSmart', () => {
         expect(html).toContain('Fresh');
     });
 
-    test('ship picker defaults to the bracket of the resolved ship, not every ship at once', () => {
+    test('shows the standalone ship-picker page (not the routes table) when no ship is chosen yet', () => {
         const cache = new DataCache();
         cache.setData({ data: [] });
         cache.setInitData({});
         cache.setVehicles([SMALL_SHIP, BIG_MANUAL_SHIP]);
 
-        // No shipSlug -> resolveShip defaults to the smallest ship (Small Ship,
-        // bracket "small"), so only that bracket's ships should render -
-        // Big Ship (bracket "very-large") should NOT appear until that
-        // bracket is selected. This is the fix for the ship picker showing
-        // all 100+ ships on one page.
+        // No shipSlug -> ship selection is a required first step, so this
+        // should render the picker page (defaulting to the "small" bracket),
+        // not the routes table - and definitely not every ship at once.
         const html = touchportalSmart(cache, {});
         expect(html).toContain('Small Ship');
         expect(html).not.toContain('Big Ship');
+        expect(html).not.toContain('<table>');
     });
 
-    test('ship picker shows ships from the requested shipBracket', () => {
+    test('ship-picker page shows ships from the requested shipBracket', () => {
         const cache = new DataCache();
         cache.setData({ data: [] });
         cache.setInitData({});
@@ -459,18 +458,16 @@ describe('touchportalSmart', () => {
         expect(html).not.toContain('Small Ship');
     });
 
-    test('preselects the ship passed in filters', () => {
+    test('renders the routes page (not the picker) once a ship is chosen, with a change-ship link', () => {
         const cache = new DataCache();
         cache.setData({ data: [] });
         cache.setInitData({});
         cache.setVehicles([SMALL_SHIP, BIG_MANUAL_SHIP]);
 
         const html = touchportalSmart(cache, { shipSlug: 'big-ship' });
+        expect(html).toContain('<table>');
         expect(html).toContain('<input type="hidden" name="ship" value="big-ship">');
-        // shipBracket isn't passed explicitly - it should be inferred from
-        // the resolved ship (Big Ship -> "very-large"), so its link is the
-        // one that shows as selected.
-        expect(html).toMatch(/ship=big-ship&shipBracket=very-large"[^>]*background-color: #4ab8ff[^>]*>Big Ship</);
+        expect(html).toContain('Change ship (Big Ship)');
     });
 
     test('renders system filter buttons for every known system plus All systems', () => {

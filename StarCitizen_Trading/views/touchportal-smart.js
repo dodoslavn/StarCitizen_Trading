@@ -238,15 +238,6 @@ const SHIP_BRACKETS = [
 ];
 
 /**
- * Which bracket a ship falls into, by SCU.
- * @param {Object} ship - { scu, ... }
- * @returns {string} A SHIP_BRACKETS key
- */
-function bracketForShip(ship) {
-    return SHIP_BRACKETS.find(b => ship.scu >= b.min && ship.scu < b.max).key;
-}
-
-/**
  * Render the ship picker as plain links, one size bracket at a time -
  * with 100+ ships in the cached vehicle list, showing them all at once
  * (as the old grouped-but-single-page layout did) was too much for the
@@ -309,7 +300,31 @@ function buildQueryString(filters, overrides = {}) {
 }
 
 /**
- * Generate the smart routes page.
+ * Standalone "pick a ship first" page shown before any routes, so the
+ * TouchPortal panel's flow is: hub -> choose ship -> routes for that ship
+ * (rather than showing every filter and 100+ ships crammed onto one page).
+ * @param {Array} vehicles - cache.getVehicles() (must be non-empty)
+ * @param {Object} filters - Current filters (only shipBracket matters here,
+ *   but sort/system/wallet/safe/sameSystem are preserved through the link
+ *   so picking a ship doesn't reset filters set on an earlier visit)
+ * @returns {string}
+ */
+function renderShipPickerPage(vehicles, filters) {
+    const activeBracket = filters.shipBracket || SHIP_BRACKETS[0].key;
+    const body = `
+    <h2>Trade Routes by AI</h2>
+    <p style="text-align: center; color: #888;">Pick a ship to see the routes it can actually fly, load, and afford.</p>
+    <div class="ship-picker">
+        ${renderShipPicker(vehicles, filters, null, activeBracket)}
+    </div>`;
+    return shell('Trade Routes by AI', body, false);
+}
+
+/**
+ * Generate the smart routes page. Requires a ship to already be chosen
+ * (filters.shipSlug) - if not, the caller should show
+ * renderShipPickerPage() instead so ship selection is always a distinct
+ * step before routes are calculated/rendered.
  * @param {Object} cache - Data cache instance
  * @param {Object} filters - { shipSlug, wallet, sort, system, safeOnly, sameSystemOnly } (already validated by the handler)
  * @returns {string} Complete HTML page
@@ -322,13 +337,21 @@ function touchportalSmart(cache, filters = {}) {
         return shell('Trade Routes by AI', body, false);
     }
 
+    const vehicles = cache.getVehicles();
+    if (!filters.shipSlug && vehicles.length > 0) {
+        return renderShipPickerPage(vehicles, filters);
+    }
+
     const { wallet = 0, sort = 'hour', system = '', safeOnly = false, sameSystemOnly = false } = filters;
     const { routes, ship } = calculateSmartRoutes(cache, filters);
-    const vehicles = cache.getVehicles();
 
     const shipInfo = ship
         ? `Pad: ${escapeHtml(ship.pad_type || 'n/a')} &middot; Boxes: ${escapeHtml(ship.container_sizes || 'n/a')} SCU`
         : 'Vehicle data not loaded yet - showing unconstrained routes.';
+
+    const changeShipLink = vehicles.length > 0
+        ? `<a href="/touchportal/smart?${buildQueryString(filters, { shipSlug: '' })}" style="background-color: #444;">Change ship${ship ? ` (${escapeHtml(ship.name)})` : ''}</a>`
+        : '';
 
     const showCapitalAtRisk = wallet > 0;
 
@@ -375,8 +398,6 @@ function touchportalSmart(cache, filters = {}) {
         ? `<input type="hidden" name="${key}" value="${escapeHtml(filters[key])}">`
         : '').join('');
 
-    const activeBracket = filters.shipBracket || (ship ? bracketForShip(ship) : SHIP_BRACKETS[0].key);
-
     const body = `
     <h2>Trade Routes by AI</h2>
     <p style="text-align: center; color: #888;">Ranked by aUEC/hour (profit discounted for data age and route risk), profit, or ROI - filtered to routes your ship can actually fly and afford, with an estimated door-to-door trip time.</p>
@@ -404,11 +425,11 @@ function touchportalSmart(cache, filters = {}) {
             ${filterLink({ safeOnly: !safeOnly }, 'Safe routes only', safeOnly)}
             ${filterLink({ sameSystemOnly: !sameSystemOnly }, 'Same system only', sameSystemOnly)}
         </div>
+        <div class="button-group">
+            ${changeShipLink}
+        </div>
     </div>
     <p style="text-align: center; color: #666; font-size: 0.85rem;">${shipInfo}</p>
-    <div class="ship-picker">
-        ${renderShipPicker(vehicles, filters, ship, activeBracket)}
-    </div>
     <table>
         <tr>
             <th>Commodity</th>
