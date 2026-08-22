@@ -15,8 +15,8 @@
  *                                  rather than path segments, since those
  *                                  inputs are independent of each other:
  *                                    ?ship=<uex-slug>  (e.g. drak-corsair)
- *                                    ?manufacturer=<slug> (e.g. drake-interplanetary;
- *                                                      which manufacturer the ship picker shows)
+ *                                    ?shipBracket=small|medium|large|very-large
+ *                                                      (which size tier the ship picker shows)
  *                                    ?wallet=<aUEC>    (omit/0 = unlimited)
  *                                    ?sort=hour|profit|roi (default hour)
  *                                    ?system=<name>    (e.g. Stanton; omit = all)
@@ -25,7 +25,7 @@
  */
 
 const html = require('../html.js');
-const { validateSCU, validateSystemName, validateShipId, validateWallet, validateManufacturer } = require('../utils/validation.js');
+const { validateSCU, validateSystemName, validateShipId, validateWallet, validateShipBracket } = require('../utils/validation.js');
 
 const VALID_SORTS = ['profit', 'roi', 'hour'];
 
@@ -59,7 +59,7 @@ function handle(req, res, cache) {
         const rawSort = url.searchParams.get('sort');
         const filters = {
             shipSlug: validateShipId(url.searchParams.get('ship') || ''),
-            manufacturer: validateManufacturer(url.searchParams.get('manufacturer') || ''),
+            shipBracket: validateShipBracket(url.searchParams.get('shipBracket') || ''),
             wallet: validateWallet(url.searchParams.get('wallet')),
             sort: VALID_SORTS.includes(rawSort) ? rawSort : 'hour',
             system: validateSystemName(url.searchParams.get('system') || ''),

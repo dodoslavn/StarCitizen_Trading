@@ -226,67 +226,74 @@ function formatDuration(minutes) {
 }
 
 /**
- * Turn a manufacturer name (e.g. "Musashi Industrial and Starflight
- * Concern") into a URL-safe slug for the ?manufacturer= query param.
- * @param {string} name
- * @returns {string}
+ * Ship-size tiers for the picker. `key` is what travels in the
+ * ?shipBracket= query param (validated by utils/validation.js
+ * validateShipBracket, which must be kept in sync with this list).
  */
-function manufacturerSlug(name) {
-    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
+const SHIP_BRACKETS = [
+    { key: 'small', label: 'Small (< 50 SCU)', min: 0, max: 50 },
+    { key: 'medium', label: 'Medium (50-150 SCU)', min: 50, max: 150 },
+    { key: 'large', label: 'Large (150-500 SCU)', min: 150, max: 500 },
+    { key: 'very-large', label: 'Very Large (500+ SCU)', min: 500, max: Infinity }
+];
 
 /**
- * Render the ship picker as plain links, one manufacturer at a time -
- * with 100+ ships across a dozen-plus manufacturers in the cached vehicle
- * list, showing them all at once (as the old grouped-but-single-page
- * layout did) was too much for the TouchPortal panel to usefully display.
- * A native <select> isn't an option either: TouchPortal's embedded panel
- * doesn't handle a large native dropdown overlay reliably (selecting an
- * option there was observed to kick the panel back to its home/hub URL,
- * even though the underlying page and server behave correctly in a
- * regular browser).
- * @param {Array} vehicles - Ships sorted ascending by SCU
+ * Render the ship picker as plain links, one SCU bracket at a time - with
+ * 100+ ships in the cached vehicle list, showing them all at once was too
+ * much for the TouchPortal panel to usefully display. A native <select>
+ * isn't an option either: TouchPortal's embedded panel doesn't handle a
+ * large native dropdown overlay reliably (selecting an option there was
+ * observed to kick the panel back to its home/hub URL, even though the
+ * underlying page and server behave correctly in a regular browser).
+ * Within a bracket, ships are grouped by manufacturer (sorted
+ * alphabetically), with ships sorted alphabetically by name inside each group.
+ * @param {Array} vehicles - Ships (any order; re-sorted here)
  * @param {Object} filters - Current filters (for buildQueryString)
  * @param {Object|null} selectedShip
- * @param {string} activeManufacturerSlug - Which manufacturer's ships to show
+ * @param {string} activeBracketKey - Which SHIP_BRACKETS key to show ships for
  * @returns {string}
  */
-function renderShipPicker(vehicles, filters, selectedShip, activeManufacturerSlug) {
-    const manufacturers = [...new Set(vehicles.map(v => v.manufacturer))].sort();
-    const resolvedSlug = manufacturers.map(manufacturerSlug).includes(activeManufacturerSlug)
-        ? activeManufacturerSlug
-        : manufacturerSlug(manufacturers[0] || '');
-
-    const manufacturerButtons = manufacturers.map(name => {
-        const slug = manufacturerSlug(name);
-        const isActive = slug === resolvedSlug;
+function renderShipPicker(vehicles, filters, selectedShip, activeBracketKey) {
+    const bracketButtons = SHIP_BRACKETS.map(b => {
+        const isActive = b.key === activeBracketKey;
         const style = isActive ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #006fdd;';
-        const qs = buildQueryString(filters, { manufacturer: slug });
-        return `<a href="/touchportal/smart?${qs}" style="${style}">${escapeHtml(name)}</a>`;
+        const qs = buildQueryString(filters, { shipBracket: b.key });
+        return `<a href="/touchportal/smart?${qs}" style="${style}">${escapeHtml(b.label)}</a>`;
     }).join('\n            ');
 
-    const links = vehicles
-        .filter(v => manufacturerSlug(v.manufacturer) === resolvedSlug)
-        .map(v => {
+    const bracket = SHIP_BRACKETS.find(b => b.key === activeBracketKey) || SHIP_BRACKETS[0];
+
+    const byManufacturer = new Map();
+    vehicles
+        .filter(v => v.scu >= bracket.min && v.scu < bracket.max)
+        .forEach(v => {
+            if (!byManufacturer.has(v.manufacturer)) byManufacturer.set(v.manufacturer, []);
+            byManufacturer.get(v.manufacturer).push(v);
+        });
+
+    const manufacturerGroups = [...byManufacturer.keys()].sort().map(manufacturer => {
+        const ships = byManufacturer.get(manufacturer).sort((a, b) => a.name.localeCompare(b.name));
+        const links = ships.map(v => {
             const isSelected = selectedShip && v.slug === selectedShip.slug;
             const style = isSelected ? 'background-color: #4ab8ff; font-weight: bold;' : 'background-color: #333;';
-            const qs = buildQueryString(filters, { shipSlug: v.slug, manufacturer: resolvedSlug });
+            const qs = buildQueryString(filters, { shipSlug: v.slug, shipBracket: activeBracketKey });
             return `<a href="/touchportal/smart?${qs}" style="${style}" title="${v.scu} SCU">${escapeHtml(v.name)}</a>`;
-        })
-        .join('\n');
+        }).join('\n');
+        return `<div class="manufacturer-group"><h4>${escapeHtml(manufacturer)}</h4><div class="ship-links">${links}</div></div>`;
+    }).join('');
 
     return `
-    <div class="button-group" style="display: block;">
-        ${manufacturerButtons}
+    <div class="button-group">
+        ${bracketButtons}
     </div>
-    <div class="ship-links">${links}</div>`;
+    ${manufacturerGroups}`;
 }
 
 /**
  * Build a query string from the current filters with some keys overridden -
  * used by every filter link/form on the page so toggling one filter never
  * drops the others.
- * @param {Object} filters - { shipSlug, manufacturer, wallet, sort, system, safeOnly, sameSystemOnly }
+ * @param {Object} filters - { shipSlug, shipBracket, wallet, sort, system, safeOnly, sameSystemOnly }
  * @param {Object} overrides - Keys to replace
  * @returns {string} Query string (no leading '?')
  */
@@ -295,7 +302,7 @@ function buildQueryString(filters, overrides = {}) {
     const params = new URLSearchParams();
     if (merged.sort) params.set('sort', merged.sort);
     if (merged.shipSlug) params.set('ship', merged.shipSlug);
-    if (merged.manufacturer) params.set('manufacturer', merged.manufacturer);
+    if (merged.shipBracket) params.set('shipBracket', merged.shipBracket);
     if (merged.wallet > 0) params.set('wallet', merged.wallet);
     if (merged.system) params.set('system', merged.system);
     if (merged.safeOnly) params.set('safe', '1');
@@ -308,7 +315,7 @@ function buildQueryString(filters, overrides = {}) {
  * TouchPortal panel's flow is: hub -> choose ship -> routes for that ship
  * (rather than showing every filter and 100+ ships crammed onto one page).
  * @param {Array} vehicles - cache.getVehicles() (must be non-empty)
- * @param {Object} filters - Current filters (only manufacturer matters here,
+ * @param {Object} filters - Current filters (only shipBracket matters here,
  *   but sort/system/wallet/safe/sameSystem are preserved through the link
  *   so picking a ship doesn't reset filters set on an earlier visit)
  * @returns {string}
@@ -318,7 +325,7 @@ function renderShipPickerPage(vehicles, filters) {
     <h2>Trade Routes by AI</h2>
     <p style="text-align: center; color: #888;">Pick a ship to see the routes it can actually fly, load, and afford.</p>
     <div class="ship-picker">
-        ${renderShipPicker(vehicles, filters, null, filters.manufacturer || '')}
+        ${renderShipPicker(vehicles, filters, null, filters.shipBracket || SHIP_BRACKETS[0].key)}
     </div>`;
     return shell('Trade Routes by AI', body, false);
 }
@@ -397,7 +404,7 @@ function touchportalSmart(cache, filters = {}) {
     ).join('\n            ');
     const allSystemsButton = filterLink({ system: '' }, 'All systems', !system);
 
-    const hiddenInputs = ['sort', 'system', 'manufacturer'].map(key => filters[key]
+    const hiddenInputs = ['sort', 'system', 'shipBracket'].map(key => filters[key]
         ? `<input type="hidden" name="${key}" value="${escapeHtml(filters[key])}">`
         : '').join('');
 

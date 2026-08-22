@@ -94,22 +94,16 @@ function validateWallet(input, max = 1000000000) {
     return Math.floor(Math.min(num, max));
 }
 
-/**
- * Validate a manufacturer slug used to page through the ship picker (there
- * are 100+ ships across a dozen-plus manufacturers, too many to show at
- * once - see views/touchportal-smart.js manufacturerSlug()). Only checks
- * format; whether it matches a real cached manufacturer is checked
- * separately where the vehicle list is available, same pattern as validateShipId.
- * @param {string} input - Manufacturer slug from the query string
- * @returns {string} Sanitized slug, empty string if input isn't a string
- */
-function validateManufacturer(input) {
-    if (typeof input !== 'string') {
-        return '';
-    }
+const VALID_SHIP_BRACKETS = ['small', 'medium', 'large', 'very-large'];
 
-    const sanitized = input.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    return sanitized.substring(0, 50);
+/**
+ * Validate a ship-size bracket key used to page through the ship picker
+ * (there are 100+ ships, too many to show all at once - see views/touchportal-smart.js SHIP_BRACKETS)
+ * @param {string} input - Bracket key from the query string
+ * @returns {string} One of VALID_SHIP_BRACKETS, or '' if invalid/missing
+ */
+function validateShipBracket(input) {
+    return VALID_SHIP_BRACKETS.includes(input) ? input : '';
 }
 
 module.exports = {
@@ -118,5 +112,5 @@ module.exports = {
     sanitizePath,
     validateShipId,
     validateWallet,
-    validateManufacturer
+    validateShipBracket
 };

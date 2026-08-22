@@ -441,24 +441,42 @@ describe('touchportalSmart', () => {
         cache.setVehicles([SMALL_SHIP, BIG_MANUAL_SHIP]);
 
         // No shipSlug -> ship selection is a required first step, so this
-        // should render the picker page (defaulting to the first
-        // manufacturer alphabetically, "Alpha Corp"), not the routes table
-        // - and definitely not every ship from every manufacturer at once.
+        // should render the picker page (defaulting to the "small"
+        // bracket), not the routes table - and definitely not every ship
+        // from every bracket at once.
         const html = touchportalSmart(cache, {});
         expect(html).toContain('Small Ship');
         expect(html).not.toContain('Big Ship');
         expect(html).not.toContain('<table>');
     });
 
-    test('ship-picker page shows ships from the requested manufacturer', () => {
+    test('ship-picker page shows ships from the requested shipBracket', () => {
         const cache = new DataCache();
         cache.setData({ data: [] });
         cache.setInitData({});
         cache.setVehicles([SMALL_SHIP, BIG_MANUAL_SHIP]);
 
-        const html = touchportalSmart(cache, { manufacturer: 'zulu-corp' });
+        const html = touchportalSmart(cache, { shipBracket: 'very-large' });
         expect(html).toContain('Big Ship');
         expect(html).not.toContain('Small Ship');
+    });
+
+    test('within a bracket, ships are grouped by manufacturer (sorted alphabetically) and sorted alphabetically by name inside each group', () => {
+        const cache = new DataCache();
+        cache.setData({ data: [] });
+        cache.setInitData({});
+        // Two ships in the same bracket ("small", <50 SCU), different
+        // manufacturers, and deliberately added in an order that would be
+        // wrong if the picker didn't explicitly sort.
+        const zebraCorpShip = { slug: 'zebra-ship', name: 'Zebra Ship', manufacturer: 'Zebra Corp', scu: 10, pad_type: 'S', container_sizes: '1', canLand: true, needsAutoLoad: false };
+        const alphaCorpShipB = { slug: 'alpha-ship-b', name: 'B Ship', manufacturer: 'Alpha Corp', scu: 15, pad_type: 'S', container_sizes: '1', canLand: true, needsAutoLoad: false };
+        cache.setVehicles([zebraCorpShip, SMALL_SHIP, alphaCorpShipB]);
+
+        const html = touchportalSmart(cache, { shipBracket: 'small' });
+        // Manufacturer headings appear in alphabetical order: Alpha before Zebra.
+        expect(html.indexOf('>Alpha Corp<')).toBeLessThan(html.indexOf('>Zebra Corp<'));
+        // Within Alpha Corp, ships appear alphabetically: "B Ship" before "Small Ship".
+        expect(html.indexOf('>B Ship<')).toBeLessThan(html.indexOf('>Small Ship<'));
     });
 
     test('renders the routes page (not the picker) once a ship is chosen, with a change-ship link', () => {
