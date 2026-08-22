@@ -61,7 +61,8 @@ const TOUCHPORTAL_STYLES = `
     body { background-color: black; color: white; font-family: Arial, sans-serif; margin: 0; padding: 1rem; }
     h1, h2 { text-align: center; color: #4ab8ff; }
     body div#top { text-align: center; margin-bottom: 1rem; }
-    body div#top a { border-radius: 5px; text-align: center; padding: 0.5rem 0.8rem; margin: 0.2rem; display: inline-block; }
+    body div#top a { border-radius: 8px; text-align: center; padding: 0.7rem 1.1rem; margin: 0.25rem; display: inline-block; font-size: 1rem; box-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.3); transition: filter 0.15s ease, transform 0.15s ease; }
+    body div#top a:hover { filter: brightness(1.15); transform: translateY(-1px); }
     body div#top div.button-group { display: inline-block; margin: 0.2rem 0.5rem; }
     body div.hub { max-width: 70rem; margin: 4rem auto; display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center; }
     body div.hub a.hub-tile { flex: 1 1 20rem; padding: 2rem; background-color: #006fdd; border-radius: 0.5rem; font-size: 1.5rem; color: white; text-decoration: none; text-align: center; }
@@ -87,7 +88,8 @@ const TOUCHPORTAL_STYLES = `
     body div.manufacturer-group { display: flex; align-items: baseline; gap: 0.6rem; margin-top: 0.5rem; text-align: left; }
     body div.manufacturer-group h4 { color: #4ab8ff; margin: 0; font-size: 0.9rem; flex: 0 0 auto; min-width: 9rem; text-align: right; }
     body div.ship-links { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-start; flex: 1 1 auto; }
-    body div.ship-links a { padding: 0.3rem 0.6rem; border-radius: 5px; font-size: 0.85rem; display: inline-block; }
+    body div.ship-links a { padding: 0.5rem 0.9rem; border-radius: 8px; font-size: 0.95rem; display: inline-block; box-shadow: 0 0.1rem 0.15rem rgba(0, 0, 0, 0.3); transition: filter 0.15s ease, transform 0.15s ease; }
+    body div.ship-links a:hover { filter: brightness(1.15); transform: translateY(-1px); }
 `;
 
 /**
