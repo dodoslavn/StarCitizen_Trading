@@ -9,6 +9,7 @@ const {
     formatContainerSizes,
     estimateMaxInventory,
     escapeHtml,
+    decodeHtmlEntities,
     getStockUsageClass,
     dataAgeConfidence
 } = require('../utils/formatters.js');
@@ -182,5 +183,36 @@ describe('escapeHtml', () => {
     test('handles non-string values by coercing to string first', () => {
         expect(escapeHtml(42)).toBe('42');
         expect(escapeHtml(0)).toBe('0');
+    });
+});
+
+describe('decodeHtmlEntities', () => {
+    test('decodes entities UEX has occasionally baked into a raw field value', () => {
+        // Real case: a manufacturer's company_name arrived from UEX as the
+        // literal string "Grey&apos;s Market" instead of "Grey's Market" -
+        // without decoding first, escapeHtml would double-escape the "&"
+        // into "Grey&amp;apos;s Market" on the page.
+        expect(decodeHtmlEntities('Grey&apos;s Market')).toBe('Grey\'s Market');
+    });
+
+    test('decodes the other four entities escapeHtml produces', () => {
+        expect(decodeHtmlEntities('a &amp; b')).toBe('a & b');
+        expect(decodeHtmlEntities('&lt;script&gt;')).toBe('<script>');
+        expect(decodeHtmlEntities('&quot;quoted&quot;')).toBe('"quoted"');
+        expect(decodeHtmlEntities('it&#39;s')).toBe('it\'s');
+    });
+
+    test('leaves plain strings unchanged', () => {
+        expect(decodeHtmlEntities('Aegis Dynamics')).toBe('Aegis Dynamics');
+    });
+
+    test('coerces nullish to empty string', () => {
+        expect(decodeHtmlEntities(null)).toBe('');
+        expect(decodeHtmlEntities(undefined)).toBe('');
+    });
+
+    test('round-trips with escapeHtml back to the original text', () => {
+        const decoded = decodeHtmlEntities('Grey&apos;s Market');
+        expect(escapeHtml(decoded)).toBe('Grey&#39;s Market');
     });
 });

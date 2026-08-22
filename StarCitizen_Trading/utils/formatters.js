@@ -18,6 +18,23 @@ function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, ch => HTML_ESCAPE_MAP[ch]);
 }
 
+const HTML_UNESCAPE_MAP = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': '\'', '&#39;': '\'' };
+
+/**
+ * Decode HTML entities UEX has occasionally baked directly into a field's
+ * raw value (e.g. a manufacturer's company_name arriving as literal
+ * "Grey&apos;s Market" instead of "Grey's Market"). Without this, escapeHtml
+ * would double-escape the already-encoded "&", rendering "Grey&amp;apos;s
+ * Market" on the page. Only handles the small fixed set of entities
+ * escapeHtml itself produces - not a general-purpose HTML decoder.
+ * @param {*} value - Value to decode (coerced to string; nullish becomes '')
+ * @returns {string}
+ */
+function decodeHtmlEntities(value) {
+    if (value === null || value === undefined) return '';
+    return String(value).replace(/&(amp|lt|gt|quot|apos|#39);/g, m => HTML_UNESCAPE_MAP[m]);
+}
+
 /**
  * Format number with thousand separators
  * @param {number|string} num - Number to format
@@ -162,6 +179,7 @@ module.exports = {
     formatContainerSizes,
     estimateMaxInventory,
     escapeHtml,
+    decodeHtmlEntities,
     getStockUsageClass,
     dataAgeConfidence
 };

@@ -6,7 +6,7 @@
 const fs = require('fs');
 const logger = require('../logger.js');
 const uexApi = require('./uexApi.js');
-const { estimateMaxInventory } = require('../utils/formatters.js');
+const { estimateMaxInventory, decodeHtmlEntities } = require('../utils/formatters.js');
 
 const DEFAULT_MAX_INVENTORY_FILE = './max_inventory.json';
 const DEFAULT_TERMINAL_DISTANCES_FILE = './terminals_distances.json';
@@ -349,7 +349,7 @@ function processVehicles(rawData) {
             id: v.id,
             slug: v.slug,
             name: v.name_full || v.name,
-            manufacturer: v.company_name || 'Unknown',
+            manufacturer: decodeHtmlEntities(v.company_name) || 'Unknown',
             scu: Number(v.scu) || 0,
             pad_type: v.pad_type || '',
             container_sizes: v.container_sizes || '',
