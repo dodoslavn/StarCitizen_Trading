@@ -363,7 +363,7 @@ function touchportalStale(cache, solar_system = '') {
             ${systemButtons}
             <a href="/touchportal/stale" style="${allSystemsStyle}">All systems</a>
         </div>
-        ${planetButtons ? `<div class="button-group">
+        ${planetButtons ? `<div class="button-group" style="display: block;">
             ${planetButtons}
         </div>` : ''}
     </div>
