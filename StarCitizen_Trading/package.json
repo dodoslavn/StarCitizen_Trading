@@ -1,6 +1,6 @@
 {
   "name": "star-citizen_trading",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Star Citizen trading data display with auto-refreshing from UEX API",
   "main": "server.js",
   "scripts": {
