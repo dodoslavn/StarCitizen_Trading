@@ -237,6 +237,14 @@ const SHIP_BRACKETS = [
     { key: 'very-large', label: 'Very Large (500+ SCU)', min: 500, max: Infinity }
 ];
 
+// Well-known short forms for manufacturer labels in the picker - grouping
+// and sort order still use the full UEX company_name, only the displayed
+// text is shortened.
+const MANUFACTURER_ABBREVIATIONS = {
+    'Roberts Space Industries': 'RSI',
+    'Musashi Industrial and Starflight Concern': 'MISC'
+};
+
 /**
  * Render the ship picker as plain links, one SCU bracket at a time - with
  * 100+ ships in the cached vehicle list, showing them all at once was too
@@ -279,7 +287,8 @@ function renderShipPicker(vehicles, filters, selectedShip, activeBracketKey) {
             const qs = buildQueryString(filters, { shipSlug: v.slug, shipBracket: activeBracketKey });
             return `<a href="/touchportal/smart?${qs}" style="${style}" title="${v.scu} SCU">${escapeHtml(v.name)}</a>`;
         }).join('\n');
-        return `<div class="manufacturer-group"><h4>${escapeHtml(manufacturer)}</h4><div class="ship-links">${links}</div></div>`;
+        const label = MANUFACTURER_ABBREVIATIONS[manufacturer] || manufacturer;
+        return `<div class="manufacturer-group"><h4>${escapeHtml(label)}</h4><div class="ship-links">${links}</div></div>`;
     }).join('');
 
     return `
