@@ -449,7 +449,7 @@ function touchportalSmart(cache, filters = {}) {
         ${rows || `<tr><td colspan="${showCapitalAtRisk ? 12 : 11}">No routes available for this ship/wallet/system combination</td></tr>`}
     </table>`;
 
-    return shell('Trade Routes by AI', body, true);
+    return shell('Trade Routes by AI', body, false);
 }
 
 module.exports = {
