@@ -4,6 +4,7 @@
  */
 
 const logger = require('./logger.js');
+const html = require('./html.js');
 const mainHandler = require('./handlers/mainHandler.js');
 const aboutHandler = require('./handlers/aboutHandler.js');
 const cssHandler = require('./handlers/cssHandler.js');
@@ -46,7 +47,7 @@ async function processRequest(req, res, config, cache) {
         logger.warn('No cached data available');
         res.statusCode = 503;
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.end('<html><body><h1>503 Service Unavailable</h1><p>Data is being loaded. Please try again in a moment.</p></body></html>');
+        res.end(html.loadingPage());
         return;
     }
 

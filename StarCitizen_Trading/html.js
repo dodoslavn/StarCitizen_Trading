@@ -12,7 +12,7 @@
  */
 
 const { css } = require('./views/styles.js');
-const { header, footer, about } = require('./views/layout.js');
+const { header, footer, loadingPage, about } = require('./views/layout.js');
 const { displayCommodity } = require('./views/commodities.js');
 const { profit_uec, profit_perc } = require('./views/profits.js');
 const { touchportal, touchportalHub, touchportalStale } = require('./views/touchportal.js');
@@ -20,6 +20,7 @@ const { touchportal, touchportalHub, touchportalStale } = require('./views/touch
 module.exports = {
     header,
     footer,
+    loadingPage,
     displayCommodity,
     css,
     profit_uec,
