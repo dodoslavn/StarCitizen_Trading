@@ -347,15 +347,19 @@ async function initializeData(config, cache) {
     try {
         logger.info('Fetching initialization data...');
 
-        const [systemsResp, terminalsResp, vehiclesResp] = await Promise.all([
+        // Systems/terminals are essential - the whole site depends on them, so
+        // a failure here should propagate and abort startup. Vehicles are only
+        // used by the (optional, gracefully-degrading) AI Trade Routes page,
+        // so they're fetched separately and are never allowed to block the
+        // rest of the site from loading (e.g. if a host's config.json predates
+        // the "vehicles" endpoint being added, or the endpoint is briefly down).
+        const [systemsResp, terminalsResp] = await Promise.all([
             uexApi.fetchSolarSystems(config),
-            uexApi.fetchTerminals(config),
-            uexApi.fetchVehicles(config)
+            uexApi.fetchTerminals(config)
         ]);
 
         const systems = processSolarSystems(systemsResp);
         const terminals = processTerminals(terminalsResp);
-        const vehicles = processVehicles(vehiclesResp);
 
         // mergedDict[terminal_nickname] = { name (system), code (system),
         //   planet_name, moon_name, orbit_name, space_station_name, city_name,
@@ -369,9 +373,16 @@ async function initializeData(config, cache) {
         });
 
         cache.setInitData(mergedDict);
-        cache.setVehicles(vehicles);
-        logger.info(`Loaded ${vehicles.length} vehicles from UEX`);
         logger.info('Initialization data processed successfully');
+
+        try {
+            const vehiclesResp = await uexApi.fetchVehicles(config);
+            const vehicles = processVehicles(vehiclesResp);
+            cache.setVehicles(vehicles);
+            logger.info(`Loaded ${vehicles.length} vehicles from UEX`);
+        } catch (vehiclesError) {
+            logger.warn(`Failed to fetch vehicles, AI Trade Routes will show unconstrained routes: ${vehiclesError.message}`);
+        }
     } catch (error) {
         logger.error('Failed to fetch init data:', error);
         throw error;
