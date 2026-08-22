@@ -84,9 +84,9 @@ const TOUCHPORTAL_STYLES = `
     body div.stale-column div.terminal-row.aging, body div.stale-column div.terminal-row.aging span.date { color: #ffb366; }
     body div.stale-column div.terminal-row.very-old, body div.stale-column div.terminal-row.very-old span.date { color: #ff8080; }
     body div.ship-picker { max-width: 60rem; margin: 1rem auto; text-align: center; }
-    body div.manufacturer-group { margin-top: 0.75rem; }
-    body div.manufacturer-group h4 { color: #4ab8ff; margin: 0 0 0.3rem; font-size: 0.95rem; }
-    body div.ship-links { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: center; margin-top: 0.5rem; }
+    body div.manufacturer-group { display: flex; align-items: baseline; gap: 0.6rem; margin-top: 0.5rem; text-align: left; }
+    body div.manufacturer-group h4 { color: #4ab8ff; margin: 0; font-size: 0.9rem; flex: 0 0 auto; min-width: 9rem; text-align: right; }
+    body div.ship-links { display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-start; flex: 1 1 auto; }
     body div.ship-links a { padding: 0.3rem 0.6rem; border-radius: 5px; font-size: 0.85rem; display: inline-block; }
 `;
 
