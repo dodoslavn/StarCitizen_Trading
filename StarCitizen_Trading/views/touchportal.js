@@ -302,7 +302,7 @@ function shortDate(unixTimestampSeconds) {
 // terminals that aren't realistically worth a special trip.
 const PLATINUM_TERMINAL_PREFIX = 'Platinum ';
 
-function touchportalStale(cache, solar_system = '', hidePlatinum = false) {
+function touchportalStale(cache, solar_system = '', hidePlatinum = true) {
     const cachedData = cache.getData();
     const cachedInitData = cache.getInitData();
 
@@ -326,12 +326,14 @@ function touchportalStale(cache, solar_system = '', hidePlatinum = false) {
         }
     });
 
-    // Build a /touchportal/stale[/system][?hidePlatinum=1] URL, so every
+    // Build a /touchportal/stale[/system][?showPlatinum=1] URL, so every
     // link on this page (system switch, platinum toggle) carries both
-    // filters forward instead of silently resetting one when the other changes.
-    const staleUrl = (system, hide) => {
+    // filters forward instead of silently resetting one when the other
+    // changes. Platinum terminals are hidden by default, so the query
+    // param only needs to appear when overriding that (i.e. showing them).
+    const staleUrl = (system, hidePlat) => {
         const path = `/touchportal/stale${system ? '/' + encodeURIComponent(system) : ''}`;
-        return hide ? `${path}?hidePlatinum=1` : path;
+        return hidePlat ? path : `${path}?showPlatinum=1`;
     };
 
     // System filter buttons - reuse the same set of systems as the routes page.
