@@ -34,16 +34,11 @@ function handle(req, res, cache, config) {
     const profit_uec = html.profit_uec(cache);
     const profit_perc = html.profit_perc(cache);
 
-    const depth = trading.generateMarketDepth(cache);
-    const market_depth = html.marketDepth(depth);
-
     res.write('<div id="content"> <div id="panel_l">');
     res.write(profit_uec);
     res.write('</div> <div id="panel_r">');
     res.write(profit_perc);
-    res.write('</div>');
-    res.write(market_depth);
-    res.write('<div id="main">');
+    res.write('</div> <div id="main">');
     res.write(tables);
     res.write('</div></div>');
     res.write(html.footer);

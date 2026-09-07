@@ -502,70 +502,6 @@ function generateBuyData(cache) {
     return commodities;
 }
 
-/**
- * Aggregate per-commodity market depth: total supply, total demand, best margin,
- * and overall market potential (tradeable SCU × best margin).
- * This powers the Market Depth section shown below the best-route tables.
- * @param {Object} cache - DataCache instance
- * @returns {Array} Sorted by marketPotential descending, filtered to margin > 0
- */
-function generateMarketDepth(cache) {
-    const data = cache.getData();
-    if (!data) return [];
-
-    const byComm = {};
-
-    data.data.forEach(item => {
-        const name = item.commodity_name;
-        if (!byComm[name]) {
-            byComm[name] = {
-                commodity: name,
-                totalBuySCU: 0,
-                totalSellSCU: 0,
-                buyTerminals: 0,
-                sellTerminals: 0,
-                bestBuyPrice: Infinity,
-                bestSellPrice: 0,
-            };
-        }
-        const c = byComm[name];
-
-        if (item.price_buy > 0 && item.scu_buy > 0) {
-            c.totalBuySCU += item.scu_buy;
-            c.buyTerminals++;
-            if (item.price_buy < c.bestBuyPrice) c.bestBuyPrice = item.price_buy;
-        }
-
-        if (item.price_sell > 0 && item.scu_sell_stock > 0) {
-            c.totalSellSCU += item.scu_sell_stock;
-            c.sellTerminals++;
-            if (item.price_sell > c.bestSellPrice) c.bestSellPrice = item.price_sell;
-        }
-    });
-
-    return Object.values(byComm)
-        .map(c => {
-            const bestBuy = c.bestBuyPrice === Infinity ? 0 : c.bestBuyPrice;
-            const margin = c.bestSellPrice - bestBuy;
-            const tradeableSCU = Math.min(c.totalBuySCU, c.totalSellSCU);
-            const marketPotential = margin > 0 && tradeableSCU > 0 ? tradeableSCU * margin : 0;
-            return {
-                commodity: c.commodity,
-                totalBuySCU: c.totalBuySCU,
-                totalSellSCU: c.totalSellSCU,
-                buyTerminals: c.buyTerminals,
-                sellTerminals: c.sellTerminals,
-                bestBuyPrice: bestBuy,
-                bestSellPrice: c.bestSellPrice,
-                margin,
-                tradeableSCU,
-                marketPotential
-            };
-        })
-        .filter(c => c.margin > 0 && c.marketPotential > 0)
-        .sort((a, b) => b.marketPotential - a.marketPotential);
-}
-
 module.exports = {
     refreshData,
     refreshConfirmedMaxInventory,
@@ -576,6 +512,5 @@ module.exports = {
     getCommodities,
     generateSellData,
     generateBuyData,
-    generateMarketDepth,
     processVehicles
 };
