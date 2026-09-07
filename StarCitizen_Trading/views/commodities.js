@@ -250,17 +250,17 @@ function generateMarketDepthRowHTML(depth) {
     const potentialMaxStr = potentialMax > 0 ? ` / ${readable_number(potentialMax)}` : '';
 
     return `<tr class="market-depth-row">
-        <td title="Current / avg / max SCU across all ${buyTerminals} buy terminal${buyTerminals !== 1 ? 's' : ''}">
-            Supply: ${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU
+        <td title="Supply — current / avg / max SCU across all ${buyTerminals} buy terminal${buyTerminals !== 1 ? 's' : ''}">
+            ${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU
         </td>
-        <td title="Current / avg / max SCU across all ${sellTerminals} sell terminal${sellTerminals !== 1 ? 's' : ''}">
-            Demand: ${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU
+        <td title="Demand — current / avg / max SCU across all ${sellTerminals} sell terminal${sellTerminals !== 1 ? 's' : ''}">
+            ${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU
         </td>
-        <td title="Current / max tradeable SCU — min(supply, demand) at each level">
-            Tradeable: ${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU
+        <td title="Tradeable — current / max SCU (min of supply and demand)">
+            ${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU
         </td>
-        <td title="Current / max market potential — tradeable × best margin">
-            Potential: ${readable_number(potentialCurrent)}${potentialMaxStr} aUEC
+        <td title="Market potential — current / max aUEC (tradeable × best margin)">
+            ${readable_number(potentialCurrent)}${potentialMaxStr} aUEC
         </td>
     </tr>`;
 }
