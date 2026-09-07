@@ -198,12 +198,6 @@ div.about-container p.footer-text
     margin-right: 3rem;
     }
 
-/* Market depth row inside each commodity table */
-tr.market-depth-row td
-    {
-    border-top: 1px solid #2a2a2a;
-    border-bottom: 1px solid #2a2a2a;
-    }
     `;
 }
 
