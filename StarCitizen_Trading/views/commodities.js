@@ -29,9 +29,19 @@ function displayTerminal(item, staleThresholds, side) {
     const max_is_estimate = max_inventory > raw_max ? false : raw_max_is_estimate;
 
     const staleness = getStalenessLevel(item.date_modified, staleThresholds);
-    // Green when current stock is at or above the historical average (well-stocked),
-    // red when it has been traded down below average (or is zero).
-    const stockClass = (stock > 0 && (stock_avg === 0 || stock >= stock_avg)) ? 'stock-available' : 'stock-depleted';
+    // Use UEX status tier (0-7) to determine stock level color.
+    // Buy side: high status = well stocked (green). Sell side: low status = high demand (green).
+    const status = (item.status_buy || 0) + (item.status_sell || 0);
+    let stockClass;
+    if (side === 'buy') {
+        if (status >= 5) stockClass = 'stock-available';
+        else if (status >= 3) stockClass = 'stock-medium';
+        else stockClass = 'stock-depleted';
+    } else {
+        if (status <= 2) stockClass = 'stock-available';
+        else if (status <= 4) stockClass = 'stock-medium';
+        else stockClass = 'stock-depleted';
+    }
     const classes = [stockClass];
     if (staleness !== 'fresh') classes.push(staleness);
     const rowClass = ` class="${classes.join(' ')}"`;

@@ -68,6 +68,10 @@ tr.stock-available:not(.stale):not(.very-stale) td
     {
     color: #b8e0b8;
     }
+tr.stock-medium:not(.stale):not(.very-stale) td
+    {
+    color: #ffcc99;
+    }
 tr.stock-depleted:not(.stale):not(.very-stale) td
     {
     color: #ffb0b0;
