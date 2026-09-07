@@ -304,8 +304,8 @@ function displayCommodity(item, buy = [], sell = [], cache, staleThresholds = { 
     return `
     <table class="commodity" id="comm-${escapeHtml(item)}">
         <tr><th colspan="4" class="text-center">${escapeHtml(item)} ${best_profit}</th></tr>
-        ${market_depth_row}
         ${best_route}
+        ${market_depth_row}
         <tr>
             <td colspan="2">(you) Sell</td>
             <td colspan="2">(you) Buy</td>
