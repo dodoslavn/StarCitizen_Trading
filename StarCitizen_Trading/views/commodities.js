@@ -249,19 +249,17 @@ function generateMarketDepthRowHTML(depth) {
     const tradeableMaxStr = tradeableMax > 0 ? ` / ${readable_number(tradeableMax)}` : '';
     const potentialMaxStr = potentialMax > 0 ? ` / ${readable_number(potentialMax)}` : '';
 
-    return `<tr class="market-depth-row">
-        <td title="Sell — how much demand exists across all ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''} (current / avg / max SCU)">
-            Sell: ${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU
-        </td>
-        <td title="Buy — how much stock is available across all ${buyTerminals} terminal${buyTerminals !== 1 ? 's' : ''} (current / avg / max SCU)">
-            Buy: ${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU
-        </td>
-        <td title="Tradeable — current / max SCU (min of sell demand and buy supply)">
-            Trade: ${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU
-        </td>
-        <td title="Market potential — current / max aUEC (tradeable × best margin)">
-            Pot: ${readable_number(potentialCurrent)}${potentialMaxStr} aUEC
-        </td>
+    return `<tr>
+        <th title="How much of this commodity terminals will buy from you (current / avg / max SCU across ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''})">Sell</th>
+        <th title="How much of this commodity you can buy from terminals (current / avg / max SCU across ${buyTerminals} terminal${buyTerminals !== 1 ? 's' : ''})">Buy</th>
+        <th title="How much you can actually trade right now — limited by whichever side is smaller (current / max SCU)">Trade</th>
+        <th title="Total market opportunity — tradeable SCU × best margin (current / max aUEC)">Potential</th>
+    </tr>
+    <tr class="market-depth-row">
+        <td>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU</td>
+        <td>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU</td>
+        <td>${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU</td>
+        <td>${readable_number(potentialCurrent)}${potentialMaxStr} aUEC</td>
     </tr>`;
 }
 
