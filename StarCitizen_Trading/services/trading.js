@@ -502,6 +502,57 @@ function generateBuyData(cache) {
     return commodities;
 }
 
+/**
+ * Aggregate market depth for all commodities at once.
+ * Used by the TouchPortal market depth page.
+ * @param {Object} cache - DataCache instance
+ * @returns {Array} Sorted by marketPotential descending, filtered to margin > 0
+ */
+function generateMarketDepth(cache) {
+    const data = cache.getData();
+    if (!data) return [];
+
+    const { estimateMaxInventory } = require('../utils/formatters.js');
+    const byComm = {};
+
+    data.data.forEach(item => {
+        const name = item.commodity_name;
+        if (!byComm[name]) {
+            byComm[name] = { commodity: name, buyCurrent: 0, buyMax: 0, buyTerminals: 0, sellCurrent: 0, sellMax: 0, sellTerminals: 0, bestBuyPrice: Infinity, bestSellPrice: 0 };
+        }
+        const c = byComm[name];
+
+        if (item.price_buy > 0 && item.scu_buy > 0) {
+            const confirmed = cache.getConfirmedMax(`${item.id_commodity}_${item.id_terminal}`, 'buy');
+            c.buyCurrent += item.scu_buy;
+            c.buyMax += confirmed ?? estimateMaxInventory(item.scu_buy, item.status_buy);
+            c.buyTerminals++;
+            if (item.price_buy < c.bestBuyPrice) c.bestBuyPrice = item.price_buy;
+        }
+
+        if (item.price_sell > 0 && item.scu_sell_stock > 0) {
+            const confirmed = cache.getConfirmedMax(`${item.id_commodity}_${item.id_terminal}`, 'sell');
+            c.sellCurrent += item.scu_sell_stock;
+            c.sellMax += confirmed ?? estimateMaxInventory(item.scu_sell_stock, item.status_sell);
+            c.sellTerminals++;
+            if (item.price_sell > c.bestSellPrice) c.bestSellPrice = item.price_sell;
+        }
+    });
+
+    return Object.values(byComm)
+        .map(c => {
+            const bestBuy = c.bestBuyPrice === Infinity ? 0 : c.bestBuyPrice;
+            const margin = c.bestSellPrice - bestBuy;
+            const tradeableCurrent = Math.min(c.buyCurrent, c.sellCurrent);
+            const tradeableMax = Math.min(c.buyMax, c.sellMax);
+            const potentialCurrent = margin > 0 && tradeableCurrent > 0 ? tradeableCurrent * margin : 0;
+            const potentialMax = margin > 0 && tradeableMax > 0 ? tradeableMax * margin : 0;
+            return { ...c, bestBuy, bestSellPrice: c.bestSellPrice, margin, tradeableCurrent, tradeableMax, potentialCurrent, potentialMax };
+        })
+        .filter(c => c.margin > 0 && c.potentialCurrent > 0)
+        .sort((a, b) => b.potentialCurrent - a.potentialCurrent);
+}
+
 module.exports = {
     refreshData,
     refreshConfirmedMaxInventory,
@@ -512,5 +563,6 @@ module.exports = {
     getCommodities,
     generateSellData,
     generateBuyData,
+    generateMarketDepth,
     processVehicles
 };

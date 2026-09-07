@@ -26,6 +26,7 @@
  */
 
 const html = require('../html.js');
+const trading = require('../services/trading.js');
 const { validateSCU, validateSystemName, validateShipId, validateWallet, validateShipBracket } = require('../utils/validation.js');
 
 const VALID_SORTS = ['profit', 'roi', 'hour'];
@@ -53,6 +54,12 @@ function handle(req, res, cache) {
         const system = parts[2] ? validateSystemName(parts[2]) : '';
         const showPlatinum = url.searchParams.get('showPlatinum') === '1';
         res.end(html.touchportalStale(cache, system, !showPlatinum));
+        return;
+    }
+
+    if (parts[1] === 'market') {
+        const depth = trading.generateMarketDepth(cache);
+        res.end(html.touchportalMarket(depth));
         return;
     }
 

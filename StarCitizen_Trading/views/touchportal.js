@@ -268,6 +268,10 @@ function touchportalHub() {
             Trade Routes by AI
             <small>Route ranking that accounts for data freshness, ship, wallet, and travel time (in progress)</small>
         </a>
+        <a class="hub-tile" href="/touchportal/market">
+            Market Depth
+            <small>All commodities ranked by total market potential — find the biggest markets to trade</small>
+        </a>
     </div>`;
     return shell('Hub', body, false);
 }
