@@ -224,13 +224,16 @@ function calcMarketDepth(commodityName, cachedData, cache) {
 
     const bestBuy = bestBuyPrice === Infinity ? 0 : bestBuyPrice;
     const margin = bestSellPrice - bestBuy;
-    const tradeableSCU = Math.min(buyCurrent, sellCurrent);
-    const marketPotential = margin > 0 && tradeableSCU > 0 ? tradeableSCU * margin : 0;
+    const tradeableCurrent = Math.min(buyCurrent, sellCurrent);
+    const tradeableMax = Math.min(buyMax, sellMax);
+    const potentialCurrent = margin > 0 && tradeableCurrent > 0 ? tradeableCurrent * margin : 0;
+    const potentialMax = margin > 0 && tradeableMax > 0 ? tradeableMax * margin : 0;
 
     return {
         buyCurrent, buyAvg, buyMax, buyTerminals,
         sellCurrent, sellAvg, sellMax, sellTerminals,
-        tradeableSCU, marketPotential
+        tradeableCurrent, tradeableMax,
+        potentialCurrent, potentialMax
     };
 }
 
@@ -238,11 +241,13 @@ function calcMarketDepth(commodityName, cachedData, cache) {
  * Generate market depth summary row HTML for a commodity table.
  */
 function generateMarketDepthRowHTML(depth) {
-    const { buyCurrent, buyAvg, buyMax, buyTerminals, sellCurrent, sellAvg, sellMax, sellTerminals, tradeableSCU, marketPotential } = depth;
+    const { buyCurrent, buyAvg, buyMax, buyTerminals, sellCurrent, sellAvg, sellMax, sellTerminals, tradeableCurrent, tradeableMax, potentialCurrent, potentialMax } = depth;
     if (!buyCurrent && !sellCurrent) return '';
 
     const buyMaxStr = buyMax > 0 ? ` / ${readable_number(buyMax)}` : '';
     const sellMaxStr = sellMax > 0 ? ` / ${readable_number(sellMax)}` : '';
+    const tradeableMaxStr = tradeableMax > 0 ? ` / ${readable_number(tradeableMax)}` : '';
+    const potentialMaxStr = potentialMax > 0 ? ` / ${readable_number(potentialMax)}` : '';
 
     return `<tr class="market-depth-row">
         <td title="Current / avg / max SCU across all ${buyTerminals} buy terminal${buyTerminals !== 1 ? 's' : ''}">
@@ -251,11 +256,11 @@ function generateMarketDepthRowHTML(depth) {
         <td title="Current / avg / max SCU across all ${sellTerminals} sell terminal${sellTerminals !== 1 ? 's' : ''}">
             Demand: ${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU
         </td>
-        <td title="How much you can actually move right now — limited by the smaller side">
-            Tradeable: ${readable_number(tradeableSCU)} SCU
+        <td title="Current / max tradeable SCU — min(supply, demand) at each level">
+            Tradeable: ${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU
         </td>
-        <td title="Tradeable SCU × best margin — total market opportunity right now">
-            Potential: ${readable_number(marketPotential)} aUEC
+        <td title="Current / max market potential — tradeable × best margin">
+            Potential: ${readable_number(potentialCurrent)}${potentialMaxStr} aUEC
         </td>
     </tr>`;
 }
