@@ -197,6 +197,69 @@ div.about-container p.footer-text
     {
     margin-right: 3rem;
     }
+
+/* Market Depth section */
+div#market-depth
+    {
+    clear: both;
+    margin: 1.5rem 1rem 0;
+    }
+
+table.market-depth
+    {
+    width: 100%;
+    border-radius: 0.5rem;
+    box-shadow: 0.15rem 0.15rem 0.15rem rgba(50, 50, 50, 0.5);
+    border-collapse: collapse;
+    }
+
+table.market-depth th.md-title
+    {
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    padding: 8px;
+    }
+
+table.market-depth th
+    {
+    padding: 5px 10px;
+    }
+
+table.market-depth td
+    {
+    padding: 4px 10px;
+    border-top: 1px solid #2a2a2a;
+    }
+
+table.market-depth td.text-left
+    {
+    text-align: left;
+    }
+
+table.market-depth tbody tr:hover td
+    {
+    background-color: #252525;
+    }
+
+table.market-depth tr.md-top td
+    {
+    color: #7ecf7e;
+    }
+
+table.market-depth tr.md-high td
+    {
+    color: #b0d4a0;
+    }
+
+table.market-depth tr.md-mid td
+    {
+    color: #d4d4aa;
+    }
+
+table.market-depth td.md-potential
+    {
+    font-weight: bold;
+    }
     `;
 }
 
