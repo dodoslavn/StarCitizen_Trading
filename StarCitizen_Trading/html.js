@@ -17,6 +17,7 @@ const { displayCommodity } = require('./views/commodities.js');
 const { profit_uec, profit_perc } = require('./views/profits.js');
 const { touchportal, touchportalHub, touchportalStale } = require('./views/touchportal.js');
 const { touchportalSmart } = require('./views/touchportal-smart.js');
+const { marketDepth } = require('./views/marketDepth.js');
 
 module.exports = {
     header,
@@ -30,5 +31,6 @@ module.exports = {
     touchportalHub,
     touchportalStale,
     touchportalSmart,
-    about
+    about,
+    marketDepth
 };
