@@ -201,11 +201,8 @@ div.about-container p.footer-text
 /* Market depth row inside each commodity table */
 tr.market-depth-row td
     {
-    font-size: 0.85rem;
-    color: #a0b8d0;
     border-top: 1px solid #2a2a2a;
     border-bottom: 1px solid #2a2a2a;
-    padding: 3px 6px;
     }
     `;
 }
