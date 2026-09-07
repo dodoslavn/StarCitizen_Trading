@@ -29,7 +29,9 @@ function displayTerminal(item, staleThresholds, side) {
     const max_is_estimate = max_inventory > raw_max ? false : raw_max_is_estimate;
 
     const staleness = getStalenessLevel(item.date_modified, staleThresholds);
-    const stockClass = stock > 0 ? 'stock-available' : 'stock-depleted';
+    // Green when current stock is at or above the historical average (well-stocked),
+    // red when it has been traded down below average (or is zero).
+    const stockClass = (stock > 0 && (stock_avg === 0 || stock >= stock_avg)) ? 'stock-available' : 'stock-depleted';
     const classes = [stockClass];
     if (staleness !== 'fresh') classes.push(staleness);
     const rowClass = ` class="${classes.join(' ')}"`;
