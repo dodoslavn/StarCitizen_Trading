@@ -250,10 +250,10 @@ function generateMarketDepthRowHTML(depth) {
     const potentialMaxStr = potentialMax > 0 ? ` / ${readable_number(potentialMax)}` : '';
 
     return `<tr>
-        <th title="How much of this commodity terminals will buy from you (current / avg / max SCU across ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''})">Sell</th>
-        <th title="How much of this commodity you can buy from terminals (current / avg / max SCU across ${buyTerminals} terminal${buyTerminals !== 1 ? 's' : ''})">Buy</th>
-        <th title="How much you can actually trade right now — limited by whichever side is smaller (current / max SCU)">Trade</th>
-        <th title="Total market opportunity — tradeable SCU × best margin (current / max aUEC)">Potential</th>
+        <th title="How much of this commodity terminals will buy from you (current / avg / max SCU across ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''})">Sell Demand</th>
+        <th title="How much of this commodity you can buy from terminals (current / avg / max SCU across ${buyTerminals} terminal${buyTerminals !== 1 ? 's' : ''})">Buy Supply</th>
+        <th title="How much you can actually trade right now — limited by whichever side is smaller (current / max SCU)">Tradeable</th>
+        <th title="Total market opportunity — tradeable SCU × best margin (current / max aUEC)">Market Potential</th>
     </tr>
     <tr class="market-depth-row">
         <td>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU</td>
