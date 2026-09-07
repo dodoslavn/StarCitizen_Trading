@@ -64,11 +64,11 @@ tr.very-stale td:not(:first-child)
     color: #3a3a3a;
     }
 
-tr.stock-available td
+tr.stock-available:not(.stale):not(.very-stale) td
     {
     color: #b8e0b8;
     }
-tr.stock-depleted td
+tr.stock-depleted:not(.stale):not(.very-stale) td
     {
     color: #ffb0b0;
     }
