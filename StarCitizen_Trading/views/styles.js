@@ -55,25 +55,20 @@ td
     vertical-align: top;
     }
 
-tr.stale td
+tr.stale td:not(:first-child)
     {
     color: #bbb;
     }
-tr.very-stale td
+tr.very-stale td:not(:first-child)
     {
     color: #3a3a3a;
     }
 
-/* Stock/demand cell tints, applied to fresh rows only */
-td.stock-orange
-    {
-    color: #ffcc99;
-    }
-td.stock-green
+tr.stock-available td
     {
     color: #b8e0b8;
     }
-td.stock-red
+tr.stock-depleted td
     {
     color: #ffb0b0;
     }

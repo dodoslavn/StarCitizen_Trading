@@ -3,7 +3,7 @@
  * Handles commodity table generation and profit calculations
  */
 
-const { readable_number, getStalenessLevel, formatDateTime, formatContainerSizes, escapeHtml, getStockUsageClass, estimateMaxInventory } = require('../utils/formatters.js');
+const { readable_number, getStalenessLevel, formatDateTime, formatContainerSizes, escapeHtml, estimateMaxInventory } = require('../utils/formatters.js');
 
 /**
  * Display single terminal data row
@@ -29,7 +29,11 @@ function displayTerminal(item, staleThresholds, side) {
     const max_is_estimate = max_inventory > raw_max ? false : raw_max_is_estimate;
 
     const staleness = getStalenessLevel(item.date_modified, staleThresholds);
-    const rowClass = staleness !== 'fresh' ? ` class="${staleness}"` : '';
+    const stockClass = stock > 0 ? 'stock-available' : 'stock-depleted';
+    const classes = [stockClass];
+    if (staleness !== 'fresh') classes.push(staleness);
+    const rowClass = ` class="${classes.join(' ')}"`;
+
     const updatedTitle = `Last updated: ${formatDateTime(item.date_modified)}`;
     const sizesTitle = `SCU box sizes: ${formatContainerSizes(item.container_sizes)}`;
     const maxTitle = max_is_estimate
@@ -37,13 +41,10 @@ function displayTerminal(item, staleThresholds, side) {
         : 'Confirmed max stock observed';
     const maxSuffix = max_inventory > 0 ? ` / ${max_is_estimate ? '~' : ''}${readable_number(max_inventory)}` : '';
 
-    const usageClass = getStockUsageClass(stock, max_inventory, side, staleness);
-    const stockClassAttr = usageClass ? ` class="${usageClass}"` : '';
-
     return `<tr${rowClass}>
         <td title="${escapeHtml(sizesTitle)}&#10;${escapeHtml(updatedTitle)}">${escapeHtml(item.terminal_name)}</td>
         <td>${readable_number(price)} (~${readable_number(price_avg)})</td>
-        <td${stockClassAttr} title="${escapeHtml(maxTitle)}">${readable_number(stock)} (~${readable_number(stock_avg)})${maxSuffix}</td>
+        <td title="${escapeHtml(maxTitle)}">${readable_number(stock)} (~${readable_number(stock_avg)})${maxSuffix}</td>
     </tr>`;
 }
 
