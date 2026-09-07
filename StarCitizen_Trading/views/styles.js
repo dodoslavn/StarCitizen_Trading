@@ -55,11 +55,11 @@ td
     vertical-align: top;
     }
 
-tr.stale td:not(:first-child)
+tr.stale td
     {
     color: #bbb;
     }
-tr.very-stale td:not(:first-child)
+tr.very-stale td
     {
     color: #3a3a3a;
     }
