@@ -34,12 +34,12 @@ function displayTerminal(item, staleThresholds, side) {
     const status = (item.status_buy || 0) + (item.status_sell || 0);
     let stockClass;
     if (side === 'buy') {
-        if (status >= 5) stockClass = 'stock-available';
-        else if (status >= 3) stockClass = 'stock-medium';
+        if (status >= 6) stockClass = 'stock-available';
+        else if (status >= 2) stockClass = 'stock-medium';
         else stockClass = 'stock-depleted';
     } else {
-        if (status <= 2) stockClass = 'stock-available';
-        else if (status <= 4) stockClass = 'stock-medium';
+        if (status <= 1) stockClass = 'stock-available';
+        else if (status <= 5) stockClass = 'stock-medium';
         else stockClass = 'stock-depleted';
     }
     const classes = [stockClass];
