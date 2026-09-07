@@ -3,7 +3,7 @@
  * Handles commodity table generation and profit calculations
  */
 
-const { readable_number, getStalenessLevel, formatDateTime, formatContainerSizes, escapeHtml, getStockUsageClass } = require('../utils/formatters.js');
+const { readable_number, getStalenessLevel, formatDateTime, formatContainerSizes, escapeHtml, getStockUsageClass, estimateMaxInventory } = require('../utils/formatters.js');
 
 /**
  * Display single terminal data row
@@ -187,24 +187,36 @@ function generateBestRouteHTML(routes) {
 
 /**
  * Compute market depth for a single commodity across all terminals.
+ * Sums current, average, and confirmed-max SCU for both buy and sell sides.
  * @param {string} commodityName
  * @param {Object} cachedData
- * @returns {{ totalBuySCU, buyTerminals, totalSellSCU, sellTerminals, tradeableSCU, marketPotential }}
+ * @param {Object} cache - DataCache instance (for confirmed max lookups)
+ * @returns {Object}
  */
-function calcMarketDepth(commodityName, cachedData) {
-    let totalBuySCU = 0, buyTerminals = 0;
-    let totalSellSCU = 0, sellTerminals = 0;
+function calcMarketDepth(commodityName, cachedData, cache) {
+    let buyCurrent = 0, buyAvg = 0, buyMax = 0, buyTerminals = 0;
+    let sellCurrent = 0, sellAvg = 0, sellMax = 0, sellTerminals = 0;
     let bestBuyPrice = Infinity, bestSellPrice = 0;
 
     cachedData.data.forEach(d => {
         if (d.commodity_name !== commodityName) return;
+
         if (d.price_buy > 0 && d.scu_buy > 0) {
-            totalBuySCU += d.scu_buy;
+            const confirmedMax = cache.getConfirmedMax(`${d.id_commodity}_${d.id_terminal}`, 'buy');
+            const maxVal = confirmedMax ?? estimateMaxInventory(d.scu_buy, d.status_buy);
+            buyCurrent += d.scu_buy;
+            buyAvg += d.scu_buy_avg || 0;
+            buyMax += maxVal;
             buyTerminals++;
             if (d.price_buy < bestBuyPrice) bestBuyPrice = d.price_buy;
         }
+
         if (d.price_sell > 0 && d.scu_sell_stock > 0) {
-            totalSellSCU += d.scu_sell_stock;
+            const confirmedMax = cache.getConfirmedMax(`${d.id_commodity}_${d.id_terminal}`, 'sell');
+            const maxVal = confirmedMax ?? estimateMaxInventory(d.scu_sell_stock, d.status_sell);
+            sellCurrent += d.scu_sell_stock;
+            sellAvg += d.scu_sell_stock_avg || 0;
+            sellMax += maxVal;
             sellTerminals++;
             if (d.price_sell > bestSellPrice) bestSellPrice = d.price_sell;
         }
@@ -212,32 +224,37 @@ function calcMarketDepth(commodityName, cachedData) {
 
     const bestBuy = bestBuyPrice === Infinity ? 0 : bestBuyPrice;
     const margin = bestSellPrice - bestBuy;
-    const tradeableSCU = Math.min(totalBuySCU, totalSellSCU);
+    const tradeableSCU = Math.min(buyCurrent, sellCurrent);
     const marketPotential = margin > 0 && tradeableSCU > 0 ? tradeableSCU * margin : 0;
 
-    return { totalBuySCU, buyTerminals, totalSellSCU, sellTerminals, tradeableSCU, marketPotential };
+    return {
+        buyCurrent, buyAvg, buyMax, buyTerminals,
+        sellCurrent, sellAvg, sellMax, sellTerminals,
+        tradeableSCU, marketPotential
+    };
 }
 
 /**
  * Generate market depth summary row HTML for a commodity table.
- * @param {{ totalBuySCU, buyTerminals, totalSellSCU, sellTerminals, tradeableSCU, marketPotential }} depth
- * @returns {string}
  */
 function generateMarketDepthRowHTML(depth) {
-    const { totalBuySCU, buyTerminals, totalSellSCU, sellTerminals, tradeableSCU, marketPotential } = depth;
-    if (!totalBuySCU && !totalSellSCU) return '';
+    const { buyCurrent, buyAvg, buyMax, buyTerminals, sellCurrent, sellAvg, sellMax, sellTerminals, tradeableSCU, marketPotential } = depth;
+    if (!buyCurrent && !sellCurrent) return '';
+
+    const buyMaxStr = buyMax > 0 ? ` / ${readable_number(buyMax)}` : '';
+    const sellMaxStr = sellMax > 0 ? ` / ${readable_number(sellMax)}` : '';
 
     return `<tr class="market-depth-row">
-        <td title="Total SCU available to buy right now across all ${buyTerminals} terminal${buyTerminals !== 1 ? 's' : ''}">
-            Supply: ${readable_number(totalBuySCU)} SCU
+        <td title="Current / avg / max SCU across all ${buyTerminals} buy terminal${buyTerminals !== 1 ? 's' : ''}">
+            Supply: ${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU
         </td>
-        <td title="Total SCU demand across all ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''}">
-            Demand: ${readable_number(totalSellSCU)} SCU
+        <td title="Current / avg / max SCU across all ${sellTerminals} sell terminal${sellTerminals !== 1 ? 's' : ''}">
+            Demand: ${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU
         </td>
-        <td title="How much you can actually trade — limited by the smaller side">
+        <td title="How much you can actually move right now — limited by the smaller side">
             Tradeable: ${readable_number(tradeableSCU)} SCU
         </td>
-        <td title="Tradeable SCU × best margin — total market opportunity">
+        <td title="Tradeable SCU × best margin — total market opportunity right now">
             Potential: ${readable_number(marketPotential)} aUEC
         </td>
     </tr>`;
@@ -278,7 +295,7 @@ function displayCommodity(item, buy = [], sell = [], cache, staleThresholds = { 
     const routes = findBestRoutes(terminals_sell, terminals_buy, cachedInitData);
     const best_route = generateBestRouteHTML(routes);
 
-    const depth = calcMarketDepth(item, cachedData);
+    const depth = calcMarketDepth(item, cachedData, cache);
     const market_depth_row = generateMarketDepthRowHTML(depth);
 
     return `
