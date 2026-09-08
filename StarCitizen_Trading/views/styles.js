@@ -115,6 +115,8 @@ div.about-page a:hover
 
 div#content
     {
+    display: flex;
+    align-items: flex-start;
     width: 100%;
     }
 
@@ -124,16 +126,21 @@ div#main
     flex-wrap: wrap;
     justify-content: flex-start;
     align-items: flex-start;
+    flex: 1;
+    min-width: 0;
+    order: 2;
     }
 
 div#panel_r
     {
-    float: right;
+    flex-shrink: 0;
+    order: 3;
     }
 
 div#panel_l
     {
-    float: left;
+    flex-shrink: 0;
+    order: 1;
     }
 
 :target tbody tr th {
