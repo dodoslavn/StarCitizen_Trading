@@ -63,11 +63,22 @@ function updateHeaders() {
 </script>`;
 
 function spectrumColor(fraction) {
-    // 0 = low → muted red, 1 = high → muted green
-    const r = Math.round(204 + (80 - 204) * fraction);
-    const g = Math.round(80 + (180 - 80) * fraction);
-    const b = Math.round(80 + (100 - 80) * fraction);
-    return `rgb(${r},${g},${b})`;
+    // Only color the outer edges; middle stays neutral white.
+    const EDGE = 0.15;
+    const neutral = [210, 210, 210];
+    const low     = [204,  80,  80];
+    const high    = [ 80, 180, 100];
+    let rgb;
+    if (fraction <= EDGE) {
+        const t = fraction / EDGE;
+        rgb = neutral.map((n, i) => Math.round(low[i] + (n - low[i]) * t));
+    } else if (fraction >= 1 - EDGE) {
+        const t = (fraction - (1 - EDGE)) / EDGE;
+        rgb = neutral.map((n, i) => Math.round(n + (high[i] - n) * t));
+    } else {
+        rgb = neutral;
+    }
+    return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 }
 
 function getRange(items, key) {
