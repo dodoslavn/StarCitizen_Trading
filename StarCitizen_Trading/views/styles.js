@@ -129,6 +129,7 @@ div#main
     flex: 1;
     min-width: 0;
     order: 2;
+    overflow-x: auto;
     }
 
 div#panel_r
