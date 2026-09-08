@@ -63,8 +63,10 @@ async function processRequest(req, res, config, cache) {
             handler.handle(req, res, cache, config);
         } else if (url === '/refresh') {
             handler.handle(req, res, config, cache);
-        } else if (url === '/about' || url === '/default.css' || url === '/favicon.ico') {
+        } else if (url === '/default.css' || url === '/favicon.ico') {
             handler.handle(req, res);
+        } else if (url === '/about') {
+            handler.handle(req, res, cache);
         } else if (url === '/touchportal') {
             handler.handle(req, res, cache);
         } else {
