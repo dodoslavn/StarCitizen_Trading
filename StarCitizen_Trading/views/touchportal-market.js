@@ -81,14 +81,13 @@ function spectrumColor(fraction) {
     return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 }
 
-function getRange(items, key) {
-    const vals = items.map(i => Math.log1p(i[key]));
-    return { min: Math.min(...vals), max: Math.max(...vals) };
-}
-
-function fraction(value, range) {
-    if (range.max === range.min) return 0.5;
-    return (Math.log1p(value) - range.min) / (range.max - range.min);
+function buildRankFractions(items, key) {
+    const sorted = items.slice().sort((a, b) => a[key] - b[key]);
+    const map = new Map();
+    sorted.forEach((item, i) => {
+        map.set(item.commodity, sorted.length > 1 ? i / (sorted.length - 1) : 0.5);
+    });
+    return map;
 }
 
 function touchportalMarket(depth) {
@@ -97,19 +96,19 @@ function touchportalMarket(depth) {
         profitPerc: item.bestBuy > 0 ? (item.margin / item.bestBuy * 100) : 0
     }));
 
-    const ranges = {
-        margin:           getRange(items, 'margin'),
-        profitPerc:       getRange(items, 'profitPerc'),
-        tradeableCurrent: getRange(items, 'tradeableCurrent'),
-        potentialCurrent: getRange(items, 'potentialCurrent'),
+    const ranks = {
+        margin:           buildRankFractions(items, 'margin'),
+        profitPerc:       buildRankFractions(items, 'profitPerc'),
+        tradeableCurrent: buildRankFractions(items, 'tradeableCurrent'),
+        potentialCurrent: buildRankFractions(items, 'potentialCurrent'),
     };
 
     const rows = items.map(item => {
         const name = escapeHtml(item.commodity);
-        const marginColor   = spectrumColor(fraction(item.margin,           ranges.margin));
-        const percColor     = spectrumColor(fraction(item.profitPerc,       ranges.profitPerc));
-        const tradeColor    = spectrumColor(fraction(item.tradeableCurrent, ranges.tradeableCurrent));
-        const potColor      = spectrumColor(fraction(item.potentialCurrent, ranges.potentialCurrent));
+        const marginColor   = spectrumColor(ranks.margin.get(item.commodity));
+        const percColor     = spectrumColor(ranks.profitPerc.get(item.commodity));
+        const tradeColor    = spectrumColor(ranks.tradeableCurrent.get(item.commodity));
+        const potColor      = spectrumColor(ranks.potentialCurrent.get(item.commodity));
 
         return `<tr>
             <td data-val="${name}"><a href="/#comm-${name}">${name}</a></td>
