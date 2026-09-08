@@ -34,50 +34,35 @@ function handle(req, res, cache) {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
-    let statsHtml = '';
+    let coverageBar = '';
     if (cache) {
-        const { confirmedCount, totalPairs, perc, sellOnly, buyOnly, both, estimated } = maxInventoryStats(cache);
-        statsHtml = `
-        <p>
-            <strong>Max Inventory Coverage:</strong><br>
-            ${confirmedCount} of ${totalPairs} commodity&ndash;terminal pairs have a confirmed historical maximum (${perc}%).<br>
-            <span style="color:#aaa; font-size:0.9em">
-                Sell max: ${sellOnly} &nbsp;&middot;&nbsp;
-                Buy max: ${buyOnly} &nbsp;&middot;&nbsp;
-                Both: ${both} &nbsp;&middot;&nbsp;
-                Estimated (no history): ${estimated}
-            </span>
-        </p>`;
+        const { perc } = maxInventoryStats(cache);
+        coverageBar = `
+        <div style="margin-bottom:1.5rem">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem;font-size:0.85rem;color:#aaa">
+                <span>Max inventory coverage</span>
+                <span style="color:#fff">${perc}%</span>
+            </div>
+            <div style="background:#2e2e2e;border-radius:0.25rem;height:6px;overflow:hidden">
+                <div style="width:${perc}%;height:100%;background:#006fdd;border-radius:0.25rem"></div>
+            </div>
+        </div>`;
     }
 
     const aboutHtml = `
     <div class="about-page about-container">
         <h1>About ComTrading</h1>
 
-        <p>
-            <strong>Community made website</strong><br>
-            Created by Dodoslav Novak
-        </p>
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:0.3rem 1.5rem;margin-bottom:1.5rem">
+            <span style="color:#aaa">Author</span>      <span>Dodoslav Novak</span>
+            <span style="color:#aaa">Contact</span>     <span><a href='mailto:admin@dodoslav.eu'>admin@dodoslav.eu</a></span>
+            <span style="color:#aaa">Data</span>        <span><a href='https://uexcorp.space/' target="_blank" rel="noopener">UEX Corp API</a></span>
+            <span style="color:#aaa">Source</span>      <span><a href='https://github.com/dodoslavn/StarCitizen_Trading' target="_blank" rel="noopener">GitHub</a> &middot; GPL v2</span>
+        </div>
 
-        <p>
-            <strong>Contact:</strong><br>
-            <a href='mailto:admin@dodoslav.eu'>admin@dodoslav.eu</a>
-        </p>
+        ${coverageBar}
 
-        <p>
-            <strong>Data Source:</strong><br>
-            Trading data collected from <a href='https://uexcorp.space/' target="_blank" rel="noopener">UEX Corp API</a>
-        </p>
-
-        <p>
-            <strong>Source Code:</strong><br>
-            <a href='https://github.com/dodoslavn/StarCitizen_Trading' target="_blank" rel="noopener">View on GitHub</a><br>
-            License: GPL v2
-        </p>
-        ${statsHtml}
-        <p class="footer-text">
-            &copy; 2026 &middot; version: ${version}
-        </p>
+        <p class="footer-text">&copy; 2026 &middot; version: ${version}</p>
     </div>`;
 
     res.write(html.header);
