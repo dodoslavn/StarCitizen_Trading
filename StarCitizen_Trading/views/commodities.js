@@ -262,6 +262,9 @@ function generateMarketDepthRowHTML(depth) {
     const tradeableMaxStr = tradeableMax > 0 ? ` / ${readable_number(tradeableMax)}` : '';
     const potentialMaxStr = potentialMax > 0 ? ` / ${readable_number(potentialMax)}` : '';
 
+    const sellPercStr = sellMax > 0 ? ` (${Math.round(sellCurrent / sellMax * 100)}%)` : '';
+    const buyPercStr = buyMax > 0 ? ` (${Math.round(buyCurrent / buyMax * 100)}%)` : '';
+
     return `<tr>
         <th title="How much of this commodity terminals will buy from you (current / avg / max SCU across ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''})">Total Demand</th>
         <th title="How much of this commodity you can buy from terminals (current / avg / max SCU across ${buyTerminals} terminal${buyTerminals !== 1 ? 's' : ''})">Total Supply</th>
@@ -269,8 +272,8 @@ function generateMarketDepthRowHTML(depth) {
         <th title="Total market opportunity — tradeable SCU × best margin (current / max aUEC)">Market Potential</th>
     </tr>
     <tr class="market-depth-row">
-        <td>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU</td>
-        <td>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU</td>
+        <td>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU${sellPercStr}</td>
+        <td>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU${buyPercStr}</td>
         <td>${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU</td>
         <td>${readable_number(potentialCurrent)}${potentialMaxStr} aUEC</td>
     </tr>`;
