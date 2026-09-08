@@ -143,7 +143,7 @@ div#main
     overflow-x: auto;
     }
 
-@media (min-width: 75rem)
+@media (min-width: 100rem)
     {
     div#content
         {
