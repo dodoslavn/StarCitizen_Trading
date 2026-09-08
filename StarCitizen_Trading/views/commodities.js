@@ -262,12 +262,14 @@ function generateMarketDepthRowHTML(depth) {
     const tradeableMaxStr = tradeableMax > 0 ? ` / ${readable_number(tradeableMax)}` : '';
     const potentialMaxStr = potentialMax > 0 ? ` / ${readable_number(potentialMax)}` : '';
 
-    const percColor = p => p === null ? '' : p >= 70 ? ' style="color:#b8e0b8"' : p <= 30 ? ' style="color:#ffb0b0"' : '';
-    const percSpan = (current, max) => {
+    const cellColor = (current, max) => {
         if (!max) return '';
         const p = Math.round(current / max * 100);
-        return ` <span${percColor(p)}>(${p}%)</span>`;
+        if (p >= 70) return ' style="color:#b8e0b8"';
+        if (p <= 30) return ' style="color:#ffb0b0"';
+        return '';
     };
+    const percStr = (current, max) => max ? ` (${Math.round(current / max * 100)}%)` : '';
 
     return `<tr>
         <th title="How much of this commodity terminals will buy from you (current / avg / max SCU across ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''})">Total Demand</th>
@@ -276,10 +278,10 @@ function generateMarketDepthRowHTML(depth) {
         <th title="Total market opportunity — tradeable SCU × best margin (current / max aUEC)">Market Potential</th>
     </tr>
     <tr class="market-depth-row">
-        <td>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU${percSpan(sellCurrent, sellMax)}</td>
-        <td>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU${percSpan(buyCurrent, buyMax)}</td>
-        <td>${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU${percSpan(tradeableCurrent, tradeableMax)}</td>
-        <td>${readable_number(potentialCurrent)}${potentialMaxStr} aUEC${percSpan(potentialCurrent, potentialMax)}</td>
+        <td${cellColor(sellCurrent, sellMax)}>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU${percStr(sellCurrent, sellMax)}</td>
+        <td${cellColor(buyCurrent, buyMax)}>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU${percStr(buyCurrent, buyMax)}</td>
+        <td${cellColor(tradeableCurrent, tradeableMax)}>${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU${percStr(tradeableCurrent, tradeableMax)}</td>
+        <td${cellColor(potentialCurrent, potentialMax)}>${readable_number(potentialCurrent)}${potentialMaxStr} aUEC${percStr(potentialCurrent, potentialMax)}</td>
     </tr>`;
 }
 
