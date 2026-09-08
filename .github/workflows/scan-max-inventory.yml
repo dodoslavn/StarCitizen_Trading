@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   scan:
-    runs-on: self-hosted
+    runs-on: [self-hosted, AS2]
     defaults:
       run:
         working-directory: StarCitizen_Trading
