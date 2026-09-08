@@ -11,7 +11,6 @@ function css() {
     return `
 body
     {
-    min-width: 92rem;
     color: white;
     background-color: #121212;
     font-family: Open Sans;
@@ -116,8 +115,21 @@ div.about-page a:hover
 div#content
     {
     display: flex;
+    flex-wrap: wrap;
     align-items: flex-start;
     width: 100%;
+    }
+
+div#panel_l
+    {
+    flex-shrink: 0;
+    order: 1;
+    }
+
+div#panel_r
+    {
+    flex-shrink: 0;
+    order: 2;
     }
 
 div#main
@@ -126,29 +138,32 @@ div#main
     flex-wrap: wrap;
     justify-content: flex-start;
     align-items: flex-start;
-    flex: 1;
-    min-width: 0;
-    order: 2;
+    flex-basis: 100%;
+    order: 3;
     overflow-x: auto;
     }
 
-div#panel_r
+@media (min-width: 75rem)
     {
-    flex-shrink: 0;
-    order: 3;
-    width: 14rem;
-    }
-
-div#panel_l
-    {
-    flex-shrink: 0;
-    order: 1;
-    width: 16rem;
-    }
-
-table.best
-    {
-    width: 100%;
+    div#content
+        {
+        flex-wrap: nowrap;
+        }
+    div#panel_l
+        {
+        order: 1;
+        }
+    div#main
+        {
+        flex: 1;
+        flex-basis: auto;
+        order: 2;
+        min-width: 0;
+        }
+    div#panel_r
+        {
+        order: 3;
+        }
     }
 
 :target tbody tr th {

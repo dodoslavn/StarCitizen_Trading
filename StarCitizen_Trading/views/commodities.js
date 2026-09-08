@@ -262,11 +262,16 @@ function generateMarketDepthRowHTML(depth) {
     const tradeableMaxStr = tradeableMax > 0 ? ` / ${readable_number(tradeableMax)}` : '';
     const potentialMaxStr = potentialMax > 0 ? ` / ${readable_number(potentialMax)}` : '';
 
-    const cellColor = (current, max) => {
+    const cellColor = (current, max, invert = false) => {
         if (!max) return '';
         const p = Math.round(current / max * 100);
-        if (p >= 70) return ' style="color:#b8e0b8"';
-        if (p <= 30) return ' style="color:#ffb0b0"';
+        if (invert) {
+            if (p <= 30) return ' style="color:#b8e0b8"';
+            if (p >= 70) return ' style="color:#ffb0b0"';
+        } else {
+            if (p >= 70) return ' style="color:#b8e0b8"';
+            if (p <= 30) return ' style="color:#ffb0b0"';
+        }
         return '';
     };
     const percStr = (current, max) => max ? ` (${Math.round(current / max * 100)}%)` : '';
@@ -278,7 +283,7 @@ function generateMarketDepthRowHTML(depth) {
         <th title="Total market opportunity — tradeable SCU × best margin (current / max aUEC)">Market Potential</th>
     </tr>
     <tr class="market-depth-row">
-        <td${cellColor(sellCurrent, sellMax)}>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU${percStr(sellCurrent, sellMax)}</td>
+        <td${cellColor(sellCurrent, sellMax, true)}>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU${percStr(sellCurrent, sellMax)}</td>
         <td${cellColor(buyCurrent, buyMax)}>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU${percStr(buyCurrent, buyMax)}</td>
         <td${cellColor(tradeableCurrent, tradeableMax)}>${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU${percStr(tradeableCurrent, tradeableMax)}</td>
         <td${cellColor(potentialCurrent, potentialMax)}>${readable_number(potentialCurrent)}${potentialMaxStr} aUEC${percStr(potentialCurrent, potentialMax)}</td>
