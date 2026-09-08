@@ -136,12 +136,19 @@ div#panel_r
     {
     flex-shrink: 0;
     order: 3;
+    width: 14rem;
     }
 
 div#panel_l
     {
     flex-shrink: 0;
     order: 1;
+    width: 16rem;
+    }
+
+table.best
+    {
+    width: 100%;
     }
 
 :target tbody tr th {
