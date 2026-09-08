@@ -130,6 +130,7 @@ div#panel_r
     {
     flex-shrink: 0;
     order: 2;
+    margin-left: auto;
     }
 
 div#main
