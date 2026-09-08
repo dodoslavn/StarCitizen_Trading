@@ -262,8 +262,12 @@ function generateMarketDepthRowHTML(depth) {
     const tradeableMaxStr = tradeableMax > 0 ? ` / ${readable_number(tradeableMax)}` : '';
     const potentialMaxStr = potentialMax > 0 ? ` / ${readable_number(potentialMax)}` : '';
 
-    const sellPercStr = sellMax > 0 ? ` (${Math.round(sellCurrent / sellMax * 100)}%)` : '';
-    const buyPercStr = buyMax > 0 ? ` (${Math.round(buyCurrent / buyMax * 100)}%)` : '';
+    const percColor = p => p === null ? '' : p >= 70 ? ' style="color:#b8e0b8"' : p <= 30 ? ' style="color:#ffb0b0"' : '';
+    const percSpan = (current, max) => {
+        if (!max) return '';
+        const p = Math.round(current / max * 100);
+        return ` <span${percColor(p)}>(${p}%)</span>`;
+    };
 
     return `<tr>
         <th title="How much of this commodity terminals will buy from you (current / avg / max SCU across ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''})">Total Demand</th>
@@ -272,10 +276,10 @@ function generateMarketDepthRowHTML(depth) {
         <th title="Total market opportunity — tradeable SCU × best margin (current / max aUEC)">Market Potential</th>
     </tr>
     <tr class="market-depth-row">
-        <td>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU${sellPercStr}</td>
-        <td>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU${buyPercStr}</td>
-        <td>${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU</td>
-        <td>${readable_number(potentialCurrent)}${potentialMaxStr} aUEC</td>
+        <td>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU${percSpan(sellCurrent, sellMax)}</td>
+        <td>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU${percSpan(buyCurrent, buyMax)}</td>
+        <td>${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU${percSpan(tradeableCurrent, tradeableMax)}</td>
+        <td>${readable_number(potentialCurrent)}${potentialMaxStr} aUEC${percSpan(potentialCurrent, potentialMax)}</td>
     </tr>`;
 }
 
