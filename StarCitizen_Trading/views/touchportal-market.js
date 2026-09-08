@@ -1,6 +1,6 @@
 /**
  * TouchPortal Market Depth Page
- * Sortable table: click column header to sort, Shift+click to add secondary sort
+ * Sortable table with spectrum coloring per column (red=low, green=high)
  */
 
 const { readable_number, escapeHtml } = require('../utils/formatters.js');
@@ -50,6 +50,7 @@ function updateHeaders() {
     var ths = document.querySelectorAll('#mkt-table th');
     for (var i = 0; i < ths.length; i++) {
         var span = ths[i].querySelector('.si');
+        if (!span) continue;
         var key = sortKeys.findIndex(function(s) { return s.col === i; });
         if (key >= 0) {
             var priority = sortKeys.length > 1 ? (key + 1) : '';
@@ -61,20 +62,52 @@ function updateHeaders() {
 }
 </script>`;
 
+function spectrumColor(fraction) {
+    // 0 = low → muted red, 1 = high → muted green
+    const r = Math.round(204 + (80 - 204) * fraction);
+    const g = Math.round(80 + (180 - 80) * fraction);
+    const b = Math.round(80 + (100 - 80) * fraction);
+    return `rgb(${r},${g},${b})`;
+}
+
+function getRange(items, key) {
+    const vals = items.map(i => i[key]);
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    return { min, max };
+}
+
+function fraction(value, range) {
+    if (range.max === range.min) return 0.5;
+    return (value - range.min) / (range.max - range.min);
+}
+
 function touchportalMarket(depth) {
     const items = depth.map(item => ({
         ...item,
         profitPerc: item.bestBuy > 0 ? (item.margin / item.bestBuy * 100) : 0
     }));
 
+    const ranges = {
+        margin:           getRange(items, 'margin'),
+        profitPerc:       getRange(items, 'profitPerc'),
+        tradeableCurrent: getRange(items, 'tradeableCurrent'),
+        potentialCurrent: getRange(items, 'potentialCurrent'),
+    };
+
     const rows = items.map(item => {
         const name = escapeHtml(item.commodity);
+        const marginColor   = spectrumColor(fraction(item.margin,           ranges.margin));
+        const percColor     = spectrumColor(fraction(item.profitPerc,       ranges.profitPerc));
+        const tradeColor    = spectrumColor(fraction(item.tradeableCurrent, ranges.tradeableCurrent));
+        const potColor      = spectrumColor(fraction(item.potentialCurrent, ranges.potentialCurrent));
+
         return `<tr>
             <td data-val="${name}"><a href="/#comm-${name}">${name}</a></td>
-            <td data-val="${item.margin}">${readable_number(item.margin)}</td>
-            <td data-val="${item.profitPerc.toFixed(2)}">${item.profitPerc.toFixed(1)}%</td>
-            <td data-val="${item.tradeableCurrent}">${readable_number(item.tradeableCurrent)}</td>
-            <td data-val="${item.potentialCurrent}">${readable_number(item.potentialCurrent)}</td>
+            <td data-val="${item.margin}" style="color:${marginColor}">${readable_number(item.margin)}</td>
+            <td data-val="${item.profitPerc.toFixed(2)}" style="color:${percColor}">${item.profitPerc.toFixed(1)}%</td>
+            <td data-val="${item.tradeableCurrent}" style="color:${tradeColor}">${readable_number(item.tradeableCurrent)}</td>
+            <td data-val="${item.potentialCurrent}" style="color:${potColor}">${readable_number(item.potentialCurrent)}</td>
         </tr>`;
     }).join('');
 
@@ -92,9 +125,6 @@ function touchportalMarket(depth) {
 
     const body = `
     ${SORT_JS}
-    <div id="top">
-        <a href="/touchportal" style="background-color: #006fdd;">← Hub</a>
-    </div>
     <h2>Market Depth</h2>
     <p style="text-align:center; color:#888; margin-top:-0.5rem; font-size:0.85rem;">Click column to sort · Shift+click to add secondary sort</p>
     <table id="mkt-table">
