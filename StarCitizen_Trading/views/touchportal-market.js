@@ -82,15 +82,13 @@ function spectrumColor(fraction) {
 }
 
 function getRange(items, key) {
-    const vals = items.map(i => i[key]);
-    const min = Math.min(...vals);
-    const max = Math.max(...vals);
-    return { min, max };
+    const vals = items.map(i => Math.log1p(i[key]));
+    return { min: Math.min(...vals), max: Math.max(...vals) };
 }
 
 function fraction(value, range) {
     if (range.max === range.min) return 0.5;
-    return (value - range.min) / (range.max - range.min);
+    return (Math.log1p(value) - range.min) / (range.max - range.min);
 }
 
 function touchportalMarket(depth) {
