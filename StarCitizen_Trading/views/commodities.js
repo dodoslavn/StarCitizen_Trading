@@ -52,14 +52,11 @@ function displayTerminal(item, staleThresholds, side) {
         ? 'Estimated max capacity (based on current stock level)'
         : 'Confirmed max stock observed';
     const maxSuffix = max_inventory > 0 ? ` / ${max_is_estimate ? '~' : ''}${readable_number(max_inventory)}` : '';
-    const perc = max_inventory > 0 ? Math.round(stock / max_inventory * 100) : null;
-    const percTd = perc !== null ? `<td style="color:#888;font-size:0.85em">${perc}%</td>` : '<td></td>';
 
     return `<tr${rowClass}>
         <td title="${escapeHtml(sizesTitle)}&#10;${escapeHtml(updatedTitle)}">${escapeHtml(item.terminal_name)}</td>
         <td>${readable_number(price)} (~${readable_number(price_avg)})</td>
         <td title="${escapeHtml(maxTitle)}">${readable_number(stock)} (~${readable_number(stock_avg)})${maxSuffix}</td>
-        ${percTd}
     </tr>`;
 }
 
@@ -72,8 +69,8 @@ function displayTerminal(item, staleThresholds, side) {
  * @returns {string} HTML table content
  */
 function displayPricing(pricings, stock_demand, staleThresholds, side) {
-    const no_prices = pricings.length === 0 ? '<tr><td>-</td><td>-</td><td>-</td><td></td></tr>' : '';
-    const header = `<tr><th>Location</th><th>Price (avg)</th><th>${stock_demand} (avg)</th><th>%</th></tr>`;
+    const no_prices = pricings.length === 0 ? '<tr><td>-</td><td>-</td><td>-</td></tr>' : '';
+    const header = `<tr><th>Location</th><th>Price (avg)</th><th>${stock_demand} (avg)</th></tr>`;
     const rows = pricings.map(terminal => displayTerminal(terminal, staleThresholds, side)).join('');
 
     return header + no_prices + rows;
@@ -178,24 +175,24 @@ function generateBestRouteHTML(routes) {
     const { latest, average, cachedInitData } = routes;
 
     return `<tr>
-        <td title="Most profitable trip based on latest reported data">
+        <td colspan="2" title="Most profitable trip based on latest reported data">
             (${escapeHtml(cachedInitData?.[latest.buy.terminal_name]?.code ?? '?')}) ${escapeHtml(latest.buy.terminal_name)} →
             (${escapeHtml(cachedInitData?.[latest.sell.terminal_name]?.code ?? '?')}) ${escapeHtml(latest.sell.terminal_name)}
         </td>
-        <td class="text-right" title="Profit from the trip">${readable_number(latest.profit)} aUEC</td>
-        <td class="text-right" title="Amount of SCU to trade">${readable_number(latest.amount)} SCU</td>
-        <td class="text-right padding-right-1" title="Required aUEC investment">
+        <td colspan="2" class="text-right" title="Profit from the trip">${readable_number(latest.profit)} aUEC</td>
+        <td colspan="2" class="text-right" title="Amount of SCU to trade">${readable_number(latest.amount)} SCU</td>
+        <td colspan="2" class="text-right padding-right-1" title="Required aUEC investment">
             ( ${readable_number(latest.investment)} aUEC )
         </td>
     </tr>
     <tr>
-        <td title="Most profitable trip based on average data">
+        <td colspan="2" title="Most profitable trip based on average data">
             (${escapeHtml(cachedInitData?.[average.buy.terminal_name]?.code ?? '?')}) ${escapeHtml(average.buy.terminal_name)} →
             (${escapeHtml(cachedInitData?.[average.sell.terminal_name]?.code ?? '?')}) ${escapeHtml(average.sell.terminal_name)}
         </td>
-        <td class="text-right" title="Profit from the trip">~ ${readable_number(average.profit)} aUEC</td>
-        <td class="text-right" title="Amount of SCU to trade">~ ${readable_number(average.amount)} SCU</td>
-        <td class="text-right padding-right-1" title="Required aUEC investment">
+        <td colspan="2" class="text-right" title="Profit from the trip">~ ${readable_number(average.profit)} aUEC</td>
+        <td colspan="2" class="text-right" title="Amount of SCU to trade">~ ${readable_number(average.amount)} SCU</td>
+        <td colspan="2" class="text-right padding-right-1" title="Required aUEC investment">
             ( ~ ${readable_number(average.investment)} aUEC )
         </td>
     </tr>`;
@@ -277,19 +274,24 @@ function generateMarketDepthRowHTML(depth) {
         }
         return '';
     };
-    const percStr = (current, max) => max ? ` (${Math.round(current / max * 100)}%)` : '';
+    const percTd = (current, max, invert = false) =>
+        max ? `<td${cellColor(current, max, invert)} style="font-size:0.85em;color:#aaa">${Math.round(current / max * 100)}%</td>` : '<td></td>';
 
     return `<tr>
-        <th title="How much of this commodity terminals will buy from you (current / avg / max SCU across ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''})">Total Demand</th>
-        <th title="How much of this commodity you can buy from terminals (current / avg / max SCU across ${buyTerminals} terminal${buyTerminals !== 1 ? 's' : ''})">Total Supply</th>
-        <th title="How much you can actually trade right now — limited by whichever side is smaller (current / max SCU)">Tradeable</th>
-        <th title="Total market opportunity — tradeable SCU × best margin (current / max aUEC)">Market Potential</th>
+        <th colspan="2" title="How much of this commodity terminals will buy from you (current / avg / max SCU across ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''})">Total Demand</th>
+        <th colspan="2" title="How much of this commodity you can buy from terminals (current / avg / max SCU across ${buyTerminals} terminal${buyTerminals !== 1 ? 's' : ''})">Total Supply</th>
+        <th colspan="2" title="How much you can actually trade right now — limited by whichever side is smaller (current / max SCU)">Tradeable</th>
+        <th colspan="2" title="Total market opportunity — tradeable SCU × best margin (current / max aUEC)">Market Potential</th>
     </tr>
     <tr class="market-depth-row">
-        <td${cellColor(sellCurrent, sellMax, true)}>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU${percStr(sellCurrent, sellMax)}</td>
-        <td${cellColor(buyCurrent, buyMax)}>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU${percStr(buyCurrent, buyMax)}</td>
-        <td${cellColor(tradeableCurrent, tradeableMax)}>${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU${percStr(tradeableCurrent, tradeableMax)}</td>
-        <td${cellColor(potentialCurrent, potentialMax)}>${readable_number(potentialCurrent)}${potentialMaxStr} aUEC${percStr(potentialCurrent, potentialMax)}</td>
+        <td${cellColor(sellCurrent, sellMax, true)}>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU</td>
+        ${percTd(sellCurrent, sellMax, true)}
+        <td${cellColor(buyCurrent, buyMax)}>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU</td>
+        ${percTd(buyCurrent, buyMax)}
+        <td${cellColor(tradeableCurrent, tradeableMax)}>${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU</td>
+        ${percTd(tradeableCurrent, tradeableMax)}
+        <td${cellColor(potentialCurrent, potentialMax)}>${readable_number(potentialCurrent)}${potentialMaxStr} aUEC</td>
+        ${percTd(potentialCurrent, potentialMax)}
     </tr>`;
 }
 
@@ -333,20 +335,20 @@ function displayCommodity(item, buy = [], sell = [], cache, staleThresholds = { 
 
     return `
     <table class="commodity" id="comm-${escapeHtml(item)}">
-        <tr><th colspan="4" class="text-center">${escapeHtml(item)} ${best_profit}</th></tr>
+        <tr><th colspan="8" class="text-center">${escapeHtml(item)} ${best_profit}</th></tr>
         ${best_route}
         ${market_depth_row}
         <tr>
-            <td colspan="2">(you) Sell</td>
-            <td colspan="2">(you) Buy</td>
+            <td colspan="4">(you) Sell</td>
+            <td colspan="4">(you) Buy</td>
         </tr>
         <tr>
-            <td colspan="2">
+            <td colspan="4">
                 <table>
                     ${displayPricing(sell_sorted, 'Demand', staleThresholds, 'sell')}
                 </table>
             </td>
-            <td colspan="2">
+            <td colspan="4">
                 <table>
                     ${displayPricing(buy_sorted, 'In stock', staleThresholds, 'buy')}
                 </table>
