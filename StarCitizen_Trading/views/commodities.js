@@ -52,11 +52,14 @@ function displayTerminal(item, staleThresholds, side) {
         ? 'Estimated max capacity (based on current stock level)'
         : 'Confirmed max stock observed';
     const maxSuffix = max_inventory > 0 ? ` / ${max_is_estimate ? '~' : ''}${readable_number(max_inventory)}` : '';
+    const perc = max_inventory > 0 ? Math.round(stock / max_inventory * 100) : null;
+    const percTd = perc !== null ? `<td style="color:#888;font-size:0.85em">${perc}%</td>` : '<td></td>';
 
     return `<tr${rowClass}>
         <td title="${escapeHtml(sizesTitle)}&#10;${escapeHtml(updatedTitle)}">${escapeHtml(item.terminal_name)}</td>
         <td>${readable_number(price)} (~${readable_number(price_avg)})</td>
         <td title="${escapeHtml(maxTitle)}">${readable_number(stock)} (~${readable_number(stock_avg)})${maxSuffix}</td>
+        ${percTd}
     </tr>`;
 }
 
@@ -69,8 +72,8 @@ function displayTerminal(item, staleThresholds, side) {
  * @returns {string} HTML table content
  */
 function displayPricing(pricings, stock_demand, staleThresholds, side) {
-    const no_prices = pricings.length === 0 ? '<tr><td>-</td><td>-</td><td>-</td></tr>' : '';
-    const header = `<tr><th>Location</th><th>Price (avg)</th><th>${stock_demand} (avg)</th></tr>`;
+    const no_prices = pricings.length === 0 ? '<tr><td>-</td><td>-</td><td>-</td><td></td></tr>' : '';
+    const header = `<tr><th>Location</th><th>Price (avg)</th><th>${stock_demand} (avg)</th><th>%</th></tr>`;
     const rows = pricings.map(terminal => displayTerminal(terminal, staleThresholds, side)).join('');
 
     return header + no_prices + rows;
