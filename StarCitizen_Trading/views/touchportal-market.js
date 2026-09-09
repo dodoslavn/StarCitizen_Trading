@@ -164,7 +164,7 @@ function touchportalMarket(depthAll, depthBySystem, systems) {
     const switcherKeys = [allKey, ...(systems || [])];
 
     const switcherButtons = switcherKeys.map(s =>
-        `<button onclick="switchSystem(${JSON.stringify(s)})" id="btn-${escapeHtml(s)}" style="margin:0 0.25rem;padding:0.3rem 0.8rem;border-radius:0.25rem;border:1px solid #444;background:#2e2e2e;color:#ccc;cursor:pointer">${escapeHtml(s)}</button>`
+        `<button onclick='switchSystem(${JSON.stringify(s)})' id="btn-${escapeHtml(s)}" style="margin:0 0.25rem;padding:0.3rem 0.8rem;border-radius:0.25rem;border:1px solid #444;background:#2e2e2e;color:#ccc;cursor:pointer">${escapeHtml(s)}</button>`
     ).join('');
 
     const body = `
