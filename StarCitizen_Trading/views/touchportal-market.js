@@ -124,9 +124,9 @@ function buildRows(depth) {
             <td data-val="${name}"><a href="/#comm-${name}">${name}</a></td>
             <td data-val="${item.margin}" style="color:${marginColor}">${readable_number(item.margin)}</td>
             <td data-val="${item.profitPerc.toFixed(2)}" style="color:${percColor}">${item.profitPerc.toFixed(1)}%</td>
-            <td data-val="${item.buyCurrent}" style="color:${supplyColor}">${readable_number(item.buyCurrent)} / ${readable_number(item.buyMax)} SCU</td>
+            <td data-val="${item.buyCurrent}" style="color:${supplyColor}">${readable_number(item.buyCurrent)} / ${readable_number(item.buyMax)} SCU${supplyPerc !== null ? ' (' + supplyPerc + '%)' : ''}</td>
             <td data-val="${supplyPerc ?? -1}" style="color:${supplyColor}">${supplyPerc !== null ? supplyPerc + '%' : '-'}</td>
-            <td data-val="${item.sellCurrent}" style="color:${demandColor}">${readable_number(item.sellCurrent)} / ${readable_number(item.sellMax)} SCU</td>
+            <td data-val="${item.sellCurrent}" style="color:${demandColor}">${readable_number(item.sellCurrent)} / ${readable_number(item.sellMax)} SCU${demandPerc !== null ? ' (' + demandPerc + '%)' : ''}</td>
             <td data-val="${demandPerc ?? -1}" style="color:${demandColor}">${demandPerc !== null ? demandPerc + '%' : '-'}</td>
             <td data-val="${item.tradeableCurrent}" style="color:${tradeColor}">${readable_number(item.tradeableCurrent)}</td>
             <td data-val="${item.potentialCurrent}" style="color:${potColor}">${readable_number(item.potentialCurrent)}</td>
