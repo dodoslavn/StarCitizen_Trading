@@ -58,8 +58,11 @@ function handle(req, res, cache) {
     }
 
     if (parts[1] === 'market') {
-        const depth = trading.generateMarketDepth(cache);
-        res.end(html.touchportalMarket(depth));
+        const systems = trading.getSystemNames(cache);
+        const depthAll = trading.generateMarketDepth(cache);
+        const depthBySystem = {};
+        systems.forEach(s => { depthBySystem[s] = trading.generateMarketDepth(cache, s); });
+        res.end(html.touchportalMarket(depthAll, depthBySystem, systems));
         return;
     }
 

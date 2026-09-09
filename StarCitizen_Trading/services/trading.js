@@ -508,14 +508,20 @@ function generateBuyData(cache) {
  * @param {Object} cache - DataCache instance
  * @returns {Array} Sorted by marketPotential descending, filtered to margin > 0
  */
-function generateMarketDepth(cache) {
+function generateMarketDepth(cache, systemFilter) {
     const data = cache.getData();
     if (!data) return [];
 
     const { estimateMaxInventory } = require('../utils/formatters.js');
+    const initData = cache.getInitData();
     const byComm = {};
 
     data.data.forEach(item => {
+        if (systemFilter) {
+            const sys = initData?.[item.terminal_name]?.name;
+            if (sys !== systemFilter) return;
+        }
+
         const name = item.commodity_name;
         if (!byComm[name]) {
             byComm[name] = { commodity: name, buyCurrent: 0, buyMax: 0, buyTerminals: 0, sellCurrent: 0, sellMax: 0, sellTerminals: 0, bestBuyPrice: Infinity, bestSellPrice: 0 };
@@ -553,6 +559,12 @@ function generateMarketDepth(cache) {
         .sort((a, b) => b.potentialCurrent - a.potentialCurrent);
 }
 
+function getSystemNames(cache) {
+    const initData = cache.getInitData();
+    if (!initData) return [];
+    return [...new Set(Object.values(initData).map(v => v.name).filter(Boolean))].sort();
+}
+
 module.exports = {
     refreshData,
     refreshConfirmedMaxInventory,
@@ -564,5 +576,6 @@ module.exports = {
     generateSellData,
     generateBuyData,
     generateMarketDepth,
+    getSystemNames,
     processVehicles
 };

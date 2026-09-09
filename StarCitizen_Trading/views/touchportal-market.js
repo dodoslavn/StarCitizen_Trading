@@ -90,7 +90,7 @@ function buildRankFractions(items, key) {
     return map;
 }
 
-function touchportalMarket(depth) {
+function buildRows(depth) {
     const items = depth.map(item => ({
         ...item,
         profitPerc: item.bestBuy > 0 ? (item.margin / item.bestBuy * 100) : 0
@@ -149,13 +149,52 @@ function touchportalMarket(depth) {
         `<th title="${escapeHtml(h.title)}" onclick="handleSort(${i}, event)" style="cursor:pointer;white-space:nowrap">${escapeHtml(h.label)} <span class="si">${i === 8 ? '↓' : ''}</span></th>`
     ).join('');
 
+    return { rows: rows || '<tr><td colspan="9">No data available</td></tr>', headerRow };
+}
+
+function touchportalMarket(depthAll, depthBySystem, systems) {
+    const allKey = 'All';
+    const { rows: allRows, headerRow } = buildRows(depthAll);
+
+    const systemData = { [allKey]: allRows };
+    (systems || []).forEach(s => {
+        systemData[s] = buildRows(depthBySystem[s] || []).rows;
+    });
+
+    const switcherKeys = [allKey, ...(systems || [])];
+
+    const switcherButtons = switcherKeys.map(s =>
+        `<button onclick="switchSystem(${JSON.stringify(s)})" id="btn-${escapeHtml(s)}" style="margin:0 0.25rem;padding:0.3rem 0.8rem;border-radius:0.25rem;border:1px solid #444;background:#2e2e2e;color:#ccc;cursor:pointer">${escapeHtml(s)}</button>`
+    ).join('');
+
     const body = `
     ${SORT_JS}
+    <script>
+    var marketData = ${JSON.stringify(systemData)};
+    var activeSystem = ${JSON.stringify(allKey)};
+
+    function switchSystem(s) {
+        activeSystem = s;
+        document.getElementById('mkt-body').innerHTML = marketData[s] || '<tr><td colspan="9">No data</td></tr>';
+        sortKeys = [{col: 8, dir: -1}];
+        applySort();
+        updateHeaders();
+        document.querySelectorAll('[id^="btn-"]').forEach(function(b) {
+            b.style.background = '#2e2e2e';
+            b.style.color = '#ccc';
+            b.style.borderColor = '#444';
+        });
+        var active = document.getElementById('btn-' + s);
+        if (active) { active.style.background = '#006fdd'; active.style.color = '#fff'; active.style.borderColor = '#006fdd'; }
+    }
+    window.addEventListener('load', function() { switchSystem(${JSON.stringify(allKey)}); });
+    </script>
     <h2>Market Depth</h2>
-    <p style="text-align:center; color:#888; margin-top:-0.5rem; font-size:0.85rem;">Click column to sort · Shift+click to add secondary sort</p>
+    <div style="text-align:center;margin-bottom:0.75rem">${switcherButtons}</div>
+    <p style="text-align:center; color:#888; margin-top:-0.25rem; font-size:0.85rem;">Click column to sort · Shift+click to add secondary sort</p>
     <table id="mkt-table">
         <thead><tr>${headerRow}</tr></thead>
-        <tbody id="mkt-body">${rows || '<tr><td colspan="9">No data available</td></tr>'}</tbody>
+        <tbody id="mkt-body">${allRows}</tbody>
     </table>`;
 
     return shell('Market Depth', body, true);
