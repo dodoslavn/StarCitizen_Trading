@@ -8,7 +8,7 @@ const { shell } = require('./touchportal.js');
 
 const SORT_JS = `
 <script>
-var sortKeys = [{col: 8, dir: -1}];
+var sortKeys = [{col: 10, dir: -1}];
 
 function handleSort(colIndex, event) {
     if (event.shiftKey) {
@@ -124,9 +124,11 @@ function buildRows(depth) {
             <td data-val="${name}"><a href="/#comm-${name}">${name}</a></td>
             <td data-val="${item.margin}" style="color:${marginColor}">${readable_number(item.margin)}</td>
             <td data-val="${item.profitPerc.toFixed(2)}" style="color:${percColor}">${item.profitPerc.toFixed(1)}%</td>
-            <td data-val="${item.buyCurrent}" style="color:${supplyColor}">${readable_number(item.buyCurrent)} / ${readable_number(item.buyMax)} SCU${supplyPerc !== null ? ' (' + supplyPerc + '%)' : ''}</td>
+            <td data-val="${item.buyCurrent}" style="color:${supplyColor}">${readable_number(item.buyCurrent)}</td>
+            <td data-val="${item.buyMax}" style="color:${supplyColor}">${readable_number(item.buyMax)}</td>
             <td data-val="${supplyPerc ?? -1}" style="color:${supplyColor}">${supplyPerc !== null ? supplyPerc + '%' : '-'}</td>
-            <td data-val="${item.sellCurrent}" style="color:${demandColor}">${readable_number(item.sellCurrent)} / ${readable_number(item.sellMax)} SCU${demandPerc !== null ? ' (' + demandPerc + '%)' : ''}</td>
+            <td data-val="${item.sellCurrent}" style="color:${demandColor}">${readable_number(item.sellCurrent)}</td>
+            <td data-val="${item.sellMax}" style="color:${demandColor}">${readable_number(item.sellMax)}</td>
             <td data-val="${demandPerc ?? -1}" style="color:${demandColor}">${demandPerc !== null ? demandPerc + '%' : '-'}</td>
             <td data-val="${item.tradeableCurrent}" style="color:${tradeColor}">${readable_number(item.tradeableCurrent)}</td>
             <td data-val="${item.potentialCurrent}" style="color:${potColor}">${readable_number(item.potentialCurrent)}</td>
@@ -137,19 +139,21 @@ function buildRows(depth) {
         { label: 'Commodity',       title: 'Commodity name' },
         { label: 'Margin aUEC/SCU', title: 'Best sell price minus best buy price' },
         { label: 'Profit %',        title: 'Margin as a percentage of the buy price — capital efficiency' },
-        { label: 'Supply SCU',      title: 'Current / max buy stock across all terminals' },
-        { label: 'Supply %',        title: 'Buy stock as % of max — how full terminals are (green = well stocked)' },
-        { label: 'Demand SCU',      title: 'Current / max sell demand stock across all terminals' },
-        { label: 'Demand %',        title: 'Sell stock as % of max — low % means terminals want more (green = good time to sell)' },
+        { label: 'Supply',     title: 'Current buy stock SCU across all terminals' },
+        { label: 'Supply Max', title: 'Maximum buy stock SCU across all terminals' },
+        { label: 'Supply %',   title: 'Buy stock as % of max — how full terminals are (green = well stocked)' },
+        { label: 'Demand',     title: 'Current sell demand SCU across all terminals' },
+        { label: 'Demand Max', title: 'Maximum sell demand SCU across all terminals' },
+        { label: 'Demand %',   title: 'Sell stock as % of max — low % means terminals want more (green = good time to sell)' },
         { label: 'Tradeable SCU',   title: 'min(supply, demand) — how much you can actually move right now' },
         { label: 'Potential aUEC',  title: 'Tradeable SCU × margin — total market opportunity right now' },
     ];
 
     const headerRow = headers.map((h, i) =>
-        `<th title="${escapeHtml(h.title)}" onclick="handleSort(${i}, event)" style="cursor:pointer;white-space:nowrap">${escapeHtml(h.label)} <span class="si">${i === 8 ? '↓' : ''}</span></th>`
+        `<th title="${escapeHtml(h.title)}" onclick="handleSort(${i}, event)" style="cursor:pointer;white-space:nowrap">${escapeHtml(h.label)} <span class="si">${i === 10 ? '↓' : ''}</span></th>`
     ).join('');
 
-    return { rows: rows || '<tr><td colspan="9">No data available</td></tr>', headerRow };
+    return { rows: rows || '<tr><td colspan="11">No data available</td></tr>', headerRow };
 }
 
 function touchportalMarket(depthAll, depthBySystem, systems) {
@@ -175,8 +179,8 @@ function touchportalMarket(depthAll, depthBySystem, systems) {
 
     function switchSystem(s) {
         activeSystem = s;
-        document.getElementById('mkt-body').innerHTML = marketData[s] || '<tr><td colspan="9">No data</td></tr>';
-        sortKeys = [{col: 8, dir: -1}];
+        document.getElementById('mkt-body').innerHTML = marketData[s] || '<tr><td colspan="11">No data</td></tr>';
+        try { localStorage.setItem('mkt-system', s); } catch(e) {}
         applySort();
         updateHeaders();
         document.querySelectorAll('[id^="btn-"]').forEach(function(b) {
@@ -187,7 +191,12 @@ function touchportalMarket(depthAll, depthBySystem, systems) {
         var active = document.getElementById('btn-' + s);
         if (active) { active.style.background = '#006fdd'; active.style.color = '#fff'; active.style.borderColor = '#006fdd'; }
     }
-    window.addEventListener('load', function() { switchSystem(${JSON.stringify(allKey)}); });
+    window.addEventListener('load', function() {
+        var saved = null;
+        try { saved = localStorage.getItem('mkt-system'); } catch(e) {}
+        var keys = ${JSON.stringify(switcherKeys)};
+        switchSystem(saved && keys.indexOf(saved) >= 0 ? saved : ${JSON.stringify(allKey)});
+    });
     </script>
     <h2>Market Depth</h2>
     <div style="text-align:center;margin-bottom:0.75rem">${switcherButtons}</div>
