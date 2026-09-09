@@ -124,9 +124,9 @@ function buildRows(depth) {
             <td data-val="${name}"><a href="/#comm-${name}">${name}</a></td>
             <td data-val="${item.margin}" style="color:${marginColor}">${readable_number(item.margin)}</td>
             <td data-val="${item.profitPerc.toFixed(2)}" style="color:${percColor}">${item.profitPerc.toFixed(1)}%</td>
-            <td data-val="${item.buyCurrent}" style="color:${supplyColor}">${readable_number(item.buyCurrent)} SCU</td>
+            <td data-val="${item.buyCurrent}" style="color:${supplyColor}">${readable_number(item.buyCurrent)} / ${readable_number(item.buyMax)} SCU</td>
             <td data-val="${supplyPerc ?? -1}" style="color:${supplyColor}">${supplyPerc !== null ? supplyPerc + '%' : '-'}</td>
-            <td data-val="${item.sellCurrent}" style="color:${demandColor}">${readable_number(item.sellCurrent)} SCU</td>
+            <td data-val="${item.sellCurrent}" style="color:${demandColor}">${readable_number(item.sellCurrent)} / ${readable_number(item.sellMax)} SCU</td>
             <td data-val="${demandPerc ?? -1}" style="color:${demandColor}">${demandPerc !== null ? demandPerc + '%' : '-'}</td>
             <td data-val="${item.tradeableCurrent}" style="color:${tradeColor}">${readable_number(item.tradeableCurrent)}</td>
             <td data-val="${item.potentialCurrent}" style="color:${potColor}">${readable_number(item.potentialCurrent)}</td>
@@ -137,9 +137,9 @@ function buildRows(depth) {
         { label: 'Commodity',       title: 'Commodity name' },
         { label: 'Margin aUEC/SCU', title: 'Best sell price minus best buy price' },
         { label: 'Profit %',        title: 'Margin as a percentage of the buy price — capital efficiency' },
-        { label: 'Supply SCU',      title: 'Current buy stock available across all terminals' },
+        { label: 'Supply SCU',      title: 'Current / max buy stock across all terminals' },
         { label: 'Supply %',        title: 'Buy stock as % of max — how full terminals are (green = well stocked)' },
-        { label: 'Demand SCU',      title: 'Current sell demand stock across all terminals' },
+        { label: 'Demand SCU',      title: 'Current / max sell demand stock across all terminals' },
         { label: 'Demand %',        title: 'Sell stock as % of max — low % means terminals want more (green = good time to sell)' },
         { label: 'Tradeable SCU',   title: 'min(supply, demand) — how much you can actually move right now' },
         { label: 'Potential aUEC',  title: 'Tradeable SCU × margin — total market opportunity right now' },
