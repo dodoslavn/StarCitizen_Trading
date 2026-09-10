@@ -27,6 +27,7 @@
 
 const html = require('../html.js');
 const trading = require('../services/trading.js');
+const influx  = require('../services/influx.js');
 const { validateSCU, validateSystemName, validateShipId, validateWallet, validateShipBracket } = require('../utils/validation.js');
 
 const VALID_SORTS = ['profit', 'roi', 'hour'];
@@ -37,7 +38,7 @@ const VALID_SORTS = ['profit', 'roi', 'hour'];
  * @param {Object} res - HTTP response
  * @param {Object} cache - DataCache instance
  */
-function handle(req, res, cache) {
+async function handle(req, res, cache, config) {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
 
@@ -62,7 +63,8 @@ function handle(req, res, cache) {
         const depthAll = trading.generateMarketDepth(cache);
         const depthBySystem = {};
         systems.forEach(s => { depthBySystem[s] = trading.generateMarketDepth(cache, s); });
-        res.end(html.touchportalMarket(depthAll, depthBySystem, systems));
+        const restockStats = await influx.getRestockStats(config).catch(() => ({}));
+        res.end(html.touchportalMarket(depthAll, depthBySystem, systems, restockStats));
         return;
     }
 

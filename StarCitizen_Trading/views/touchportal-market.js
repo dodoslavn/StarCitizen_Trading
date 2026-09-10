@@ -90,7 +90,9 @@ function buildRankFractions(items, key) {
     return map;
 }
 
-function buildRows(depth) {
+function buildRows(depth, restockStats) {
+    const rs = restockStats || {};
+
     const items = depth.map(item => ({
         ...item,
         profitPerc: item.bestBuy > 0 ? (item.margin / item.bestBuy * 100) : 0
@@ -116,9 +118,27 @@ function buildRows(depth) {
         const demandPerc = pct(item.sellCurrent, item.sellMax);
         // Supply: high % = well stocked = green. Demand: low % = room to sell = green (invert).
         const supplyFrac = supplyPerc !== null ? supplyPerc / 100 : 0.5;
-        const demandFrac = demandPerc !== null ? 1 - demandPerc / 100 : 0.5;
+        const demandFrac = demandPerc !== null ? demandPerc / 100 : 0.5;
         const supplyColor = spectrumColor(supplyFrac);
         const demandColor = spectrumColor(demandFrac);
+
+        // Restock column
+        const stat = rs[item.commodity];
+        let restockVal = 9999, restockDisplay = '-', restockColor = spectrumColor(0.5), restockTitle = '';
+        if (stat) {
+            const { lastRestockH, avgCycleH, hoursToEmpty } = stat;
+            restockVal = lastRestockH;
+            // Fraction: 1 = just restocked (green), 0 = overdue (red)
+            const fraction = avgCycleH ? Math.max(0, 1 - lastRestockH / avgCycleH) : 0.5;
+            restockColor = spectrumColor(fraction);
+            const ago = lastRestockH < 24
+                ? `${lastRestockH}h ago`
+                : `${Math.round(lastRestockH / 24 * 10) / 10}d ago`;
+            const cycle = avgCycleH ? `~${avgCycleH}h cycle` : '';
+            const empty = hoursToEmpty ? ` · empties in ~${hoursToEmpty}h` : '';
+            restockDisplay = ago + (cycle ? ` · ${cycle}` : '');
+            restockTitle = `Last restock: ${ago}${cycle ? ', avg ' + cycle : ''}${empty}`;
+        }
 
         return `<tr>
             <td data-val="${name}"><a href="/#comm-${name}">${name}</a></td>
@@ -132,6 +152,7 @@ function buildRows(depth) {
             <td data-val="${demandPerc ?? -1}" style="color:${demandColor}">${demandPerc !== null ? demandPerc + '%' : '-'}</td>
             <td data-val="${item.tradeableCurrent}" style="color:${tradeColor}">${readable_number(item.tradeableCurrent)}</td>
             <td data-val="${item.potentialCurrent}" style="color:${potColor}">${readable_number(item.potentialCurrent)}</td>
+            <td data-val="${restockVal}" style="color:${restockColor}" title="${escapeHtml(restockTitle)}">${restockDisplay}</td>
         </tr>`;
     }).join('');
 
@@ -139,30 +160,31 @@ function buildRows(depth) {
         { label: 'Commodity',       title: 'Commodity name' },
         { label: 'Margin aUEC/SCU', title: 'Best sell price minus best buy price' },
         { label: 'Profit %',        title: 'Margin as a percentage of the buy price — capital efficiency' },
-        { label: 'Supply',     title: 'Current buy stock SCU across all terminals' },
-        { label: 'Supply Max', title: 'Maximum buy stock SCU across all terminals' },
-        { label: 'Supply %',   title: 'Buy stock as % of max — how full terminals are (green = well stocked)' },
-        { label: 'Demand',     title: 'Current sell demand SCU across all terminals' },
-        { label: 'Demand Max', title: 'Maximum sell demand SCU across all terminals' },
-        { label: 'Demand %',   title: 'Sell stock as % of max — low % means terminals want more (green = good time to sell)' },
+        { label: 'Supply',          title: 'Current buy stock SCU across all terminals' },
+        { label: 'Supply Max',      title: 'Maximum buy stock SCU across all terminals' },
+        { label: 'Supply %',        title: 'Buy stock as % of max — how full terminals are (green = well stocked)' },
+        { label: 'Demand',          title: 'Current sell demand SCU across all terminals' },
+        { label: 'Demand Max',      title: 'Maximum sell demand SCU across all terminals' },
+        { label: 'Demand %',        title: 'Sell stock as % of max — how much is available for you to buy (green = well stocked)' },
         { label: 'Tradeable SCU',   title: 'min(supply, demand) — how much you can actually move right now' },
         { label: 'Potential aUEC',  title: 'Tradeable SCU × margin — total market opportunity right now' },
+        { label: 'Restock',         title: 'Time since last observed restock · avg restock cycle (green = recently restocked, red = overdue)' },
     ];
 
     const headerRow = headers.map((h, i) =>
         `<th title="${escapeHtml(h.title)}" onclick="handleSort(${i}, event)" style="cursor:pointer;white-space:nowrap">${escapeHtml(h.label)} <span class="si">${i === 10 ? '↓' : ''}</span></th>`
     ).join('');
 
-    return { rows: rows || '<tr><td colspan="11">No data available</td></tr>', headerRow };
+    return { rows: rows || '<tr><td colspan="12">No data available</td></tr>', headerRow };
 }
 
-function touchportalMarket(depthAll, depthBySystem, systems) {
+function touchportalMarket(depthAll, depthBySystem, systems, restockStats) {
     const allKey = 'All';
-    const { rows: allRows, headerRow } = buildRows(depthAll);
+    const { rows: allRows, headerRow } = buildRows(depthAll, restockStats);
 
     const systemData = { [allKey]: allRows };
     (systems || []).forEach(s => {
-        systemData[s] = buildRows(depthBySystem[s] || []).rows;
+        systemData[s] = buildRows(depthBySystem[s] || [], restockStats).rows;
     });
 
     const switcherKeys = [allKey, ...(systems || [])];
@@ -179,7 +201,7 @@ function touchportalMarket(depthAll, depthBySystem, systems) {
 
     function switchSystem(s) {
         activeSystem = s;
-        document.getElementById('mkt-body').innerHTML = marketData[s] || '<tr><td colspan="11">No data</td></tr>';
+        document.getElementById('mkt-body').innerHTML = marketData[s] || '<tr><td colspan="12">No data</td></tr>';
         try { localStorage.setItem('mkt-system', s); } catch(e) {}
         applySort();
         updateHeaders();

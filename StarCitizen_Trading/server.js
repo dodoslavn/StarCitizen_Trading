@@ -8,6 +8,7 @@ const cron = require('node-cron');
 const logger = require('./logger.js');
 const DataCache = require('./dataCache.js');
 const trading = require('./services/trading.js');
+const influx  = require('./services/influx.js');
 const routes = require('./routes.js');
 const { loadConfig } = require('./config.js');
 
@@ -37,6 +38,11 @@ async function initialize() {
 
         await trading.initializeData(config, cache);
         await trading.refreshData(config, cache);
+
+        // Enrich max inventory from InfluxDB historical data (best-effort, non-blocking)
+        influx.enrichMaxInventory(cache, config).catch(e =>
+            logger.warn(`InfluxDB max inventory enrichment failed: ${e.message}`)
+        );
 
         logger.info('Initial data loaded successfully');
     } catch (error) {

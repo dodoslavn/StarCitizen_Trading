@@ -274,20 +274,31 @@ function generateMarketDepthRowHTML(depth) {
         }
         return '';
     };
-    const percTd = (current, max, invert = false) =>
-        max ? `<td${cellColor(current, max, invert)} style="font-size:0.85em;color:#aaa">${Math.round(current / max * 100)}%</td>` : '<td></td>';
+    const percTd = (current, max, invert = false) => {
+        if (!max) return '<td></td>';
+        const p = Math.round(current / max * 100);
+        let color = '#aaa';
+        if (invert) {
+            if (p <= 30) color = '#b8e0b8';
+            else if (p >= 70) color = '#ffb0b0';
+        } else {
+            if (p >= 70) color = '#b8e0b8';
+            else if (p <= 30) color = '#ffb0b0';
+        }
+        return `<td style="color:${color}">${p}%</td>`;
+    };
 
     return `<tr>
-        <th colspan="2" title="How much of this commodity terminals will buy from you (current / avg / max SCU across ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''})">Total Demand</th>
-        <th colspan="2" title="How much of this commodity you can buy from terminals (current / avg / max SCU across ${buyTerminals} terminal${buyTerminals !== 1 ? 's' : ''})">Total Supply</th>
+        <th colspan="2" title="How much of this commodity terminals will buy from you (current / avg / max SCU across ${buyTerminals} terminal${buyTerminals !== 1 ? 's' : ''})">Total Demand</th>
+        <th colspan="2" title="How much of this commodity you can buy from terminals (current / avg / max SCU across ${sellTerminals} terminal${sellTerminals !== 1 ? 's' : ''})">Total Supply</th>
         <th colspan="2" title="How much you can actually trade right now — limited by whichever side is smaller (current / max SCU)">Tradeable</th>
         <th colspan="2" title="Total market opportunity — tradeable SCU × best margin (current / max aUEC)">Market Potential</th>
     </tr>
     <tr class="market-depth-row">
-        <td${cellColor(sellCurrent, sellMax, true)}>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU</td>
-        ${percTd(sellCurrent, sellMax, true)}
-        <td${cellColor(buyCurrent, buyMax)}>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU</td>
-        ${percTd(buyCurrent, buyMax)}
+        <td${cellColor(buyCurrent, buyMax, true)}>${readable_number(buyCurrent)} (~${readable_number(buyAvg)})${buyMaxStr} SCU</td>
+        ${percTd(buyCurrent, buyMax, true)}
+        <td${cellColor(sellCurrent, sellMax)}>${readable_number(sellCurrent)} (~${readable_number(sellAvg)})${sellMaxStr} SCU</td>
+        ${percTd(sellCurrent, sellMax)}
         <td${cellColor(tradeableCurrent, tradeableMax)}>${readable_number(tradeableCurrent)}${tradeableMaxStr} SCU</td>
         ${percTd(tradeableCurrent, tradeableMax)}
         <td${cellColor(potentialCurrent, potentialMax)}>${readable_number(potentialCurrent)}${potentialMaxStr} aUEC</td>

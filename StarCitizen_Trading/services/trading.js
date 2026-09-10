@@ -433,7 +433,7 @@ function generateSellData(cache) {
     const cachedInitData = cache.getInitData();
 
     cachedData.data.forEach(item => {
-        const { commodity_name, container_sizes, terminal_name, price_sell, price_sell_avg, scu_sell_stock, scu_sell_stock_avg, status_sell, date_modified, id_commodity, id_terminal } = item;
+        const { commodity_name, container_sizes, terminal_name, price_sell, price_sell_avg, scu_sell_stock, scu_sell_stock_avg, status_sell, status_buy, date_modified, id_commodity, id_terminal } = item;
 
         let system = cachedInitData?.[terminal_name]?.code ?? '(?) ';
         if (system !== '(?) ') system = '(' + system + ') ';
@@ -455,6 +455,7 @@ function generateSellData(cache) {
             scu_sell_avg: scu_sell_stock_avg > 0 ? scu_sell_stock_avg : null,
             scu_sell_max: confirmedMax ?? estimateMaxInventory(scu_sell_stock, status_sell),
             scu_sell_max_is_estimate: confirmedMax === undefined,
+            status_buy,
             date_modified,
         });
     });
@@ -473,7 +474,7 @@ function generateBuyData(cache) {
     const cachedInitData = cache.getInitData();
 
     cachedData.data.forEach(item => {
-        const { commodity_name, container_sizes, terminal_name, price_buy, price_buy_avg, scu_buy, scu_buy_avg, status_buy, date_modified, id_commodity, id_terminal } = item;
+        const { commodity_name, container_sizes, terminal_name, price_buy, price_buy_avg, scu_buy, scu_buy_avg, status_buy, status_sell, date_modified, id_commodity, id_terminal } = item;
 
         let system = cachedInitData?.[terminal_name]?.code ?? '(?) ';
         if (system !== '(?) ') system = '(' + system + ') ';
@@ -495,6 +496,7 @@ function generateBuyData(cache) {
             scu_buy_avg: scu_buy_avg > 0 ? scu_buy_avg : null,
             scu_buy_max: confirmedMax ?? estimateMaxInventory(scu_buy, status_buy),
             scu_buy_max_is_estimate: confirmedMax === undefined,
+            status_sell,
             date_modified,
         });
     });

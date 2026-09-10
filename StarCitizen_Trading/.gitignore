@@ -31,3 +31,6 @@ Thumbs.db
 # Environment variables
 .env
 .env.local
+
+# Local config overrides (secrets, local IPs — never commit)
+config.local.json

@@ -68,7 +68,7 @@ async function processRequest(req, res, config, cache) {
         } else if (url === '/about') {
             handler.handle(req, res, cache);
         } else if (url === '/touchportal') {
-            handler.handle(req, res, cache);
+            handler.handle(req, res, cache, config);
         } else {
             handler.handle(req, res, cache);
         }
