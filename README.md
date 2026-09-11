@@ -242,29 +242,3 @@ All trading data is sourced from the [UEX Corp API](https://uexcorp.space/), a c
 ## License
 
 See [LICENSE](../LICENSE.txt) for details.
-
-## Contributing
-
-Contributions welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure `npm test` and `npm run lint` pass
-5. Submit a pull request
-
-## Credits
-
-- **Author**: Dodoslav Novak
-- **Data**: UEX Corp API
-- **Community**: Star Citizen players
-
-## Support
-
-For issues or questions:
-- Open an issue on GitHub
-- Email: admin@dodoslav.eu
-
----
-
-Built for the Star Citizen community 🚀
