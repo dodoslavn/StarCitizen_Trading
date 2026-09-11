@@ -49,6 +49,9 @@ jobs:
           }
           EOF
 
+      - name: Test InfluxDB connectivity
+        run: curl -v --max-time 5 "${{ vars.INFLUX_URL }}/ping" || true
+
       - name: Enrich max inventory from InfluxDB
         run: npm run enrich-inventory-influx
 
