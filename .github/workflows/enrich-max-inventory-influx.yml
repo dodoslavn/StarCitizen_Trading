@@ -5,9 +5,9 @@ name: Enrich max inventory from InfluxDB
 # Requires config.local.json with InfluxDB credentials on the self-hosted runner.
 
 'on':
-  workflow_run:
-    workflows: ["Scan max inventory"]
-    types: [completed]
+  schedule:
+    # 04:00 UTC — after the UEX scan (03:15 UTC) has had time to finish and commit
+    - cron: '0 4 * * *'
   workflow_dispatch:
 
 permissions:
@@ -19,7 +19,6 @@ concurrency:
 
 jobs:
   enrich-influx:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: [self-hosted, AS2]
     defaults:
       run:
