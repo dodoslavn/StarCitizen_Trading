@@ -455,7 +455,7 @@ function generateSellData(cache) {
             scu_sell_avg: scu_sell_stock_avg > 0 ? scu_sell_stock_avg : null,
             scu_sell_max: confirmedMax ?? estimateMaxInventory(scu_sell_stock, status_sell),
             scu_sell_max_is_estimate: confirmedMax === undefined,
-            status_buy,
+            status_sell,
             date_modified,
         });
     });
@@ -496,7 +496,7 @@ function generateBuyData(cache) {
             scu_buy_avg: scu_buy_avg > 0 ? scu_buy_avg : null,
             scu_buy_max: confirmedMax ?? estimateMaxInventory(scu_buy, status_buy),
             scu_buy_max_is_estimate: confirmedMax === undefined,
-            status_sell,
+            status_buy,
             date_modified,
         });
     });
