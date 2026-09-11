@@ -571,6 +571,7 @@ module.exports = {
     refreshData,
     refreshConfirmedMaxInventory,
     loadConfirmedMaxInventory,
+    saveConfirmedMaxInventory,
     loadTerminalDistances,
     fetchLiveGameVersion,
     initializeData,

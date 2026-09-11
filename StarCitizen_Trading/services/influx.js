@@ -74,7 +74,7 @@ async function enrichMaxInventory(cache, config) {
     try {
         res = await influxQuery(config, 'SELECT MAX(scu) FROM Market WHERE scu > 0 GROUP BY terminal, commodity, trade_type');
     } catch (e) {
-        logger.warn(`[influx] enrichMaxInventory query failed: ${e.message}`);
+        logger.warn(`[influx] enrichMaxInventory query failed: ${e.message || e}`);
         return;
     }
 
