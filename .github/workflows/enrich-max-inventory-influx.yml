@@ -35,6 +35,19 @@ jobs:
       - name: Create config.json from example
         run: cp config.json.example config.json
 
+      - name: Create config.local.json from secrets
+        run: |
+          cat > config.local.json <<EOF
+          {
+            "influx": {
+              "url": "${{ secrets.INFLUX_URL }}",
+              "db": "${{ secrets.INFLUX_DB }}",
+              "user": "${{ secrets.INFLUX_USER }}",
+              "password": "${{ secrets.INFLUX_PASSWORD }}"
+            }
+          }
+          EOF
+
       - name: Enrich max inventory from InfluxDB
         run: npm run enrich-inventory-influx
 
