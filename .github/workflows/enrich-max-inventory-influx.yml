@@ -19,6 +19,7 @@ concurrency:
 
 jobs:
   enrich-influx:
+    environment: INFLUX
     runs-on: [self-hosted, AS2]
     defaults:
       run:
@@ -40,10 +41,10 @@ jobs:
           cat > config.local.json <<EOF
           {
             "influx": {
-              "url": "${{ secrets.INFLUX_URL }}",
-              "db": "${{ secrets.INFLUX_DB }}",
-              "user": "${{ secrets.INFLUX_USER }}",
-              "password": "${{ secrets.INFLUX_PASSWORD }}"
+              "url": "${{ vars.INFLUX_URL }}",
+              "db": "${{ vars.INFLUX_DB }}",
+              "user": "${{ vars.INFLUX_USER }}",
+              "password": "${{ vars.INFLUX_PASSWORD }}"
             }
           }
           EOF
