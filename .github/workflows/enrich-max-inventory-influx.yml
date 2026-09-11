@@ -1,0 +1,55 @@
+name: Enrich max inventory from InfluxDB
+
+# Runs after the UEX scan completes, updating any pair in max_inventory.json
+# where InfluxDB historical MAX(scu) exceeds what the scan found.
+# Requires config.local.json with InfluxDB credentials on the self-hosted runner.
+
+'on':
+  workflow_run:
+    workflows: ["Scan max inventory"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: enrich-max-inventory-influx
+  cancel-in-progress: false
+
+jobs:
+  enrich-influx:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: [self-hosted, AS2]
+    defaults:
+      run:
+        working-directory: StarCitizen_Trading
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull latest (scan job may have just committed)
+        run: git pull
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Create config.json from example
+        run: cp config.json.example config.json
+
+      - name: Enrich max inventory from InfluxDB
+        run: npm run enrich-inventory-influx
+
+      - name: Commit enriched max_inventory.json (if changed)
+        run: |
+          if git diff --quiet -- max_inventory.json; then
+            echo "No changes from InfluxDB enrichment, skipping commit"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add max_inventory.json
+          git commit -m "Enrich max_inventory.json from InfluxDB historical data
+
+          Confirmed pairs: $(node -e 'console.log(Object.keys(JSON.parse(require("fs").readFileSync("max_inventory.json")).data).length)')"
+          git push
