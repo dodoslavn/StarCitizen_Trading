@@ -1,0 +1,77 @@
+pipeline {
+    agent any
+
+    triggers {
+        // 04:30 UTC daily — after the GitHub Actions UEX scan (03:15 UTC) has committed
+        cron('30 4 * * *')
+    }
+
+    options {
+        disableConcurrentBuilds()
+        timeout(time: 15, unit: 'MINUTES')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install dependencies') {
+            steps {
+                dir('StarCitizen_Trading') {
+                    sh 'npm install --no-audit --no-fund'
+                }
+            }
+        }
+
+        stage('Prepare config') {
+            steps {
+                dir('StarCitizen_Trading') {
+                    sh 'cp config.json.example config.json'
+                    // config.local.json with InfluxDB credentials lives permanently
+                    // on the Jenkins agent at the workspace path — place it once:
+                    //   { "influx": { "url": "http://localhost:8086",
+                    //                 "db": "starcitizen_trading",
+                    //                 "user": "claude",
+                    //                 "password": "..." } }
+                }
+            }
+        }
+
+        stage('Enrich from InfluxDB') {
+            steps {
+                dir('StarCitizen_Trading') {
+                    sh 'node enrich-max-inventory-influx.js'
+                }
+            }
+        }
+
+        stage('Commit and push') {
+            steps {
+                dir('StarCitizen_Trading') {
+                    sh '''
+                        if git diff --quiet -- max_inventory.json; then
+                            echo "No changes from InfluxDB enrichment, skipping commit"
+                            exit 0
+                        fi
+                        git config user.name "jenkins"
+                        git config user.email "jenkins@fordo.eu"
+                        git add max_inventory.json
+                        git commit -m "Enrich max_inventory.json from InfluxDB historical data
+
+Confirmed pairs: $(node -e 'console.log(Object.keys(JSON.parse(require("fs").readFileSync("max_inventory.json")).data).length)')"
+                        git push
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo 'InfluxDB enrichment failed — max_inventory.json not updated'
+        }
+    }
+}
