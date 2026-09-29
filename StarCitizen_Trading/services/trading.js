@@ -4,6 +4,8 @@
  */
 
 const fs = require('fs');
+const https = require('https');
+const http = require('http');
 const logger = require('../logger.js');
 const uexApi = require('./uexApi.js');
 const { estimateMaxInventory, decodeHtmlEntities } = require('../utils/formatters.js');
@@ -567,6 +569,59 @@ function getSystemNames(cache) {
     return [...new Set(Object.values(initData).map(v => v.name).filter(Boolean))].sort();
 }
 
+const DEFAULT_MAX_INVENTORY_URL = 'https://scpages.github.io/trading_data/data/max_inventory.json';
+const SAMPLE_MAX_INVENTORY_FILE = './max_inventory.sample.json';
+
+function tryFetchInventoryUrl(cache, url) {
+    const lib = url.startsWith('https://') ? https : http;
+    return new Promise((resolve) => {
+        const req = lib.get(url, (res) => {
+            if (res.statusCode !== 200) {
+                res.resume();
+                logger.warn(`Max inventory fetch got HTTP ${res.statusCode} from ${url}`);
+                return resolve(false);
+            }
+            let body = '';
+            res.on('data', d => { body += d; });
+            res.on('end', () => {
+                try {
+                    const state = JSON.parse(body);
+                    const currentVersion = cache.getGameVersion();
+                    if (currentVersion && state.gameVersion && state.gameVersion !== currentVersion) {
+                        logger.warn(`Max inventory data is from game version ${state.gameVersion}, current is ${currentVersion} — skipping import`);
+                        return resolve(false);
+                    }
+                    cache.importMaxInventoryState(state);
+                    const pairCount = Object.keys(state.data || {}).length;
+                    logger.info(`Loaded max inventory from ${url} (${pairCount} pairs, updatedAt: ${state.updatedAt || 'unknown'}, updatedBy: ${state.updatedBy || 'unknown'})`);
+                    resolve(true);
+                } catch (e) {
+                    logger.warn(`Failed to parse max inventory response from ${url}: ${e.message}`);
+                    resolve(false);
+                }
+            });
+        });
+        req.on('error', (e) => {
+            logger.warn(`Failed to fetch max inventory from ${url}: ${e.message}`);
+            resolve(false);
+        });
+        req.setTimeout(15000, () => {
+            req.destroy();
+            logger.warn(`Max inventory fetch timed out (${url})`);
+            resolve(false);
+        });
+    });
+}
+
+async function fetchMaxInventoryFromUrl(cache, config) {
+    const url = config?.max_inventory_url || DEFAULT_MAX_INVENTORY_URL;
+
+    if (await tryFetchInventoryUrl(cache, url)) return;
+
+    logger.warn('Remote max inventory fetch failed — falling back to bundled sample file');
+    loadConfirmedMaxInventory(cache, { ...config, data_files: { ...config?.data_files, max_inventory: SAMPLE_MAX_INVENTORY_FILE } });
+}
+
 module.exports = {
     refreshData,
     refreshConfirmedMaxInventory,
@@ -574,6 +629,7 @@ module.exports = {
     saveConfirmedMaxInventory,
     loadTerminalDistances,
     fetchLiveGameVersion,
+    fetchMaxInventoryFromUrl,
     initializeData,
     getCommodities,
     generateSellData,
