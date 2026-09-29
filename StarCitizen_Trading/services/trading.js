@@ -569,7 +569,7 @@ function getSystemNames(cache) {
     return [...new Set(Object.values(initData).map(v => v.name).filter(Boolean))].sort();
 }
 
-const DEFAULT_MAX_INVENTORY_URL = 'https://raw.githubusercontent.com/scpages/trading_data/main/data/max_inventory.json';
+const DEFAULT_MAX_INVENTORY_URL = 'https://scpages.github.io/trading_data/data/max_inventory.json';
 
 async function fetchMaxInventoryFromUrl(cache, config) {
     const url = config?.max_inventory_url || DEFAULT_MAX_INVENTORY_URL;
