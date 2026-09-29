@@ -8,7 +8,6 @@ const cron = require('node-cron');
 const logger = require('./logger.js');
 const DataCache = require('./dataCache.js');
 const trading = require('./services/trading.js');
-const influx  = require('./services/influx.js');
 const routes = require('./routes.js');
 const { loadConfig } = require('./config.js');
 
@@ -27,9 +26,8 @@ async function initialize() {
         cache.setGameVersion(gameVersion);
         logger.info(`Live game version: ${gameVersion || 'unknown'}`);
 
-        // Max inventory data is populated by the separate scan-max-inventory.js
-        // script (run e.g. as a systemd ExecStartPre step); the server only reads it.
-        trading.loadConfirmedMaxInventory(cache, config);
+        // Max inventory is fetched from trading_data repo (updated daily by Jenkins).
+        await trading.fetchMaxInventoryFromUrl(cache, config);
 
         // Terminal distance backup is populated by the separate
         // scan-terminal-distances.js script, run manually/rarely since
@@ -38,11 +36,6 @@ async function initialize() {
 
         await trading.initializeData(config, cache);
         await trading.refreshData(config, cache);
-
-        // Enrich max inventory from InfluxDB historical data (best-effort, non-blocking)
-        influx.enrichMaxInventory(cache, config).catch(e =>
-            logger.warn(`InfluxDB max inventory enrichment failed: ${e.message}`)
-        );
 
         logger.info('Initial data loaded successfully');
     } catch (error) {
@@ -60,6 +53,16 @@ cron.schedule(cronExpression, () => {
     logger.debug('Running scheduled data refresh');
     trading.refreshData(config, cache).catch(err => {
         logger.error('Scheduled refresh failed:', err);
+    });
+});
+
+// Refresh max inventory from GitHub every 30 minutes
+const inventoryRefreshMinutes = config.max_inventory_refresh_minutes || 30;
+logger.info(`Scheduling max inventory refresh every ${inventoryRefreshMinutes} minute(s)`);
+cron.schedule(`*/${inventoryRefreshMinutes} * * * *`, () => {
+    logger.debug('Running scheduled max inventory refresh');
+    trading.fetchMaxInventoryFromUrl(cache, config).catch(err => {
+        logger.warn(`Max inventory refresh failed: ${err.message}`);
     });
 });
 

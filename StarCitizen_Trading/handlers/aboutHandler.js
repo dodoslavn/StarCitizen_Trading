@@ -62,6 +62,16 @@ function handle(req, res, cache) {
 
         ${coverageBar}
 
+        <div style="margin-bottom:1.5rem">
+            <h3 style="margin:0 0 0.8rem;font-size:1rem;color:#aaa;text-transform:uppercase;letter-spacing:0.08em">Community Resources</h3>
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:0.3rem 1.5rem">
+                <span style="color:#aaa;padding-top:0.15rem">Mining</span>
+                <span><a href="https://scminer.rocks/" target="_blank" rel="noopener">SCMiner.rocks</a> &mdash; mining calculator &amp; data</span>
+                <span style="color:#aaa;padding-top:0.15rem">Missions &amp; Crafting</span>
+                <span><a href="https://scmdb.net/" target="_blank" rel="noopener">SCMDB</a> &mdash; mission, crafting &amp; mining database</span>
+            </div>
+        </div>
+
         <p class="footer-text">&copy; 2026 &middot; version: ${version}</p>
     </div>`;
 

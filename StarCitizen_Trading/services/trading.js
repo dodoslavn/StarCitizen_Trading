@@ -4,6 +4,8 @@
  */
 
 const fs = require('fs');
+const https = require('https');
+const http = require('http');
 const logger = require('../logger.js');
 const uexApi = require('./uexApi.js');
 const { estimateMaxInventory, decodeHtmlEntities } = require('../utils/formatters.js');
@@ -567,6 +569,46 @@ function getSystemNames(cache) {
     return [...new Set(Object.values(initData).map(v => v.name).filter(Boolean))].sort();
 }
 
+const DEFAULT_MAX_INVENTORY_URL = 'https://raw.githubusercontent.com/scpages/trading_data/main/data/max_inventory.json';
+
+async function fetchMaxInventoryFromUrl(cache, config) {
+    const url = config?.max_inventory_url || DEFAULT_MAX_INVENTORY_URL;
+    const lib = url.startsWith('https://') ? https : http;
+
+    return new Promise((resolve) => {
+        const req = lib.get(url, (res) => {
+            let body = '';
+            res.on('data', d => { body += d; });
+            res.on('end', () => {
+                try {
+                    const state = JSON.parse(body);
+                    const currentVersion = cache.getGameVersion();
+                    if (currentVersion && state.gameVersion && state.gameVersion !== currentVersion) {
+                        logger.warn(`Max inventory data is from game version ${state.gameVersion}, current is ${currentVersion} — skipping import`);
+                        return resolve();
+                    }
+                    cache.importMaxInventoryState(state);
+                    const pairCount = Object.keys(state.data || {}).length;
+                    logger.info(`Loaded max inventory from URL (${pairCount} pairs, updatedAt: ${state.updatedAt || 'unknown'}, updatedBy: ${state.updatedBy || 'unknown'})`);
+                    resolve();
+                } catch (e) {
+                    logger.warn(`Failed to parse max inventory response from ${url}: ${e.message}`);
+                    resolve();
+                }
+            });
+        });
+        req.on('error', (e) => {
+            logger.warn(`Failed to fetch max inventory from ${url}: ${e.message}`);
+            resolve();
+        });
+        req.setTimeout(15000, () => {
+            req.destroy();
+            logger.warn(`Max inventory fetch timed out (${url})`);
+            resolve();
+        });
+    });
+}
+
 module.exports = {
     refreshData,
     refreshConfirmedMaxInventory,
@@ -574,6 +616,7 @@ module.exports = {
     saveConfirmedMaxInventory,
     loadTerminalDistances,
     fetchLiveGameVersion,
+    fetchMaxInventoryFromUrl,
     initializeData,
     getCommodities,
     generateSellData,
