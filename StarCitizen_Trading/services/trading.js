@@ -570,7 +570,7 @@ function getSystemNames(cache) {
 }
 
 const DEFAULT_MAX_INVENTORY_URL = 'https://scpages.github.io/trading_data/data/max_inventory.json';
-const FALLBACK_MAX_INVENTORY_URL = 'https://raw.githubusercontent.com/scpages/trading_data/main/data/max_inventory.json';
+const SAMPLE_MAX_INVENTORY_FILE = './max_inventory.sample.json';
 
 function tryFetchInventoryUrl(cache, url) {
     const lib = url.startsWith('https://') ? https : http;
@@ -614,18 +614,12 @@ function tryFetchInventoryUrl(cache, url) {
 }
 
 async function fetchMaxInventoryFromUrl(cache, config) {
-    const primaryUrl = config?.max_inventory_url || DEFAULT_MAX_INVENTORY_URL;
-    const urls = [...new Set([primaryUrl, FALLBACK_MAX_INVENTORY_URL])];
+    const url = config?.max_inventory_url || DEFAULT_MAX_INVENTORY_URL;
 
-    for (const url of urls) {
-        if (await tryFetchInventoryUrl(cache, url)) return;
-        if (url !== urls[urls.length - 1]) {
-            logger.warn(`Trying next max inventory source...`);
-        }
-    }
+    if (await tryFetchInventoryUrl(cache, url)) return;
 
-    logger.warn('All remote max inventory sources failed — falling back to local file');
-    loadConfirmedMaxInventory(cache, config);
+    logger.warn('Remote max inventory fetch failed — falling back to bundled sample file');
+    loadConfirmedMaxInventory(cache, { ...config, data_files: { ...config?.data_files, max_inventory: SAMPLE_MAX_INVENTORY_FILE } });
 }
 
 module.exports = {
