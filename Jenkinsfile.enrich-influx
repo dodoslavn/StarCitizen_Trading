@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'AS2' }
 
     triggers {
         // 04:30 UTC daily — after the GitHub Actions UEX scan (03:15 UTC) has committed
@@ -30,12 +30,26 @@ pipeline {
             steps {
                 dir('StarCitizen_Trading') {
                     sh 'cp config.json.example config.json'
-                    // config.local.json with InfluxDB credentials lives permanently
-                    // on the Jenkins agent at the workspace path — place it once:
-                    //   { "influx": { "url": "http://localhost:8086",
-                    //                 "db": "starcitizen_trading",
-                    //                 "user": "claude",
-                    //                 "password": "..." } }
+                    withCredentials([
+                        string(credentialsId: 'influx_url',      variable: 'INFLUX_URL'),
+                        string(credentialsId: 'influx_db',       variable: 'INFLUX_DB'),
+                        string(credentialsId: 'influx_user',     variable: 'INFLUX_USER'),
+                        string(credentialsId: 'influx_password', variable: 'INFLUX_PASSWORD')
+                    ]) {
+                        sh '''
+set +x
+cat > config.local.json <<EOF
+{
+  "influx": {
+    "url": "${INFLUX_URL}",
+    "db": "${INFLUX_DB}",
+    "user": "${INFLUX_USER}",
+    "password": "${INFLUX_PASSWORD}"
+  }
+}
+EOF
+'''
+                    }
                 }
             }
         }
@@ -50,20 +64,22 @@ pipeline {
 
         stage('Commit and push') {
             steps {
-                dir('StarCitizen_Trading') {
-                    sh '''
-                        if git diff --quiet -- max_inventory.json; then
-                            echo "No changes from InfluxDB enrichment, skipping commit"
-                            exit 0
-                        fi
-                        git config user.name "jenkins"
-                        git config user.email "jenkins@fordo.eu"
-                        git add max_inventory.json
-                        git commit -m "Enrich max_inventory.json from InfluxDB historical data
+                sshagent(['jenkins_git_AS2_SC_trading']) {
+                    dir('StarCitizen_Trading') {
+                        sh '''
+                            if git diff --quiet -- max_inventory.json; then
+                                echo "No changes from InfluxDB enrichment, skipping commit"
+                                exit 0
+                            fi
+                            git config user.name "jenkins"
+                            git config user.email "jenkins@fordo.eu"
+                            git add max_inventory.json
+                            git commit -m "Enrich max_inventory.json from InfluxDB historical data
 
 Confirmed pairs: $(node -e 'console.log(Object.keys(JSON.parse(require("fs").readFileSync("max_inventory.json")).data).length)')"
-                        git push
-                    '''
+                            git push
+                        '''
+                    }
                 }
             }
         }
