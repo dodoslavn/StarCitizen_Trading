@@ -27,7 +27,7 @@ describe('HTML Module', () => {
 
     test('header should contain valid HTML', () => {
         expect(html.header).toContain('<!DOCTYPE html>');
-        expect(html.header).toContain('<title>ComTrading');
+        expect(html.header).toContain('<title>SCTrading');
     });
 
     test('footer should contain closing tags', () => {

@@ -31,7 +31,7 @@ const header = `
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>ComTrading - Star Citizen</title>
+        <title>SCTrading - Star Citizen</title>
         <link rel="stylesheet" type="text/css" href="/default.css" media="screen" >
         <meta http-equiv="refresh" content="300">
     </head>
@@ -56,7 +56,7 @@ function loadingPage() {
 <html>
     <head>
         <meta charset="UTF-8">
-        <title>ComTrading - Star Citizen</title>
+        <title>SCTrading - Star Citizen</title>
         <meta http-equiv="refresh" content="3">
         <style>
             body {
@@ -112,7 +112,7 @@ function loadingPage() {
 
 const about = `
     <div class="about-page about-container">
-        <h1>About ComTrading</h1>
+        <h1>About SCTrading</h1>
 
         <p>
             <strong>Community made website</strong><br>
