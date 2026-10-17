@@ -29,18 +29,33 @@ function displayTerminal(item, staleThresholds, side) {
     const max_is_estimate = max_inventory > raw_max ? false : raw_max_is_estimate;
 
     const staleness = getStalenessLevel(item.date_modified, staleThresholds);
-    // Use UEX status tier (0-7) to determine stock level color.
-    // Buy side: high status = well stocked (green). Sell side: low status = high demand (green).
-    const status = (item.status_buy || 0) + (item.status_sell || 0);
+    // Prefer ratio-based coloring (stock / max) when max is known — UEX's status field
+    // can disagree with actual SCU numbers (e.g. status=6 "full" on a 15%-capacity terminal).
+    // Fall back to UEX status (0-7) only when max is unknown.
+    // Buy side: high fill = well stocked (green). Sell side: low fill = high demand (green).
     let stockClass;
-    if (side === 'buy') {
-        if (status >= 6) stockClass = 'stock-available';
-        else if (status >= 2) stockClass = 'stock-medium';
-        else stockClass = 'stock-depleted';
+    if (max_inventory > 0) {
+        const ratio = stock / max_inventory;
+        if (side === 'buy') {
+            if (ratio >= 0.6) stockClass = 'stock-available';
+            else if (ratio >= 0.2) stockClass = 'stock-medium';
+            else stockClass = 'stock-depleted';
+        } else {
+            if (ratio <= 0.4) stockClass = 'stock-available';
+            else if (ratio <= 0.8) stockClass = 'stock-medium';
+            else stockClass = 'stock-depleted';
+        }
     } else {
-        if (status <= 1) stockClass = 'stock-available';
-        else if (status <= 5) stockClass = 'stock-medium';
-        else stockClass = 'stock-depleted';
+        const status = (item.status_buy || 0) + (item.status_sell || 0);
+        if (side === 'buy') {
+            if (status >= 6) stockClass = 'stock-available';
+            else if (status >= 2) stockClass = 'stock-medium';
+            else stockClass = 'stock-depleted';
+        } else {
+            if (status <= 1) stockClass = 'stock-available';
+            else if (status <= 5) stockClass = 'stock-medium';
+            else stockClass = 'stock-depleted';
+        }
     }
     const classes = [stockClass];
     if (staleness !== 'fresh') classes.push(staleness);
