@@ -100,7 +100,6 @@ function touchportalChain(cache) {
 <div id="chain-wrap">
 <div id="chain-setup">
     <div id="ship-row">
-        <label for="ship-select">Ship:</label>
         <select id="ship-select">${shipOptions}</select>
     </div>
     <div id="stops-row"></div>
