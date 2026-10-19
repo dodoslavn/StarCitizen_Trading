@@ -272,6 +272,10 @@ function touchportalHub() {
             Market Depth
             <small>All commodities ranked by total market potential — find the biggest markets to trade</small>
         </a>
+        <a class="hub-tile" href="/touchportal/chain">
+            Chain Route Planner
+            <small>Pick any stops A → B → C, choose your ship, see all profitable trades between every pair</small>
+        </a>
     </div>`;
     return shell('Hub', body, false);
 }
