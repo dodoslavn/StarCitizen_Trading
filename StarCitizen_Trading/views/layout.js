@@ -33,7 +33,7 @@ const header = `
         <meta charset="UTF-8">
         <title>SCTrading - Star Citizen</title>
         <link rel="stylesheet" type="text/css" href="/default.css" media="screen" >
-        <meta http-equiv="refresh" content="300">
+        <meta http-equiv="refresh" content="1800">
     </head>
     <body>
     `;
@@ -42,40 +42,184 @@ const footer = `
     <div id="sc-tooltip"></div>
     <script>
     (function () {
-        var tip = document.getElementById('sc-tooltip');
-        var active = null;
+        var tip    = document.getElementById('sc-tooltip');
+        var active = null;   // element whose tooltip is open
+        var pinned = null;   // pinned terminal name string
 
+        // ── Terminal data index ─────────────────────────────────────────
+        // index[terminalName] = { buy: {commodity: price}, sell: {commodity: price} }
+        // "buy"  = player CAN BUY here   (right table "you buy")
+        // "sell" = player CAN SELL here  (left table "you sell")
+        var index = {};
+
+        function parsePrice(text) {
+            if (!text) return 0;
+            var s = text + '';
+            var avg = s.match(/\\(~([\\d\\s]+)\\)/);
+            var raw = avg ? avg[1] : s.split('(')[0];
+            return parseInt(raw.replace(/\\s/g, '')) || 0;
+        }
+
+        function buildIndex() {
+            document.querySelectorAll('table.commodity').forEach(function (table) {
+                var h = table.querySelector('th.text-center');
+                if (!h) return;
+                var commodity = h.textContent.trim().split(' (')[0];
+                var inner = table.querySelectorAll('td[colspan="4"] > table');
+                if (inner.length < 2) return;
+
+                [inner[0], inner[1]].forEach(function (t, i) {
+                    var side = i === 0 ? 'sell' : 'buy';
+                    t.querySelectorAll('tr').forEach(function (row) {
+                        var td = row.querySelector('td[data-tname]');
+                        if (!td) return;
+                        var tname = td.dataset.tname;
+                        var cells = row.querySelectorAll('td');
+                        var price = parsePrice(cells[1] && cells[1].textContent);
+                        if (!index[tname]) index[tname] = { buy: {}, sell: {} };
+                        if (price > 0) index[tname][side][commodity] = price;
+                    });
+                });
+            });
+        }
+
+        // ── Trade computation ───────────────────────────────────────────
+        function computeTrades(pinnedName, hoverName, excludeCommodity) {
+            if (pinnedName === hoverName) return '';
+            var P = index[pinnedName];
+            var H = index[hoverName];
+            if (!P || !H) return '';
+
+            var bring = [], take = [];
+
+            Object.keys(P.buy).forEach(function (c) {
+                if (c === excludeCommodity) return;
+                var sp = H.sell[c];
+                if (sp && sp > P.buy[c]) bring.push({ c: c, profit: sp - P.buy[c] });
+            });
+            Object.keys(H.buy).forEach(function (c) {
+                if (c === excludeCommodity) return;
+                var sp = P.sell[c];
+                if (sp && sp > H.buy[c]) take.push({ c: c, profit: sp - H.buy[c] });
+            });
+
+            if (!bring.length && !take.length) return '';
+
+            bring.sort(function (a, b) { return b.profit - a.profit; });
+            take.sort(function (a, b) { return b.profit - a.profit; });
+
+            function fmtNum(n) {
+                return ('' + n).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ' ') + ' aUEC/SCU';
+            }
+            function fmt(list) {
+                return list.slice(0, 6).map(function (x) {
+                    return x.c + ' ( ~ ' + fmtNum(x.profit) + ' )';
+                }).join('\\n  ');
+            }
+
+            var lines = [];
+            if (bring.length) lines.push('\\nBuyable at ' + pinnedName + ', sell here:\\n  ' + fmt(bring));
+            if (take.length)  lines.push('\\nBuyable here, sell at ' + pinnedName + ':\\n  ' + fmt(take));
+            return lines.join('\\n');
+        }
+
+        // ── Tooltip display ─────────────────────────────────────────────
         function show(el) {
             active = el;
-            tip.textContent = el.title;
+            var text = el.dataset.tip || '';
+            var tname = el.dataset.tname;
+
+            // Color legend
+            var tr = el.parentElement;
+            if (tr) {
+                var colorText = '';
+                if (tr.classList.contains('very-stale')) {
+                    colorText = 'Color: dark gray (outdated data)';
+                } else if (tr.classList.contains('stale')) {
+                    colorText = 'Color: light gray (older data)';
+                } else {
+                    var ct = el.closest('table.commodity');
+                    var its = ct ? ct.querySelectorAll('td[colspan] > table') : [];
+                    var isSell = its.length >= 1 && its[0].contains(el);
+                    if (tr.classList.contains('stock-available')) {
+                        colorText = isSell ? 'Color: green (high demand)' : 'Color: green (well stocked)';
+                    } else if (tr.classList.contains('stock-medium')) {
+                        colorText = isSell ? 'Color: orange (moderate demand)' : 'Color: orange (moderate stock)';
+                    } else if (tr.classList.contains('stock-depleted')) {
+                        colorText = isSell ? 'Color: red (demand met)' : 'Color: red (low stock)';
+                    }
+                }
+                if (colorText) text += '\\n' + colorText;
+            }
+            if (el.dataset.loc) text += '\\n' + el.dataset.loc;
+
+            if (pinned && tname) {
+                var ct = el.closest('table.commodity');
+                var cth = ct ? ct.querySelector('th.text-center') : null;
+                var curCommodity = cth ? cth.textContent.trim().split(' (')[0] : null;
+                var trades = computeTrades(pinned, tname, curCommodity);
+                if (trades) text += '\\n' + trades;
+            }
+            tip.textContent = text;
             tip.style.display = 'block';
 
             var rect = el.getBoundingClientRect();
-            var scrollY = window.scrollY || document.documentElement.scrollTop;
-            var scrollX = window.scrollX || document.documentElement.scrollLeft;
-
-            var top = rect.bottom + scrollY + 6;
-            var left = rect.left + scrollX;
-            var maxLeft = scrollX + window.innerWidth - 8;
-            tip.style.left = Math.min(left, maxLeft - 290) + 'px';
-            tip.style.top = top + 'px';
+            var sY = window.scrollY || document.documentElement.scrollTop;
+            var sX = window.scrollX || document.documentElement.scrollLeft;
+            tip.style.top  = (rect.bottom + sY + 6) + 'px';
+            tip.style.left = Math.min(rect.left + sX, sX + window.innerWidth - 336) + 'px';
         }
 
-        function hide() {
-            active = null;
-            tip.style.display = 'none';
+        function hide() { active = null; tip.style.display = 'none'; }
+
+        // ── Pin ─────────────────────────────────────────────────────────
+        function handlePin(el) {
+            var tname = el.dataset.tname;
+            document.querySelectorAll('[data-tname].sc-pinned').forEach(function (t) { t.classList.remove('sc-pinned'); });
+            if (pinned === tname) {
+                pinned = null;
+            } else {
+                pinned = tname;
+                el.classList.add('sc-pinned');
+            }
         }
 
+        // ── Events ──────────────────────────────────────────────────────
+        // Desktop: hover to show tooltip (with delay)
+        var hovered = null;
+        var hoverTimer = null;
+        document.addEventListener('mouseover', function (e) {
+            var el = e.target.closest('[data-tname]');
+            if (el === hovered) return;
+            hovered = el;
+            clearTimeout(hoverTimer);
+            if (el) hoverTimer = setTimeout(function () { if (hovered === el) show(el); }, 350);
+            else hide();
+        });
+        document.addEventListener('mouseout', function (e) {
+            var el = e.target.closest('[data-tname]');
+            if (el && !el.contains(e.relatedTarget)) { clearTimeout(hoverTimer); hovered = null; hide(); }
+        });
+
+        // Desktop: click cell to toggle pin, refresh tooltip
+        document.addEventListener('click', function (e) {
+            var el = e.target.closest('[data-tname]');
+            if (el) { handlePin(el); show(el); }
+        });
+
+        // Mobile: tap cell to toggle pin and show tooltip
         document.addEventListener('touchstart', function (e) {
-            var el = e.target.closest('[title]');
-            if (el && el.title) {
-                if (active === el) { hide(); return; }
+            var el = e.target.closest('[data-tname]');
+            if (el) {
                 e.preventDefault();
+                handlePin(el);
                 show(el);
             } else {
                 hide();
             }
         }, { passive: false });
+
+        buildIndex();
     })();
     </script>
     </body>

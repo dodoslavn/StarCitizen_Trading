@@ -228,6 +228,19 @@ div.about-container p.footer-text
     margin-right: 3rem;
     }
 
+td[data-tname]
+    {
+    cursor: pointer;
+    }
+td.sc-pinned
+    {
+    background: goldenrod;
+    border-radius: 5px;
+    position: relative;
+    z-index: 1;
+    color: #1a1a1a !important;
+    }
+
 #sc-tooltip
     {
     display: none;
@@ -243,7 +256,9 @@ div.about-container p.footer-text
     pointer-events: none;
     white-space: pre-line;
     box-shadow: 0 2px 10px rgba(0,0,0,0.6);
-    max-width: 280px;
+    max-width: 320px;
+    max-height: 60vh;
+    overflow-y: auto;
     }
 
     `;
