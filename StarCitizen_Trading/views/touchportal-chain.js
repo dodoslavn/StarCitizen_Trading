@@ -64,9 +64,9 @@ function touchportalChain(cache) {
 <h1>Chain Route Planner</h1>
 <style>
     div#chain-setup { max-width: 72rem; margin: 0 auto 1.5rem; }
-    div#stops-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.8rem; }
-    div#stops-row .stop-wrap { display: flex; align-items: center; gap: 0.25rem; }
-    div#stops-row .stop-arrow { color: #4ab8ff; font-size: 1.2rem; }
+    div#stops-row { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.8rem; max-width: 22rem; }
+    div#stops-row .stop-wrap { display: flex; align-items: center; gap: 0.4rem; }
+    div#stops-row .stop-arrow { color: #4ab8ff; font-size: 1.1rem; margin-left: 0.5rem; display: block; line-height: 1; }
     input.stop-input { background: #1a1a1a; color: white; border: 1px solid #444; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 1rem; width: 16rem; }
     input.stop-input:focus { outline: none; border-color: #4ab8ff; }
     button.btn { background: #006fdd; color: white; border: none; border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.95rem; cursor: pointer; }
@@ -141,10 +141,10 @@ function touchportalChain(cache) {
         wrap.className = 'stop-wrap';
 
         if (stops.length > 0) {
-            var arrow = document.createElement('span');
-            arrow.className = 'stop-arrow';
-            arrow.textContent = '\\u2192';
-            wrap.appendChild(arrow);
+            var arrowRow = document.createElement('span');
+            arrowRow.className = 'stop-arrow';
+            arrowRow.textContent = '\\u2193';
+            stopsRow.appendChild(arrowRow);
         }
 
         var inp = document.createElement('input');
