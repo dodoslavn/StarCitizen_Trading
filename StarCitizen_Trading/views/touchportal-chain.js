@@ -88,6 +88,11 @@ function touchportalChain(cache) {
     td.total   { color: #ffd966; font-weight: bold; }
     td.from    { color: #4ab8ff; }
     td.to      { color: #ff9f43; }
+    div.stop-section { margin-bottom: 2rem; }
+    h3.stop-header { color: #4ab8ff; margin: 1.2rem 0 0.5rem; font-size: 1.15rem; border-bottom: 1px solid #333; padding-bottom: 0.3rem; }
+    div.action-label { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; margin: 0.6rem 0 0.25rem; }
+    div.sell-label { color: #7dff8a; }
+    div.buy-label  { color: #ffd966; }
     p#no-trades { text-align: center; color: #888; margin-top: 2rem; }
     span#scu-label { color: #ffd966; font-weight: bold; }
 </style>
@@ -229,28 +234,70 @@ function touchportalChain(cache) {
             return;
         }
 
-        rows.sort(function (a, b) { return b.profit - a.profit; });
-
-        var html = '<table><thead><tr>'
-            + '<th>Commodity</th><th>Buy at</th><th>Sell at</th>'
-            + '<th>Buy avg</th><th>Sell avg</th>'
-            + '<th>Profit / SCU</th><th>Est. Total (' + scu + ' SCU)</th>'
-            + '</tr></thead><tbody>';
-
+        // Build per-stop actions: buy[stopIndex] and sell[stopIndex]
+        var buyAt  = names.map(function () { return []; });
+        var sellAt = names.map(function () { return []; });
         rows.forEach(function (r) {
-            html += '<tr>'
-                + '<td>' + r.commodity + '</td>'
-                + '<td class="from">' + r.buyTerm + '</td>'
-                + '<td class="to">' + r.sellTerm + '</td>'
-                + '<td>' + fmtNum(r.buyPrice) + '</td>'
-                + '<td>' + fmtNum(r.sellPrice) + '</td>'
-                + '<td class="profit">' + fmtNum(r.profit) + '</td>'
-                + '<td class="total">' + fmtNum(r.total) + '</td>'
-                + '</tr>';
+            var bi = names.indexOf(r.buyTerm);
+            var si = names.indexOf(r.sellTerm);
+            if (bi < 0 || si < 0) return;
+            buyAt[bi].push(r);
+            sellAt[si].push(r);
         });
 
-        html += '</tbody></table>';
-        results.innerHTML = html;
+        var anyFound = false;
+        var html = '';
+        names.forEach(function (name, idx) {
+            var buys  = buyAt[idx].sort(function (a, b) { return b.profit - a.profit; });
+            var sells = sellAt[idx].sort(function (a, b) { return b.profit - a.profit; });
+            if (!buys.length && !sells.length) return;
+            anyFound = true;
+
+            html += '<div class="stop-section">'
+                + '<h3 class="stop-header">' + name + '</h3>';
+
+            if (sells.length) {
+                html += '<div class="action-label sell-label">Sell here</div>'
+                    + '<table><thead><tr><th>Commodity</th><th>Bought at</th>'
+                    + '<th>Buy avg</th><th>Sell avg</th>'
+                    + '<th>Profit / SCU</th><th>Est. Total (' + scu + ' SCU)</th>'
+                    + '</tr></thead><tbody>';
+                sells.forEach(function (r) {
+                    html += '<tr>'
+                        + '<td>' + r.commodity + '</td>'
+                        + '<td class="from">' + r.buyTerm + '</td>'
+                        + '<td>' + fmtNum(r.buyPrice) + '</td>'
+                        + '<td>' + fmtNum(r.sellPrice) + '</td>'
+                        + '<td class="profit">' + fmtNum(r.profit) + '</td>'
+                        + '<td class="total">' + fmtNum(r.total) + '</td>'
+                        + '</tr>';
+                });
+                html += '</tbody></table>';
+            }
+
+            if (buys.length) {
+                html += '<div class="action-label buy-label">Buy here</div>'
+                    + '<table><thead><tr><th>Commodity</th><th>Sell at</th>'
+                    + '<th>Buy avg</th><th>Sell avg</th>'
+                    + '<th>Profit / SCU</th><th>Est. Total (' + scu + ' SCU)</th>'
+                    + '</tr></thead><tbody>';
+                buys.forEach(function (r) {
+                    html += '<tr>'
+                        + '<td>' + r.commodity + '</td>'
+                        + '<td class="to">' + r.sellTerm + '</td>'
+                        + '<td>' + fmtNum(r.buyPrice) + '</td>'
+                        + '<td>' + fmtNum(r.sellPrice) + '</td>'
+                        + '<td class="profit">' + fmtNum(r.profit) + '</td>'
+                        + '<td class="total">' + fmtNum(r.total) + '</td>'
+                        + '</tr>';
+                });
+                html += '</tbody></table>';
+            }
+
+            html += '</div>';
+        });
+
+        results.innerHTML = anyFound ? html : '<p id="no-trades">No profitable trades found between the selected stops.</p>';
     }
 
     // Start with 2 empty stops
