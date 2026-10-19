@@ -294,6 +294,31 @@ function processSolarSystems(rawData) {
 }
 
 /**
+ * Build a › breadcrumb from a terminal's location metadata.
+ * @param {Object} meta - Entry from cachedInitData (merged system + terminal fields)
+ * @returns {string|null} e.g. "Stanton › ArcCorp › Area 18"
+ */
+function buildLocationLabel(meta) {
+    if (!meta) return null;
+    const parts = [meta.name]; // system name always first
+
+    if (meta.planet_name) {
+        parts.push(meta.planet_name);
+    } else if (meta.orbit_name) {
+        // No planet — asteroid/rogue body (e.g. Delamar in Nyx)
+        parts.push(meta.orbit_name);
+    }
+
+    if (meta.moon_name) parts.push(meta.moon_name);
+
+    // Most specific terminal label: city > outpost > space station
+    const terminal = meta.city_name || meta.outpost_name || meta.space_station_name;
+    if (terminal) parts.push(terminal);
+
+    return parts.join(' › ');
+}
+
+/**
  * Process terminals data. Keyed by nickname, storing star-system id and the
  * planet the terminal belongs to (used for grouping in the touchportal
  * views). `planet_name` may be null for Lagrange stations etc.
@@ -447,10 +472,12 @@ function generateSellData(cache) {
         }
 
         const confirmedMax = cache.getConfirmedMax(`${id_commodity}_${id_terminal}`, 'sell');
+        const location_detail = buildLocationLabel(cachedInitData?.[terminal_name]);
 
         commodities[commodity_name].push({
             terminal_name: system + terminal_name,
             container_sizes,
+            location_detail,
             price_sell: price_sell > 0 ? price_sell : null,
             price_sell_avg: price_sell_avg > 0 ? price_sell_avg : null,
             scu_sell: scu_sell_stock > 0 ? scu_sell_stock : null,
@@ -488,10 +515,12 @@ function generateBuyData(cache) {
         }
 
         const confirmedMax = cache.getConfirmedMax(`${id_commodity}_${id_terminal}`, 'buy');
+        const location_detail = buildLocationLabel(cachedInitData?.[terminal_name]);
 
         commodities[commodity_name].push({
             terminal_name: system + terminal_name,
             container_sizes,
+            location_detail,
             price_buy: price_buy > 0 ? price_buy : null,
             price_buy_avg: price_buy_avg > 0 ? price_buy_avg : null,
             scu_buy: scu_buy > 0 ? scu_buy : null,

@@ -61,15 +61,17 @@ function displayTerminal(item, staleThresholds, side) {
     if (staleness !== 'fresh') classes.push(staleness);
     const rowClass = ` class="${classes.join(' ')}"`;
 
-    const updatedTitle = `Last updated: ${formatDateTime(item.date_modified)}`;
-    const sizesTitle = `SCU box sizes: ${formatContainerSizes(item.container_sizes)}`;
+    const locationLine = item.location_detail ? `${item.location_detail}\n` : '';
+    const sizesTitle = `Boxes: ${formatContainerSizes(item.container_sizes)}`;
+    const updatedTitle = `Updated: ${formatDateTime(item.date_modified)}`;
+    const terminalTitle = `${locationLine}${sizesTitle}\n${updatedTitle}`;
     const maxTitle = max_is_estimate
         ? 'Estimated max capacity (based on current stock level)'
         : 'Confirmed max stock observed';
     const maxSuffix = max_inventory > 0 ? ` / ${max_is_estimate ? '~' : ''}${readable_number(max_inventory)}` : '';
 
     return `<tr${rowClass}>
-        <td title="${escapeHtml(sizesTitle)}&#10;${escapeHtml(updatedTitle)}">${escapeHtml(item.terminal_name)}</td>
+        <td title="${escapeHtml(terminalTitle)}">${escapeHtml(item.terminal_name)}</td>
         <td>${readable_number(price)} (~${readable_number(price_avg)})</td>
         <td title="${escapeHtml(maxTitle)}">${readable_number(stock)} (~${readable_number(stock_avg)})${maxSuffix}</td>
     </tr>`;
