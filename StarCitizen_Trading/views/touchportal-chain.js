@@ -63,10 +63,11 @@ function touchportalChain(cache) {
     const body = `
 <h1>Chain Route Planner</h1>
 <style>
-    div#chain-setup { max-width: 72rem; margin: 0 auto 1.5rem; }
-    div#stops-row { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.8rem; max-width: 22rem; }
+    div#chain-wrap { max-width: 72rem; margin: 0 auto; }
+    div#chain-setup { margin-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; }
+    div#stops-row { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.8rem; }
     div#stops-row .stop-wrap { display: flex; align-items: center; gap: 0.4rem; }
-    div#stops-row .stop-arrow { color: #4ab8ff; font-size: 1.1rem; margin-left: 0.5rem; display: block; line-height: 1; }
+    div#stops-row .stop-arrow { color: #4ab8ff; font-size: 1.1rem; display: block; line-height: 1; text-align: center; }
     input.stop-input { background: #1a1a1a; color: white; border: 1px solid #444; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 1rem; width: 16rem; }
     input.stop-input:focus { outline: none; border-color: #4ab8ff; }
     button.btn { background: #006fdd; color: white; border: none; border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.95rem; cursor: pointer; }
@@ -75,11 +76,11 @@ function touchportalChain(cache) {
     button.btn.red:hover { background: #e74c3c; }
     button.btn.green { background: #1e7e34; }
     button.btn.green:hover { background: #28a745; }
-    div#ship-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
+    div#ship-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.8rem; flex-wrap: wrap; justify-content: center; }
     div#ship-row label { color: #aaa; }
     select#ship-select { background: #1a1a1a; color: white; border: 1px solid #444; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.95rem; min-width: 18rem; }
     select#ship-select:focus { outline: none; border-color: #4ab8ff; }
-    div#results { max-width: 72rem; margin: 0 auto; }
+    div#results { }
     div#results table { font-size: 0.85rem; }
     div#results table thead th { position: sticky; top: 0; background: #006fdd; z-index: 2; padding: 0.4rem 0.5rem; }
     div#results table td { padding: 0.3rem 0.5rem; border-bottom: 1px solid #2a2a2a; }
@@ -97,11 +98,11 @@ function touchportalChain(cache) {
     span#scu-label { color: #ffd966; font-weight: bold; }
 </style>
 
+<div id="chain-wrap">
 <div id="chain-setup">
     <div id="ship-row">
         <label for="ship-select">Ship:</label>
         <select id="ship-select">${shipOptions}</select>
-        <span id="scu-label"></span>
     </div>
     <div id="stops-row"></div>
     <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
@@ -111,6 +112,7 @@ function touchportalChain(cache) {
     </div>
 </div>
 <div id="results"></div>
+</div>
 
 <datalist id="terminals-list"></datalist>
 
@@ -130,16 +132,7 @@ function touchportalChain(cache) {
     var stops = [];   // array of input elements
     var stopsRow = document.getElementById('stops-row');
     var shipSel  = document.getElementById('ship-select');
-    var scuLabel = document.getElementById('scu-label');
-
-    function updateScuLabel() {
-        var opt = shipSel.options[shipSel.selectedIndex];
-        if (!opt) { scuLabel.textContent = ''; return; }
-        var m = opt.text.match(/\\((\\d+) SCU\\)/);
-        scuLabel.textContent = m ? m[1] + ' SCU' : '';
-    }
-    shipSel.addEventListener('change', function () { updateScuLabel(); computeAndShow(); });
-    updateScuLabel();
+    shipSel.addEventListener('change', computeAndShow);
 
     function addStop(value) {
         var wrap = document.createElement('div');
