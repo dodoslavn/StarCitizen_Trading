@@ -228,6 +228,24 @@ div.about-container p.footer-text
     margin-right: 3rem;
     }
 
+#sc-tooltip
+    {
+    display: none;
+    position: absolute;
+    background: #2a2a2a;
+    color: #e0e0e0;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    border: 1px solid #555;
+    z-index: 9999;
+    pointer-events: none;
+    white-space: pre-line;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    max-width: 280px;
+    }
+
     `;
 }
 

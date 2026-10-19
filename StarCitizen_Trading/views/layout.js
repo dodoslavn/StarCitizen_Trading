@@ -39,6 +39,45 @@ const header = `
     `;
 
 const footer = `
+    <div id="sc-tooltip"></div>
+    <script>
+    (function () {
+        var tip = document.getElementById('sc-tooltip');
+        var active = null;
+
+        function show(el) {
+            active = el;
+            tip.textContent = el.title;
+            tip.style.display = 'block';
+
+            var rect = el.getBoundingClientRect();
+            var scrollY = window.scrollY || document.documentElement.scrollTop;
+            var scrollX = window.scrollX || document.documentElement.scrollLeft;
+
+            var top = rect.bottom + scrollY + 6;
+            var left = rect.left + scrollX;
+            var maxLeft = scrollX + window.innerWidth - 8;
+            tip.style.left = Math.min(left, maxLeft - 290) + 'px';
+            tip.style.top = top + 'px';
+        }
+
+        function hide() {
+            active = null;
+            tip.style.display = 'none';
+        }
+
+        document.addEventListener('touchstart', function (e) {
+            var el = e.target.closest('[title]');
+            if (el && el.title) {
+                if (active === el) { hide(); return; }
+                e.preventDefault();
+                show(el);
+            } else {
+                hide();
+            }
+        }, { passive: false });
+    })();
+    </script>
     </body>
 </html>
 `;
