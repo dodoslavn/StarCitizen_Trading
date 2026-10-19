@@ -91,9 +91,8 @@ function touchportalChain(cache) {
     td.to      { color: #ff9f43; }
     div.stop-section { margin-bottom: 2rem; }
     h3.stop-header { color: #4ab8ff; margin: 1.2rem 0 0.5rem; font-size: 1.15rem; border-bottom: 1px solid #333; padding-bottom: 0.3rem; }
-    div.action-label { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; margin: 0.6rem 0 0.25rem; }
-    div.sell-label { color: #7dff8a; }
-    div.buy-label  { color: #ffd966; }
+    td.action-buy  { color: #ffd966; font-weight: bold; }
+    td.action-sell { color: #7dff8a; font-weight: bold; }
     p#no-trades { text-align: center; color: #888; margin-top: 2rem; }
     span#scu-label { color: #ffd966; font-weight: bold; }
 </style>
@@ -107,7 +106,6 @@ function touchportalChain(cache) {
     <div id="stops-row"></div>
     <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
         <button class="btn green" onclick="addStop()">+ Add Stop</button>
-        <button class="btn" onclick="computeAndShow()">Show Trades</button>
         <button class="btn red" onclick="clearAll()">Clear All</button>
     </div>
 </div>
@@ -246,48 +244,34 @@ function touchportalChain(cache) {
             if (!buys.length && !sells.length) return;
             anyFound = true;
 
+            // Merge: sells first (do these first on arrival), then buys
+            var allRows = [];
+            sells.forEach(function (r) { allRows.push({ action: 'Sell', terminal: r.buyTerm, termClass: 'from', r: r }); });
+            buys.forEach(function (r)  { allRows.push({ action: 'Buy',  terminal: r.sellTerm, termClass: 'to',   r: r }); });
+
             html += '<div class="stop-section">'
-                + '<h3 class="stop-header">' + name + '</h3>';
+                + '<h3 class="stop-header">' + name + '</h3>'
+                + '<table><thead><tr>'
+                + '<th>Action</th><th>Commodity</th>'
+                + '<th>Buy avg</th><th>Sell avg</th>'
+                + '<th>Profit / SCU</th><th>Est. Total (' + scu + ' SCU)</th>'
+                + '<th>Terminal</th>'
+                + '</tr></thead><tbody>';
 
-            if (sells.length) {
-                html += '<div class="action-label sell-label">Sell here</div>'
-                    + '<table><thead><tr><th>Commodity</th><th>Bought at</th>'
-                    + '<th>Buy avg</th><th>Sell avg</th>'
-                    + '<th>Profit / SCU</th><th>Est. Total (' + scu + ' SCU)</th>'
-                    + '</tr></thead><tbody>';
-                sells.forEach(function (r) {
-                    html += '<tr>'
-                        + '<td>' + r.commodity + '</td>'
-                        + '<td class="from">' + r.buyTerm + '</td>'
-                        + '<td>' + fmtNum(r.buyPrice) + '</td>'
-                        + '<td>' + fmtNum(r.sellPrice) + '</td>'
-                        + '<td class="profit">' + fmtNum(r.profit) + '</td>'
-                        + '<td class="total">' + fmtNum(r.total) + '</td>'
-                        + '</tr>';
-                });
-                html += '</tbody></table>';
-            }
+            allRows.forEach(function (entry) {
+                var actionClass = entry.action === 'Buy' ? 'action-buy' : 'action-sell';
+                html += '<tr>'
+                    + '<td class="' + actionClass + '">' + entry.action + '</td>'
+                    + '<td>' + entry.r.commodity + '</td>'
+                    + '<td>' + fmtNum(entry.r.buyPrice) + '</td>'
+                    + '<td>' + fmtNum(entry.r.sellPrice) + '</td>'
+                    + '<td class="profit">' + fmtNum(entry.r.profit) + '</td>'
+                    + '<td class="total">' + fmtNum(entry.r.total) + '</td>'
+                    + '<td class="' + entry.termClass + '">' + entry.terminal + '</td>'
+                    + '</tr>';
+            });
 
-            if (buys.length) {
-                html += '<div class="action-label buy-label">Buy here</div>'
-                    + '<table><thead><tr><th>Commodity</th><th>Sell at</th>'
-                    + '<th>Buy avg</th><th>Sell avg</th>'
-                    + '<th>Profit / SCU</th><th>Est. Total (' + scu + ' SCU)</th>'
-                    + '</tr></thead><tbody>';
-                buys.forEach(function (r) {
-                    html += '<tr>'
-                        + '<td>' + r.commodity + '</td>'
-                        + '<td class="to">' + r.sellTerm + '</td>'
-                        + '<td>' + fmtNum(r.buyPrice) + '</td>'
-                        + '<td>' + fmtNum(r.sellPrice) + '</td>'
-                        + '<td class="profit">' + fmtNum(r.profit) + '</td>'
-                        + '<td class="total">' + fmtNum(r.total) + '</td>'
-                        + '</tr>';
-                });
-                html += '</tbody></table>';
-            }
-
-            html += '</div>';
+            html += '</tbody></table></div>';
         });
 
         results.innerHTML = anyFound ? html : '<p id="no-trades">No profitable trades found between the selected stops.</p>';
