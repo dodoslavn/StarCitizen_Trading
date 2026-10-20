@@ -19,6 +19,7 @@ const { touchportal, touchportalHub, touchportalStale } = require('./views/touch
 const { touchportalSmart } = require('./views/touchportal-smart.js');
 const { touchportalMarket } = require('./views/touchportal-market.js');
 const { touchportalChain } = require('./views/touchportal-chain.js');
+const { touchportalBestFrom } = require('./views/touchportal-bestfrom.js');
 
 module.exports = {
     header,
@@ -34,5 +35,6 @@ module.exports = {
     touchportalSmart,
     touchportalMarket,
     touchportalChain,
+    touchportalBestFrom,
     about
 };
