@@ -31,8 +31,8 @@ function buildPriceIndex(cachedData, initData) {
         if (!index[t]) index[t] = { b: {}, s: {} };
         const buyAvg  = Number(item.price_buy_avg)  || 0;
         const sellAvg = Number(item.price_sell_avg) || 0;
-        if (buyAvg  > 0) index[t].b[c] = { p: buyAvg,  scu: Number(item.scu_buy_avg)       || 0, max: estimateMaxInventory(Number(item.scu_buy_avg)       || 0, item.status_buy)  || 0 };
-        if (sellAvg > 0) index[t].s[c] = { p: sellAvg, scu: Number(item.scu_sell_stock_avg) || 0, max: estimateMaxInventory(Number(item.scu_sell_stock_avg) || 0, item.status_sell) || 0 };
+        if (buyAvg  > 0) index[t].b[c] = { p: buyAvg,  cur: Number(item.scu_buy)        || 0, scu: Number(item.scu_buy_avg)       || 0, max: estimateMaxInventory(Number(item.scu_buy_avg)       || 0, item.status_buy)  || 0 };
+        if (sellAvg > 0) index[t].s[c] = { p: sellAvg, cur: Number(item.scu_sell_stock) || 0, scu: Number(item.scu_sell_stock_avg) || 0, max: estimateMaxInventory(Number(item.scu_sell_stock_avg) || 0, item.status_sell) || 0 };
     }
     return index;
 }
@@ -62,14 +62,15 @@ function touchportalChain(cache) {
     const terminalsJson = JSON.stringify(terminalNames);
 
     const body = `
-<h1>Chain Route Planner</h1>
-<style>
+<h1>Chain Route Planner</h1><style>
+    h1 { font-size: 1.3rem; margin: 0.4rem 0 0.8rem; text-align: center; }
     div#chain-wrap { max-width: 72rem; margin: 0 auto; }
-    div#chain-setup { margin-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; }
-    div#stops-row { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.8rem; }
+    div#chain-setup { margin-bottom: 0.8rem; display: flex; flex-direction: column; align-items: center; }
+    div#form-col { display: flex; flex-direction: column; gap: 0.25rem; width: 20rem; }
+    div#stops-row { display: flex; flex-direction: column; gap: 0.25rem; }
     div#stops-row .stop-wrap { display: flex; align-items: center; gap: 0.4rem; }
     div#stops-row .stop-arrow { color: #555; font-size: 1.1rem; display: block; line-height: 1; text-align: center; }
-    input.stop-input { background: #1a1a1a; color: white; border: 1px solid #444; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 1rem; width: 16rem; }
+    input.stop-input { background: #1a1a1a; color: white; border: 1px solid #444; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 1rem; width: 100%; box-sizing: border-box; }
     input.stop-input:focus { outline: none; border-color: #4ab8ff; }
     button.btn { background: #006fdd; color: white; border: none; border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.95rem; cursor: pointer; }
     button.btn:hover { background: #4ab8ff; }
@@ -77,9 +78,9 @@ function touchportalChain(cache) {
     button.btn.red:hover { background: #e74c3c; }
     button.btn.green { background: #1e7e34; }
     button.btn.green:hover { background: #28a745; }
-    div#ship-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.8rem; flex-wrap: wrap; justify-content: center; }
+    div#ship-row { margin-bottom: 0; }
     div#ship-row label { color: #aaa; }
-    select#ship-select { background: #1a1a1a; color: white; border: 1px solid #444; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.95rem; min-width: 18rem; }
+    select#ship-select { background: #1a1a1a; color: white; border: 1px solid #444; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.95rem; width: 100%; box-sizing: border-box; }
     select#ship-select:focus { outline: none; border-color: #4ab8ff; }
     div#results { }
     div#results table { font-size: 0.85rem; }
@@ -101,18 +102,21 @@ function touchportalChain(cache) {
     td.scu-low     { color: #ff9f43; }
     td.scu-none    { color: #888; font-style: italic; }
     p#no-trades { text-align: center; color: #888; margin-top: 2rem; }
+    p.stop-empty { color: #555; font-style: italic; margin: 0.3rem 0 0.5rem; font-size: 0.9rem; }
     span#scu-label { color: #ffd966; font-weight: bold; }
 </style>
 
 <div id="chain-wrap">
 <div id="chain-setup">
-    <div id="ship-row">
-        <select id="ship-select">${shipOptions}</select>
-    </div>
-    <div id="stops-row"></div>
-    <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-        <button class="btn red" onclick="clearAll()">Clear All</button>
-        <button class="btn green" onclick="addStop()">+ Add Stop</button>
+    <div id="form-col">
+        <div id="ship-row">
+            <select id="ship-select">${shipOptions}</select>
+        </div>
+        <div id="stops-row"></div>
+        <div style="display:flex;gap:0.5rem">
+            <button class="btn red" onclick="clearAll()" style="flex:1">Clear</button>
+            <button class="btn green" onclick="addStop()" style="flex:3">+ Add Stop</button>
+        </div>
     </div>
 </div>
 <div id="results"></div>
@@ -216,8 +220,10 @@ function touchportalChain(cache) {
                         sellTerm:  sellTerm,
                         buyPrice:  bEntry.p,
                         sellPrice: sEntry.p,
+                        buyCur:    bEntry.cur || 0,
                         buyScu:    bEntry.scu || 0,
                         buyMax:    bEntry.max || 0,
+                        sellCur:   sEntry.cur || 0,
                         sellScu:   sEntry.scu || 0,
                         sellMax:   sEntry.max || 0,
                         stockScu:  stockScu,
@@ -251,7 +257,6 @@ function touchportalChain(cache) {
         names.forEach(function (name, idx) {
             var buys  = buyAt[idx].sort(function (a, b) { return b.eff - a.eff; });
             var sells = sellAt[idx].sort(function (a, b) { return b.eff - a.eff; });
-            if (!buys.length && !sells.length) return;
             anyFound = true;
 
             // Merge: sells first (do these first on arrival), then buys
@@ -260,13 +265,19 @@ function touchportalChain(cache) {
             buys.forEach(function (r)  { allRows.push({ action: 'Buy',  terminal: r.sellTerm, termClass: 'to',   r: r }); });
 
             html += '<div class="stop-section">'
-                + '<h3 class="stop-header">' + name + '</h3>'
-                + '<table><thead><tr>'
+                + '<h3 class="stop-header">' + name + '</h3>';
+
+            if (!buys.length && !sells.length) {
+                html += '<p class="stop-empty">Nothing to do here — pass through.</p></div>';
+                return;
+            }
+
+            html += '<table><thead><tr>'
                 + '<th>Action</th><th>Commodity</th>'
                 + '<th>Buy avg</th><th>Sell avg</th>'
                 + '<th>Profit/SCU</th><th>Hops</th><th title="Profit per SCU divided by number of stops the cargo rides">Eff./SCU</th>'
-                + '<th title="Avg stock / max capacity at buy terminal">Supply (avg/max)</th>'
-                + '<th title="Avg demand / max capacity at sell terminal">Demand (avg/max)</th>'
+                + '<th title="Current / avg / max SCU at buy terminal">Supply (cur/avg/max)</th>'
+                + '<th title="Current / avg / max SCU at sell terminal">Demand (cur/avg/max)</th>'
                 + '<th>Est. Total</th>'
                 + '<th>Terminal</th>'
                 + '</tr></thead><tbody>';
@@ -277,8 +288,12 @@ function touchportalChain(cache) {
                 var hopClass = r.hops === 1 ? 'hops-good' : r.hops >= 3 ? 'hops-bad' : '';
                 var supplyClass = r.buyScu >= scu ? 'scu-ok' : r.buyScu > 0 ? 'scu-low' : 'scu-none';
                 var demandClass = r.sellScu >= scu ? 'scu-ok' : r.sellScu > 0 ? 'scu-low' : 'scu-none';
-                var supplyTxt = r.buyScu > 0 ? (r.buyMax > 0 ? r.buyScu + ' / ' + r.buyMax : r.buyScu + '') : '?';
-                var demandTxt = r.sellScu > 0 ? (r.sellMax > 0 ? r.sellScu + ' / ' + r.sellMax : r.sellScu + '') : '?';
+                var supplyAvgPart = r.buyScu > 0 ? ' (' + r.buyScu + ')' : '';
+                var supplyMaxPart = r.buyMax > 0 ? ' / ' + r.buyMax : '';
+                var supplyTxt = (r.buyCur > 0 || r.buyScu > 0) ? r.buyCur + supplyAvgPart + supplyMaxPart : '?';
+                var demandAvgPart = r.sellScu > 0 ? ' (' + r.sellScu + ')' : '';
+                var demandMaxPart = r.sellMax > 0 ? ' / ' + r.sellMax : '';
+                var demandTxt = (r.sellCur > 0 || r.sellScu > 0) ? r.sellCur + demandAvgPart + demandMaxPart : '?';
                 html += '<tr>'
                     + '<td class="' + actionClass + '">' + entry.action + '</td>'
                     + '<td>' + r.commodity + '</td>'
@@ -312,7 +327,7 @@ function touchportalChain(cache) {
 })();
 </script>`;
 
-    return shell('Chain Route', body, false);
+    return shell('Chain Route Planner', body, false);
 }
 
 module.exports = { touchportalChain };
