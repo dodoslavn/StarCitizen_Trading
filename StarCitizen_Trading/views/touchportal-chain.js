@@ -11,10 +11,11 @@ const { escapeHtml } = require('../utils/formatters.js');
 
 /**
  * Build a compact price index from the raw cache data.
- * index[displayName] = { b: {commodity: avgBuyPrice}, s: {commodity: avgSellPrice} }
- * displayName includes system prefix, e.g. "(ST) TDD New Babbage"
- * b = player CAN BUY here (price_buy_avg > 0)
- * s = player CAN SELL here (price_sell_avg > 0)
+ * index[displayName] = {
+ *   b: { commodity: { p: avgBuyPrice,  scu: avgBuyScu  } },
+ *   s: { commodity: { p: avgSellPrice, scu: avgSellScu } }
+ * }
+ * b = player CAN BUY here, s = player CAN SELL here
  * @param {Object} cachedData - cache.getData()
  * @param {Object} initData   - cache.getInitData()
  * @returns {Object}
@@ -30,8 +31,8 @@ function buildPriceIndex(cachedData, initData) {
         if (!index[t]) index[t] = { b: {}, s: {} };
         const buyAvg  = Number(item.price_buy_avg)  || 0;
         const sellAvg = Number(item.price_sell_avg) || 0;
-        if (buyAvg  > 0) index[t].b[c] = buyAvg;
-        if (sellAvg > 0) index[t].s[c] = sellAvg;
+        if (buyAvg  > 0) index[t].b[c] = { p: buyAvg,  scu: Number(item.scu_buy_avg)       || 0 };
+        if (sellAvg > 0) index[t].s[c] = { p: sellAvg, scu: Number(item.scu_sell_stock_avg) || 0 };
     }
     return index;
 }
@@ -96,6 +97,9 @@ function touchportalChain(cache) {
     td.eff         { color: #c8a0ff; font-weight: bold; }
     td.hops-good   { color: #7dff8a; }
     td.hops-bad    { color: #ff9f43; }
+    td.scu-ok      { color: #7dff8a; }
+    td.scu-low     { color: #ff9f43; }
+    td.scu-none    { color: #888; font-style: italic; }
     p#no-trades { text-align: center; color: #888; margin-top: 2rem; }
     span#scu-label { color: #ffd966; font-weight: bold; }
 </style>
@@ -201,18 +205,22 @@ function touchportalChain(cache) {
 
                 var hops = j - i;
                 Object.keys(B.b).forEach(function (c) {
-                    var bp = B.b[c];
-                    var sp = S.s[c];
-                    if (!sp || sp <= bp) return;
-                    var profit = sp - bp;
+                    var bEntry = B.b[c];
+                    var sEntry = S.s[c];
+                    if (!sEntry || sEntry.p <= bEntry.p) return;
+                    var profit = sEntry.p - bEntry.p;
+                    var stockScu = Math.min(bEntry.scu || 0, sEntry.scu || 0);
                     rows.push({
                         commodity: c,
                         buyTerm:   buyTerm,
                         sellTerm:  sellTerm,
-                        buyPrice:  bp,
-                        sellPrice: sp,
+                        buyPrice:  bEntry.p,
+                        sellPrice: sEntry.p,
+                        buyScu:    bEntry.scu || 0,
+                        sellScu:   sEntry.scu || 0,
+                        stockScu:  stockScu,
                         profit:    profit,
-                        total:     profit * scu,
+                        total:     profit * Math.min(stockScu || scu, scu),
                         hops:      hops,
                         eff:       profit / hops
                     });
@@ -254,8 +262,10 @@ function touchportalChain(cache) {
                 + '<table><thead><tr>'
                 + '<th>Action</th><th>Commodity</th>'
                 + '<th>Buy avg</th><th>Sell avg</th>'
-                + '<th>Profit/SCU</th><th>Hops</th><th title="Profit per SCU divided by number of stops the cargo rides — higher is more efficient use of cargo space">Eff./SCU</th>'
-                + '<th>Est. Total (' + scu + ' SCU)</th>'
+                + '<th>Profit/SCU</th><th>Hops</th><th title="Profit per SCU divided by number of stops the cargo rides">Eff./SCU</th>'
+                + '<th title="Supply SCU at buy terminal">Supply</th>'
+                + '<th title="Demand SCU at sell terminal">Demand</th>'
+                + '<th>Est. Total</th>'
                 + '<th>Terminal</th>'
                 + '</tr></thead><tbody>';
 
@@ -263,6 +273,10 @@ function touchportalChain(cache) {
                 var r = entry.r;
                 var actionClass = entry.action === 'Buy' ? 'action-buy' : 'action-sell';
                 var hopClass = r.hops === 1 ? 'hops-good' : r.hops >= 3 ? 'hops-bad' : '';
+                var supplyClass = r.buyScu >= scu ? 'scu-ok' : r.buyScu > 0 ? 'scu-low' : 'scu-none';
+                var demandClass = r.sellScu >= scu ? 'scu-ok' : r.sellScu > 0 ? 'scu-low' : 'scu-none';
+                var supplyTxt = r.buyScu > 0 ? r.buyScu + ' SCU' : '?';
+                var demandTxt = r.sellScu > 0 ? r.sellScu + ' SCU' : '?';
                 html += '<tr>'
                     + '<td class="' + actionClass + '">' + entry.action + '</td>'
                     + '<td>' + r.commodity + '</td>'
@@ -271,6 +285,8 @@ function touchportalChain(cache) {
                     + '<td class="profit">' + fmtNum(r.profit) + '</td>'
                     + '<td class="' + hopClass + '">' + r.hops + '</td>'
                     + '<td class="eff">' + fmtNum(r.eff) + '</td>'
+                    + '<td class="' + supplyClass + '">' + supplyTxt + '</td>'
+                    + '<td class="' + demandClass + '">' + demandTxt + '</td>'
                     + '<td class="total">' + fmtNum(r.total) + '</td>'
                     + '<td class="' + entry.termClass + '">' + entry.terminal + '</td>'
                     + '</tr>';
