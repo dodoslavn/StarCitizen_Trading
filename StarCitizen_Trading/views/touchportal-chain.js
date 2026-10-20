@@ -7,7 +7,7 @@
 'use strict';
 
 const { shell } = require('./touchportal.js');
-const { escapeHtml } = require('../utils/formatters.js');
+const { escapeHtml, estimateMaxInventory } = require('../utils/formatters.js');
 
 /**
  * Build a compact price index from the raw cache data.
@@ -31,8 +31,8 @@ function buildPriceIndex(cachedData, initData) {
         if (!index[t]) index[t] = { b: {}, s: {} };
         const buyAvg  = Number(item.price_buy_avg)  || 0;
         const sellAvg = Number(item.price_sell_avg) || 0;
-        if (buyAvg  > 0) index[t].b[c] = { p: buyAvg,  scu: Number(item.scu_buy_avg)       || 0 };
-        if (sellAvg > 0) index[t].s[c] = { p: sellAvg, scu: Number(item.scu_sell_stock_avg) || 0 };
+        if (buyAvg  > 0) index[t].b[c] = { p: buyAvg,  scu: Number(item.scu_buy_avg)       || 0, max: estimateMaxInventory(Number(item.scu_buy_avg)       || 0, item.status_buy)  || 0 };
+        if (sellAvg > 0) index[t].s[c] = { p: sellAvg, scu: Number(item.scu_sell_stock_avg) || 0, max: estimateMaxInventory(Number(item.scu_sell_stock_avg) || 0, item.status_sell) || 0 };
     }
     return index;
 }
@@ -217,7 +217,9 @@ function touchportalChain(cache) {
                         buyPrice:  bEntry.p,
                         sellPrice: sEntry.p,
                         buyScu:    bEntry.scu || 0,
+                        buyMax:    bEntry.max || 0,
                         sellScu:   sEntry.scu || 0,
+                        sellMax:   sEntry.max || 0,
                         stockScu:  stockScu,
                         profit:    profit,
                         total:     profit * Math.min(stockScu || scu, scu),
@@ -263,8 +265,8 @@ function touchportalChain(cache) {
                 + '<th>Action</th><th>Commodity</th>'
                 + '<th>Buy avg</th><th>Sell avg</th>'
                 + '<th>Profit/SCU</th><th>Hops</th><th title="Profit per SCU divided by number of stops the cargo rides">Eff./SCU</th>'
-                + '<th title="Supply SCU at buy terminal">Supply</th>'
-                + '<th title="Demand SCU at sell terminal">Demand</th>'
+                + '<th title="Avg stock / max capacity at buy terminal">Supply (avg/max)</th>'
+                + '<th title="Avg demand / max capacity at sell terminal">Demand (avg/max)</th>'
                 + '<th>Est. Total</th>'
                 + '<th>Terminal</th>'
                 + '</tr></thead><tbody>';
@@ -275,8 +277,8 @@ function touchportalChain(cache) {
                 var hopClass = r.hops === 1 ? 'hops-good' : r.hops >= 3 ? 'hops-bad' : '';
                 var supplyClass = r.buyScu >= scu ? 'scu-ok' : r.buyScu > 0 ? 'scu-low' : 'scu-none';
                 var demandClass = r.sellScu >= scu ? 'scu-ok' : r.sellScu > 0 ? 'scu-low' : 'scu-none';
-                var supplyTxt = r.buyScu > 0 ? r.buyScu + ' SCU' : '?';
-                var demandTxt = r.sellScu > 0 ? r.sellScu + ' SCU' : '?';
+                var supplyTxt = r.buyScu > 0 ? (r.buyMax > 0 ? r.buyScu + ' / ' + r.buyMax : r.buyScu + '') : '?';
+                var demandTxt = r.sellScu > 0 ? (r.sellMax > 0 ? r.sellScu + ' / ' + r.sellMax : r.sellScu + '') : '?';
                 html += '<tr>'
                     + '<td class="' + actionClass + '">' + entry.action + '</td>'
                     + '<td>' + r.commodity + '</td>'
