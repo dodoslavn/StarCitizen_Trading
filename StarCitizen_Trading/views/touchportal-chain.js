@@ -104,8 +104,8 @@ function touchportalChain(cache) {
     </div>
     <div id="stops-row"></div>
     <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-        <button class="btn green" onclick="addStop()">+ Add Stop</button>
         <button class="btn red" onclick="clearAll()">Clear All</button>
+        <button class="btn green" onclick="addStop()">+ Add Stop</button>
     </div>
 </div>
 <div id="results"></div>
