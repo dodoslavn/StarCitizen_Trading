@@ -93,6 +93,9 @@ function touchportalChain(cache) {
     h3.stop-header { color: #4ab8ff; margin: 1.2rem 0 0.5rem; font-size: 1.15rem; border-bottom: 1px solid #333; padding-bottom: 0.3rem; }
     td.action-buy  { color: #ffd966; font-weight: bold; }
     td.action-sell { color: #7dff8a; font-weight: bold; }
+    td.eff         { color: #c8a0ff; font-weight: bold; }
+    td.hops-good   { color: #7dff8a; }
+    td.hops-bad    { color: #ff9f43; }
     p#no-trades { text-align: center; color: #888; margin-top: 2rem; }
     span#scu-label { color: #ffd966; font-weight: bold; }
 </style>
@@ -196,18 +199,22 @@ function touchportalChain(cache) {
                 var S = INDEX[sellTerm];
                 if (!B || !S) continue;
 
+                var hops = j - i;
                 Object.keys(B.b).forEach(function (c) {
                     var bp = B.b[c];
                     var sp = S.s[c];
                     if (!sp || sp <= bp) return;
+                    var profit = sp - bp;
                     rows.push({
                         commodity: c,
                         buyTerm:   buyTerm,
                         sellTerm:  sellTerm,
                         buyPrice:  bp,
                         sellPrice: sp,
-                        profit:    sp - bp,
-                        total:     (sp - bp) * scu
+                        profit:    profit,
+                        total:     profit * scu,
+                        hops:      hops,
+                        eff:       profit / hops
                     });
                 });
             }
@@ -232,8 +239,8 @@ function touchportalChain(cache) {
         var anyFound = false;
         var html = '';
         names.forEach(function (name, idx) {
-            var buys  = buyAt[idx].sort(function (a, b) { return b.profit - a.profit; });
-            var sells = sellAt[idx].sort(function (a, b) { return b.profit - a.profit; });
+            var buys  = buyAt[idx].sort(function (a, b) { return b.eff - a.eff; });
+            var sells = sellAt[idx].sort(function (a, b) { return b.eff - a.eff; });
             if (!buys.length && !sells.length) return;
             anyFound = true;
 
@@ -247,19 +254,24 @@ function touchportalChain(cache) {
                 + '<table><thead><tr>'
                 + '<th>Action</th><th>Commodity</th>'
                 + '<th>Buy avg</th><th>Sell avg</th>'
-                + '<th>Profit / SCU</th><th>Est. Total (' + scu + ' SCU)</th>'
+                + '<th>Profit/SCU</th><th>Hops</th><th title="Profit per SCU divided by number of stops the cargo rides — higher is more efficient use of cargo space">Eff./SCU</th>'
+                + '<th>Est. Total (' + scu + ' SCU)</th>'
                 + '<th>Terminal</th>'
                 + '</tr></thead><tbody>';
 
             allRows.forEach(function (entry) {
+                var r = entry.r;
                 var actionClass = entry.action === 'Buy' ? 'action-buy' : 'action-sell';
+                var hopClass = r.hops === 1 ? 'hops-good' : r.hops >= 3 ? 'hops-bad' : '';
                 html += '<tr>'
                     + '<td class="' + actionClass + '">' + entry.action + '</td>'
-                    + '<td>' + entry.r.commodity + '</td>'
-                    + '<td>' + fmtNum(entry.r.buyPrice) + '</td>'
-                    + '<td>' + fmtNum(entry.r.sellPrice) + '</td>'
-                    + '<td class="profit">' + fmtNum(entry.r.profit) + '</td>'
-                    + '<td class="total">' + fmtNum(entry.r.total) + '</td>'
+                    + '<td>' + r.commodity + '</td>'
+                    + '<td>' + fmtNum(r.buyPrice) + '</td>'
+                    + '<td>' + fmtNum(r.sellPrice) + '</td>'
+                    + '<td class="profit">' + fmtNum(r.profit) + '</td>'
+                    + '<td class="' + hopClass + '">' + r.hops + '</td>'
+                    + '<td class="eff">' + fmtNum(r.eff) + '</td>'
+                    + '<td class="total">' + fmtNum(r.total) + '</td>'
                     + '<td class="' + entry.termClass + '">' + entry.terminal + '</td>'
                     + '</tr>';
             });
