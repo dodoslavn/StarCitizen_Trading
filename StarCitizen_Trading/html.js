@@ -18,6 +18,8 @@ const { profit_uec, profit_perc } = require('./views/profits.js');
 const { touchportal, touchportalHub, touchportalStale } = require('./views/touchportal.js');
 const { touchportalSmart } = require('./views/touchportal-smart.js');
 const { touchportalMarket } = require('./views/touchportal-market.js');
+const { touchportalChain } = require('./views/touchportal-chain.js');
+const { touchportalBestFrom } = require('./views/touchportal-bestfrom.js');
 
 module.exports = {
     header,
@@ -32,5 +34,7 @@ module.exports = {
     touchportalStale,
     touchportalSmart,
     touchportalMarket,
+    touchportalChain,
+    touchportalBestFrom,
     about
 };

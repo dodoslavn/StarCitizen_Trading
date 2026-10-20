@@ -58,6 +58,16 @@ async function handle(req, res, cache, config) {
         return;
     }
 
+    if (parts[1] === 'chain') {
+        res.end(html.touchportalChain(cache));
+        return;
+    }
+
+    if (parts[1] === 'best-from') {
+        res.end(html.touchportalBestFrom(cache));
+        return;
+    }
+
     if (parts[1] === 'market') {
         const systems = trading.getSystemNames(cache);
         const depthAll = trading.generateMarketDepth(cache);
