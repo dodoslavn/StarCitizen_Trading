@@ -67,7 +67,7 @@ function touchportalChain(cache) {
     div#chain-setup { margin-bottom: 1.5rem; display: flex; flex-direction: column; align-items: center; }
     div#stops-row { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.8rem; }
     div#stops-row .stop-wrap { display: flex; align-items: center; gap: 0.4rem; }
-    div#stops-row .stop-arrow { color: #4ab8ff; font-size: 1.1rem; display: block; line-height: 1; text-align: center; }
+    div#stops-row .stop-arrow { color: #555; font-size: 1.1rem; display: block; line-height: 1; text-align: center; }
     input.stop-input { background: #1a1a1a; color: white; border: 1px solid #444; border-radius: 6px; padding: 0.45rem 0.6rem; font-size: 1rem; width: 16rem; }
     input.stop-input:focus { outline: none; border-color: #4ab8ff; }
     button.btn { background: #006fdd; color: white; border: none; border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.95rem; cursor: pointer; }
@@ -135,12 +135,6 @@ function touchportalChain(cache) {
         var wrap = document.createElement('div');
         wrap.className = 'stop-wrap';
 
-        if (stops.length > 0) {
-            var arrowRow = document.createElement('span');
-            arrowRow.className = 'stop-arrow';
-            arrowRow.textContent = '\\u2193';
-            stopsRow.appendChild(arrowRow);
-        }
 
         var inp = document.createElement('input');
         inp.type = 'text';
