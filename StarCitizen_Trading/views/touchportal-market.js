@@ -238,7 +238,7 @@ function touchportalMarket(depthAll, depthBySystem, systems, restockStats) {
     function toggleView() {
         var expanded = document.body.classList.toggle('expanded');
         var btn = document.getElementById('toggle-btn');
-        btn.textContent = expanded ? 'Combined' : 'Expanded';
+        btn.textContent = expanded ? 'Collapse columns' : 'Expand columns';
         btn.classList.toggle('active', expanded);
         try { localStorage.setItem('mkt-view', expanded ? 'expanded' : 'combined'); } catch(e) {}
         sortKeys = [{col: expanded ? 12 : 12, dir: -1}];
@@ -260,7 +260,7 @@ function touchportalMarket(depthAll, depthBySystem, systems, restockStats) {
     <h2>Market Depth</h2>
     <div style="text-align:center;margin-bottom:0.75rem">
         ${switcherButtons}
-        <button id="toggle-btn" onclick="toggleView()">Expanded</button>
+        <button id="toggle-btn" onclick="toggleView()">Expand columns</button>
     </div>
     <p style="text-align:center; color:#888; margin-top:-0.25rem; font-size:0.85rem;">Click column to sort · Shift+click to add secondary sort</p>
     <table id="mkt-table">
