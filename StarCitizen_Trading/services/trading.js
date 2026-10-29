@@ -564,7 +564,7 @@ function generateMarketDepth(cache, systemFilter) {
         if (item.price_buy > 0 && item.scu_buy > 0) {
             const confirmed = cache.getConfirmedMax(`${item.id_commodity}_${item.id_terminal}`, 'buy');
             c.buyCurrent += item.scu_buy;
-            c.buyMax += confirmed ?? estimateMaxInventory(item.scu_buy, item.status_buy);
+            c.buyMax += confirmed ?? estimateMaxInventory(item.scu_buy_avg, item.status_buy);
             c.buyTerminals++;
             if (item.price_buy < c.bestBuyPrice) c.bestBuyPrice = item.price_buy;
         }
@@ -572,7 +572,7 @@ function generateMarketDepth(cache, systemFilter) {
         if (item.price_sell > 0 && item.scu_sell_stock > 0) {
             const confirmed = cache.getConfirmedMax(`${item.id_commodity}_${item.id_terminal}`, 'sell');
             c.sellCurrent += item.scu_sell_stock;
-            c.sellMax += confirmed ?? estimateMaxInventory(item.scu_sell_stock, item.status_sell);
+            c.sellMax += confirmed ?? estimateMaxInventory(item.scu_sell_stock_avg, item.status_sell);
             c.sellTerminals++;
             if (item.price_sell > c.bestSellPrice) c.bestSellPrice = item.price_sell;
         }
