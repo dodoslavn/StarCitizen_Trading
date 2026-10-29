@@ -122,24 +122,6 @@ function buildRows(depth, restockStats) {
         const supplyColor = spectrumColor(supplyFrac);
         const demandColor = spectrumColor(demandFrac);
 
-        // Restock column
-        const stat = rs[item.commodity];
-        let restockVal = 9999, restockDisplay = '-', restockColor = spectrumColor(0.5), restockTitle = '';
-        if (stat) {
-            const { lastRestockH, avgCycleH, hoursToEmpty } = stat;
-            restockVal = lastRestockH;
-            // Fraction: 1 = just restocked (green), 0 = overdue (red)
-            const fraction = avgCycleH ? Math.max(0, 1 - lastRestockH / avgCycleH) : 0.5;
-            restockColor = spectrumColor(fraction);
-            const ago = lastRestockH < 24
-                ? `${lastRestockH}h ago`
-                : `${Math.round(lastRestockH / 24 * 10) / 10}d ago`;
-            const cycle = avgCycleH ? `~${avgCycleH}h cycle` : '';
-            const empty = hoursToEmpty ? ` · empties in ~${hoursToEmpty}h` : '';
-            restockDisplay = ago + (cycle ? ` · ${cycle}` : '');
-            restockTitle = `Last restock: ${ago}${cycle ? ', avg ' + cycle : ''}${empty}`;
-        }
-
         const supplyCombined = item.buyCurrent > 0
             ? readable_number(item.buyCurrent) + (item.buyMax > 0 ? ' / ' + readable_number(item.buyMax) + (supplyPerc !== null ? ' (' + supplyPerc + '%)' : '') : '')
             : '-';
@@ -161,7 +143,6 @@ function buildRows(depth, restockStats) {
             <td class="dem-combined" data-val="${item.sellCurrent}" style="color:${demandColor}">${demandCombined}</td>
             <td data-val="${item.tradeableCurrent}" style="color:${tradeColor}">${readable_number(item.tradeableCurrent)}</td>
             <td data-val="${item.potentialCurrent}" style="color:${potColor}">${readable_number(item.potentialCurrent)}</td>
-            <td data-val="${restockVal}" style="color:${restockColor}" title="${escapeHtml(restockTitle)}">${restockDisplay}</td>
         </tr>`;
     }).join('');
 
@@ -179,14 +160,13 @@ function buildRows(depth, restockStats) {
         { label: 'Demand',          title: 'Current / max / fill % of sell demand across all terminals',                                          cls: 'dem-combined' },
         { label: 'Tradeable SCU',   title: 'min(supply, demand) — how much you can actually move right now',                                      cls: '' },
         { label: 'Potential aUEC',  title: 'Tradeable SCU × margin — total market opportunity right now',                                         cls: '' },
-        { label: 'Restock',         title: 'Time since last observed restock · avg restock cycle (green = recently restocked, red = overdue)',     cls: '' },
     ];
 
     const headerRow = headers.map((h, i) =>
         `<th class="${h.cls}" title="${escapeHtml(h.title)}" onclick="handleSort(${i}, event)" style="cursor:pointer;white-space:nowrap">${escapeHtml(h.label)} <span class="si">${i === 12 ? '↓' : ''}</span></th>`
     ).join('');
 
-    return { rows: rows || '<tr><td colspan="14">No data available</td></tr>', headerRow };
+    return { rows: rows || '<tr><td colspan="13">No data available</td></tr>', headerRow };
 }
 
 function touchportalMarket(depthAll, depthBySystem, systems, restockStats) {
@@ -222,7 +202,7 @@ function touchportalMarket(depthAll, depthBySystem, systems, restockStats) {
 
     function switchSystem(s) {
         activeSystem = s;
-        document.getElementById('mkt-body').innerHTML = marketData[s] || '<tr><td colspan="14">No data</td></tr>';
+        document.getElementById('mkt-body').innerHTML = marketData[s] || '<tr><td colspan="13">No data</td></tr>';
         try { localStorage.setItem('mkt-system', s); } catch(e) {}
         applySort();
         updateHeaders();
