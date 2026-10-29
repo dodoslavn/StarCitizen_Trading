@@ -101,12 +101,13 @@ const TOUCHPORTAL_STYLES = `
  * @param {boolean} autoRefresh - Whether to auto-reload every 60s (data pages yes, hub no)
  * @returns {string}
  */
-function shell(title, body, autoRefresh = false) {
+function shell(title, body, autoRefresh = false, refreshMs = 60000) {
     // location.reload() (rather than <meta http-equiv="refresh">) reloads the
     // exact current URL including the #hash, and reliably re-triggers the
     // browser's native scroll-to-anchor on load - a bare meta-refresh isn't
     // guaranteed to preserve the fragment across the reload in every browser.
-    const refresh = autoRefresh ? '<script>setTimeout(() => location.reload(), 60000);</script>' : '';
+    const ms = typeof autoRefresh === 'number' ? autoRefresh : (autoRefresh ? refreshMs : 0);
+    const refresh = ms > 0 ? `<script>setTimeout(() => location.reload(), ${ms});</script>` : '';
     return `<!DOCTYPE html><html><head>
     <meta charset="UTF-8">
     <title>SC Trading - ${escapeHtml(title)}</title>

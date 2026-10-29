@@ -8,7 +8,7 @@ const { shell } = require('./touchportal.js');
 
 const SORT_JS = `
 <script>
-var sortKeys = [{col: 10, dir: -1}];
+var sortKeys = [{col: 12, dir: -1}];
 
 function handleSort(colIndex, event) {
     if (event.shiftKey) {
@@ -140,16 +140,25 @@ function buildRows(depth, restockStats) {
             restockTitle = `Last restock: ${ago}${cycle ? ', avg ' + cycle : ''}${empty}`;
         }
 
+        const supplyCombined = item.buyCurrent > 0
+            ? readable_number(item.buyCurrent) + (item.buyMax > 0 ? ' / ' + readable_number(item.buyMax) + (supplyPerc !== null ? ' (' + supplyPerc + '%)' : '') : '')
+            : '-';
+        const demandCombined = item.sellCurrent > 0
+            ? readable_number(item.sellCurrent) + (item.sellMax > 0 ? ' / ' + readable_number(item.sellMax) + (demandPerc !== null ? ' (' + demandPerc + '%)' : '') : '')
+            : '-';
+
         return `<tr>
             <td data-val="${name}"><a href="/#comm-${name}">${name}</a></td>
             <td data-val="${item.margin}" style="color:${marginColor}">${readable_number(item.margin)}</td>
             <td data-val="${item.profitPerc.toFixed(2)}" style="color:${percColor}">${item.profitPerc.toFixed(1)}%</td>
-            <td data-val="${item.buyCurrent}" style="color:${supplyColor}">${readable_number(item.buyCurrent)}</td>
-            <td data-val="${item.buyMax}" style="color:${supplyColor}">${readable_number(item.buyMax)}</td>
-            <td data-val="${supplyPerc ?? -1}" style="color:${supplyColor}">${supplyPerc !== null ? supplyPerc + '%' : '-'}</td>
-            <td data-val="${item.sellCurrent}" style="color:${demandColor}">${readable_number(item.sellCurrent)}</td>
-            <td data-val="${item.sellMax}" style="color:${demandColor}">${readable_number(item.sellMax)}</td>
-            <td data-val="${demandPerc ?? -1}" style="color:${demandColor}">${demandPerc !== null ? demandPerc + '%' : '-'}</td>
+            <td class="sup-col" data-val="${item.buyCurrent}" style="color:${supplyColor}">${readable_number(item.buyCurrent)}</td>
+            <td class="sup-col" data-val="${item.buyMax}" style="color:${supplyColor}">${readable_number(item.buyMax)}</td>
+            <td class="sup-col" data-val="${supplyPerc ?? -1}" style="color:${supplyColor}">${supplyPerc !== null ? supplyPerc + '%' : '-'}</td>
+            <td class="sup-combined" data-val="${item.buyCurrent}" style="color:${supplyColor}">${supplyCombined}</td>
+            <td class="dem-col" data-val="${item.sellCurrent}" style="color:${demandColor}">${readable_number(item.sellCurrent)}</td>
+            <td class="dem-col" data-val="${item.sellMax}" style="color:${demandColor}">${readable_number(item.sellMax)}</td>
+            <td class="dem-col" data-val="${demandPerc ?? -1}" style="color:${demandColor}">${demandPerc !== null ? demandPerc + '%' : '-'}</td>
+            <td class="dem-combined" data-val="${item.sellCurrent}" style="color:${demandColor}">${demandCombined}</td>
             <td data-val="${item.tradeableCurrent}" style="color:${tradeColor}">${readable_number(item.tradeableCurrent)}</td>
             <td data-val="${item.potentialCurrent}" style="color:${potColor}">${readable_number(item.potentialCurrent)}</td>
             <td data-val="${restockVal}" style="color:${restockColor}" title="${escapeHtml(restockTitle)}">${restockDisplay}</td>
@@ -157,25 +166,27 @@ function buildRows(depth, restockStats) {
     }).join('');
 
     const headers = [
-        { label: 'Commodity',       title: 'Commodity name' },
-        { label: 'Margin aUEC/SCU', title: 'Best sell price minus best buy price' },
-        { label: 'Profit %',        title: 'Margin as a percentage of the buy price — capital efficiency' },
-        { label: 'Supply',          title: 'Current buy stock SCU across all terminals' },
-        { label: 'Supply Max',      title: 'Maximum buy stock SCU across all terminals' },
-        { label: 'Supply %',        title: 'Buy stock as % of max — how full terminals are (green = well stocked)' },
-        { label: 'Demand',          title: 'Current sell demand SCU across all terminals' },
-        { label: 'Demand Max',      title: 'Maximum sell demand SCU across all terminals' },
-        { label: 'Demand %',        title: 'Sell stock as % of max — how much is available for you to buy (green = well stocked)' },
-        { label: 'Tradeable SCU',   title: 'min(supply, demand) — how much you can actually move right now' },
-        { label: 'Potential aUEC',  title: 'Tradeable SCU × margin — total market opportunity right now' },
-        { label: 'Restock',         title: 'Time since last observed restock · avg restock cycle (green = recently restocked, red = overdue)' },
+        { label: 'Commodity',       title: 'Commodity name',                                                                                       cls: '' },
+        { label: 'Margin aUEC/SCU', title: 'Best sell price minus best buy price',                                                                 cls: '' },
+        { label: 'Profit %',        title: 'Margin as a percentage of the buy price — capital efficiency',                                         cls: '' },
+        { label: 'Supply',          title: 'Current buy stock SCU across all terminals',                                                           cls: 'sup-col' },
+        { label: 'Supply Max',      title: 'Maximum buy stock SCU across all terminals',                                                           cls: 'sup-col' },
+        { label: 'Supply %',        title: 'Buy stock as % of max — how full terminals are (green = well stocked)',                                cls: 'sup-col' },
+        { label: 'Supply',          title: 'Current / max / fill % of buy stock across all terminals',                                            cls: 'sup-combined' },
+        { label: 'Demand',          title: 'Current sell demand SCU across all terminals',                                                         cls: 'dem-col' },
+        { label: 'Demand Max',      title: 'Maximum sell demand SCU across all terminals',                                                         cls: 'dem-col' },
+        { label: 'Demand %',        title: 'Sell stock as % of max — how much is available for you to buy (green = well stocked)',                 cls: 'dem-col' },
+        { label: 'Demand',          title: 'Current / max / fill % of sell demand across all terminals',                                          cls: 'dem-combined' },
+        { label: 'Tradeable SCU',   title: 'min(supply, demand) — how much you can actually move right now',                                      cls: '' },
+        { label: 'Potential aUEC',  title: 'Tradeable SCU × margin — total market opportunity right now',                                         cls: '' },
+        { label: 'Restock',         title: 'Time since last observed restock · avg restock cycle (green = recently restocked, red = overdue)',     cls: '' },
     ];
 
     const headerRow = headers.map((h, i) =>
-        `<th title="${escapeHtml(h.title)}" onclick="handleSort(${i}, event)" style="cursor:pointer;white-space:nowrap">${escapeHtml(h.label)} <span class="si">${i === 10 ? '↓' : ''}</span></th>`
+        `<th class="${h.cls}" title="${escapeHtml(h.title)}" onclick="handleSort(${i}, event)" style="cursor:pointer;white-space:nowrap">${escapeHtml(h.label)} <span class="si">${i === 12 ? '↓' : ''}</span></th>`
     ).join('');
 
-    return { rows: rows || '<tr><td colspan="12">No data available</td></tr>', headerRow };
+    return { rows: rows || '<tr><td colspan="14">No data available</td></tr>', headerRow };
 }
 
 function touchportalMarket(depthAll, depthBySystem, systems, restockStats) {
@@ -194,6 +205,16 @@ function touchportalMarket(depthAll, depthBySystem, systems, restockStats) {
     ).join('');
 
     const body = `
+    <style>
+        /* Combined mode (default): show combined cells, hide individual */
+        .sup-col, .dem-col { display: none; }
+        .sup-combined, .dem-combined { display: table-cell; }
+        /* Expanded mode */
+        body.expanded .sup-col, body.expanded .dem-col { display: table-cell; }
+        body.expanded .sup-combined, body.expanded .dem-combined { display: none; }
+        #toggle-btn { margin-left:0.75rem; padding:0.3rem 0.8rem; border-radius:0.25rem; border:1px solid #444; background:#2e2e2e; color:#ccc; cursor:pointer; }
+        #toggle-btn.active { background:#006fdd; color:#fff; border-color:#006fdd; }
+    </style>
     ${SORT_JS}
     <script>
     var marketData = ${JSON.stringify(systemData)};
@@ -201,7 +222,7 @@ function touchportalMarket(depthAll, depthBySystem, systems, restockStats) {
 
     function switchSystem(s) {
         activeSystem = s;
-        document.getElementById('mkt-body').innerHTML = marketData[s] || '<tr><td colspan="12">No data</td></tr>';
+        document.getElementById('mkt-body').innerHTML = marketData[s] || '<tr><td colspan="14">No data</td></tr>';
         try { localStorage.setItem('mkt-system', s); } catch(e) {}
         applySort();
         updateHeaders();
@@ -213,7 +234,23 @@ function touchportalMarket(depthAll, depthBySystem, systems, restockStats) {
         var active = document.getElementById('btn-' + s);
         if (active) { active.style.background = '#006fdd'; active.style.color = '#fff'; active.style.borderColor = '#006fdd'; }
     }
+
+    function toggleView() {
+        var expanded = document.body.classList.toggle('expanded');
+        var btn = document.getElementById('toggle-btn');
+        btn.textContent = expanded ? 'Combined' : 'Expanded';
+        btn.classList.toggle('active', expanded);
+        try { localStorage.setItem('mkt-view', expanded ? 'expanded' : 'combined'); } catch(e) {}
+        sortKeys = [{col: expanded ? 12 : 12, dir: -1}];
+        applySort();
+        updateHeaders();
+    }
+
     window.addEventListener('load', function() {
+        var savedView = null;
+        try { savedView = localStorage.getItem('mkt-view'); } catch(e) {}
+        if (savedView === 'expanded') toggleView();
+
         var saved = null;
         try { saved = localStorage.getItem('mkt-system'); } catch(e) {}
         var keys = ${JSON.stringify(switcherKeys)};
@@ -221,14 +258,17 @@ function touchportalMarket(depthAll, depthBySystem, systems, restockStats) {
     });
     </script>
     <h2>Market Depth</h2>
-    <div style="text-align:center;margin-bottom:0.75rem">${switcherButtons}</div>
+    <div style="text-align:center;margin-bottom:0.75rem">
+        ${switcherButtons}
+        <button id="toggle-btn" onclick="toggleView()">Expanded</button>
+    </div>
     <p style="text-align:center; color:#888; margin-top:-0.25rem; font-size:0.85rem;">Click column to sort · Shift+click to add secondary sort</p>
     <table id="mkt-table">
         <thead><tr>${headerRow}</tr></thead>
         <tbody id="mkt-body">${allRows}</tbody>
     </table>`;
 
-    return shell('Market Depth', body, true);
+    return shell('Market Depth', body, 30 * 60 * 1000);
 }
 
 module.exports = { touchportalMarket };
